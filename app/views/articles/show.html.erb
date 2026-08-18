@@ -1,0 +1,24 @@
+<h1><%= @article.title %></h1>
+<p class="muted"><%= @article.feed.name %> · <%= @article.published_at&.strftime("%d/%m/%Y %H:%M") %></p>
+
+<div class="card">
+  <p><strong>Origem:</strong> <%= link_to @article.source_url, @article.source_url, target: "_blank", rel: "noopener" %></p>
+  <% if @article.image_url.present? %><p><%= image_tag @article.image_url, style: "max-width:320px" %></p><% end %>
+  <p><%= @article.description %></p>
+</div>
+
+<%= form_with model: @article do |form| %>
+  <%= form.label :status, "Status editorial" %>
+  <%= form.select :status, Article::STATUSES.map { |status| [status.humanize, status] } %>
+
+  <h3>Distribuir para</h3>
+  <% selected_ids = @article.site_articles.pluck(:site_id) %>
+  <% @sites.each do |site| %>
+    <label style="display:block;margin:8px 0">
+      <%= check_box_tag "site_ids[]", site.id, selected_ids.include?(site.id) %>
+      <%= site.name %> — <%= site.domain %>
+    </label>
+  <% end %>
+  <br>
+  <%= form.submit "Salvar revisão" %>
+<% end %>
