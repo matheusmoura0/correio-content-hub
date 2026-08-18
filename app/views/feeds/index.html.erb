@@ -1,0 +1,21 @@
+<div style="display:flex;justify-content:space-between;align-items:center">
+  <h1>Feeds RSS</h1>
+  <%= link_to "Novo feed", new_feed_path, class: "button" %>
+</div>
+<table>
+  <thead><tr><th>Nome</th><th>Site</th><th>Categoria</th><th>Última importação</th><th></th></tr></thead>
+  <tbody>
+    <% @feeds.each do |feed| %>
+      <tr>
+        <td><%= feed.name %><br><span class="muted"><%= feed.url %></span></td>
+        <td><%= feed.site&.name || "—" %></td>
+        <td><%= feed.category&.name || "—" %></td>
+        <td><%= feed.last_imported_at&.strftime("%d/%m/%Y %H:%M") || "Nunca" %></td>
+        <td>
+          <%= button_to "Importar agora", import_feed_path(feed), method: :post %>
+          <%= link_to "Editar", edit_feed_path(feed) %>
+        </td>
+      </tr>
+    <% end %>
+  </tbody>
+</table>
