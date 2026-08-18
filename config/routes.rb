@@ -3,9 +3,9 @@ Rails.application.routes.draw do
 
   root "dashboard#index"
 
-  resources :sites
-  resources :categories
-  resources :feeds do
+  resources :sites, except: :show
+  resources :categories, except: :show
+  resources :feeds, except: :show do
     post :import, on: :member, action: :import_feed
   end
   resources :articles, only: %i[index show update]
