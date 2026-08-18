@@ -34,8 +34,8 @@
       <% end %>
     </header>
     <main>
-      <div class="notice"><%= notice %></div> <% if notice.present? %>
-      <div class="alert"><%= alert %></div> <% if alert.present? %>
+      <% if notice.present? %><div class="notice"><%= notice %></div><% end %>
+      <% if alert.present? %><div class="alert"><%= alert %></div><% end %>
       <%= yield %>
     </main>
   </body>
