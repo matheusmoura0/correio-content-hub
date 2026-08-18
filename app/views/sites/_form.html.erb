@@ -1,0 +1,9 @@
+<%= form_with model: site do |form| %>
+  <% site.errors.full_messages.each do |message| %><p class="alert"><%= message %></p><% end %>
+  <%= form.label :name, "Nome" %>
+  <%= form.text_field :name, required: true %>
+  <%= form.label :domain, "Domínio" %>
+  <%= form.text_field :domain, required: true, placeholder: "exemplo.com.br" %>
+  <label><%= form.check_box :active %> Ativo</label><br><br>
+  <%= form.submit %>
+<% end %>
