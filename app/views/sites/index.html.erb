@@ -1,0 +1,17 @@
+<div style="display:flex;justify-content:space-between;align-items:center">
+  <h1>Sites</h1>
+  <%= link_to "Novo site", new_site_path, class: "button" %>
+</div>
+<table>
+  <thead><tr><th>Nome</th><th>Domínio</th><th>Status</th><th></th></tr></thead>
+  <tbody>
+    <% @sites.each do |site| %>
+      <tr>
+        <td><%= site.name %></td>
+        <td><%= site.domain %></td>
+        <td><%= site.active? ? "Ativo" : "Inativo" %></td>
+        <td><%= link_to "Editar", edit_site_path(site) %></td>
+      </tr>
+    <% end %>
+  </tbody>
+</table>
