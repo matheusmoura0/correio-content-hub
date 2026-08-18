@@ -2,7 +2,7 @@ class CategoriesController < ApplicationController
   before_action :set_category, only: %i[edit update destroy]
 
   def index
-    @categories = Category.includes(:site).order("sites.name", :name)
+    @categories = Category.joins(:site).includes(:site).order("sites.name ASC", "categories.name ASC")
   end
 
   def new
