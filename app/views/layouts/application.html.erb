@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Correio Content Hub</title>
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <%= csrf_meta_tags %>
+    <%= csp_meta_tag %>
+    <style>
+      body { font-family: Arial, sans-serif; margin: 0; background: #f6f6f3; color: #1f2527; }
+      header { background: #1f2527; color: white; padding: 16px 24px; display: flex; gap: 24px; align-items: center; }
+      header a { color: white; text-decoration: none; }
+      main { max-width: 1100px; margin: 32px auto; padding: 0 20px; }
+      .card { background: white; border: 1px solid #ddd; border-radius: 8px; padding: 18px; margin-bottom: 16px; }
+      .grid { display: grid; grid-template-columns: repeat(auto-fit,minmax(180px,1fr)); gap: 16px; }
+      table { width: 100%; border-collapse: collapse; background: white; }
+      th, td { padding: 12px; border-bottom: 1px solid #e5e5e5; text-align: left; vertical-align: top; }
+      input, select, textarea { width: 100%; box-sizing: border-box; padding: 9px; margin: 6px 0 14px; }
+      input[type=checkbox] { width: auto; }
+      .button, button, input[type=submit] { display: inline-block; width: auto; background: #1f2527; color: white; border: 0; border-radius: 5px; padding: 9px 13px; text-decoration: none; cursor: pointer; }
+      .muted { color: #6d7375; }
+      .notice { background: #e8f5e9; padding: 10px; margin-bottom: 16px; }
+      .alert { background: #ffebee; padding: 10px; margin-bottom: 16px; }
+    </style>
+  </head>
+  <body>
+    <header>
+      <strong><%= link_to "Correio Content Hub", root_path %></strong>
+      <% if user_signed_in? %>
+        <%= link_to "Sites", sites_path %>
+        <%= link_to "Categorias", categories_path %>
+        <%= link_to "Feeds", feeds_path %>
+        <%= link_to "Matérias", articles_path %>
+        <%= button_to "Sair", destroy_user_session_path, method: :delete %>
+      <% end %>
+    </header>
+    <main>
+      <div class="notice"><%= notice %></div> <% if notice.present? %>
+      <div class="alert"><%= alert %></div> <% if alert.present? %>
+      <%= yield %>
+    </main>
+  </body>
+</html>
