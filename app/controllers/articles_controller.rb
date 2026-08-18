@@ -12,7 +12,7 @@ class ArticlesController < ApplicationController
 
   def update
     if @article.update(article_params)
-      sync_sites if params[:site_ids]
+      sync_sites
       redirect_to @article, notice: "Matéria atualizada."
     else
       @sites = Site.where(active: true).order(:name)
@@ -35,9 +35,11 @@ class ArticlesController < ApplicationController
     @article.site_articles.where.not(site_id: selected_ids).destroy_all
 
     selected_ids.each do |site_id|
-      @article.site_articles.find_or_create_by!(site_id:) do |distribution|
-        distribution.status = "draft"
-      end
+      distribution = @article.site_articles.find_or_initialize_by(site_id:)
+      distribution.status = @article.status == "published" ? "published" : "draft"
+      distribution.published_at = Time.current if distribution.status == "published" && distribution.published_at.blank?
+      distribution.published_at = nil if distribution.status == "draft"
+      distribution.save!
     end
   end
 end
