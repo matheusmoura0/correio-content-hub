@@ -1,0 +1,13 @@
+<%= form_with model: feed do |form| %>
+  <% feed.errors.full_messages.each do |message| %><p class="alert"><%= message %></p><% end %>
+  <%= form.label :name, "Nome" %>
+  <%= form.text_field :name, required: true %>
+  <%= form.label :url, "URL do RSS" %>
+  <%= form.url_field :url, required: true %>
+  <%= form.label :site_id, "Site padrão" %>
+  <%= form.collection_select :site_id, Site.order(:name), :id, :name, include_blank: "Nenhum" %>
+  <%= form.label :category_id, "Categoria padrão" %>
+  <%= form.collection_select :category_id, Category.includes(:site).order(:name), :id, :name, include_blank: "Nenhuma" %>
+  <label><%= form.check_box :active %> Ativo</label><br><br>
+  <%= form.submit %>
+<% end %>
