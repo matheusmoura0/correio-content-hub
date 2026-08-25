@@ -15,7 +15,7 @@ RUN bundle install
 
 COPY . .
 
-RUN chmod +x bin/docker-entrypoint
+RUN chmod +x bin/docker-entrypoint && mkdir -p tmp/pids log
 
 EXPOSE 3000
 

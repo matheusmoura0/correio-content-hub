@@ -16,8 +16,6 @@ services:
         value: production
       - key: RAILS_SERVE_STATIC_FILES
         value: "true"
-      - key: WEB_CONCURRENCY
-        value: "1"
       - key: SECRET_KEY_BASE
         generateValue: true
       - key: OPENAI_MODEL

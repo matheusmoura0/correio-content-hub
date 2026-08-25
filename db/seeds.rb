@@ -1,15 +1,12 @@
 admin_email = ENV.fetch("ADMIN_EMAIL", "admin@correio.local")
 admin_password = ENV.fetch("ADMIN_PASSWORD", "changeme123")
 
-User.find_or_create_by!(email: admin_email) do |user|
-  user.name = ENV.fetch("ADMIN_NAME", "Administrador")
-  user.role = "admin"
-  user.password = admin_password
-  user.password_confirmation = admin_password
-end
-
-admin = User.find_by!(email: admin_email)
-admin.update!(role: "admin", name: admin.name.presence || "Administrador")
+admin = User.find_or_initialize_by(email: admin_email)
+admin.name = ENV.fetch("ADMIN_NAME", "Administrador")
+admin.role = "admin"
+admin.password = admin_password
+admin.password_confirmation = admin_password
+admin.save!
 
 site = Site.find_or_create_by!(domain: "correioeconomico.local") do |record|
   record.name = "Correio Econômico"
@@ -21,4 +18,3 @@ Category.find_or_create_by!(site: site, slug: "economia") do |category|
 end
 
 puts "Usuário local: #{admin_email}"
-puts "Senha local: #{admin_password}"
