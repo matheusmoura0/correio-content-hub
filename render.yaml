@@ -1,12 +1,11 @@
 services:
   - type: web
     name: correio-content-hub
-    runtime: ruby
+    runtime: docker
     plan: free
     region: virginia
     branch: develop
-    buildCommand: bin/render-build.sh
-    startCommand: bundle exec puma -C config/puma.rb
+    dockerfilePath: ./Dockerfile
     healthCheckPath: /up
     envVars:
       - key: DATABASE_URL

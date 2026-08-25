@@ -74,7 +74,7 @@ O token nunca deve ser salvo no repositório ou enviado ao navegador.
 
 ## Deploy no Render
 
-O repositório inclui um Blueprint em `render.yaml`. Ele cria o serviço Rails e o PostgreSQL, executa as migrations e cria a primeira conta administrativa.
+O repositório inclui um Blueprint em `render.yaml` e uma imagem Docker. Eles criam o serviço Rails e o PostgreSQL, executam as migrations e criam a primeira conta administrativa.
 
 No primeiro deploy, o Render solicitará `OPENAI_API_KEY`, `ADMIN_EMAIL` e `ADMIN_PASSWORD`. Use uma senha forte com pelo menos 12 caracteres. O plano gratuito é adequado apenas para validar o beta: o serviço pode hibernar e o banco gratuito não deve ser tratado como ambiente definitivo sem uma rotina de backup.
 
