@@ -5,12 +5,17 @@ class User < ApplicationRecord
   MAX_BETA_USERS = 5
 
   has_many :rewritten_articles, class_name: "Article", foreign_key: :rewritten_by_id, inverse_of: :rewritten_by
+  has_many :activity_logs, dependent: :destroy
 
   validates :role, inclusion: { in: ROLES }
   validate :beta_user_limit, on: :create
 
   def admin?
     role == "admin"
+  end
+
+  def online?
+    last_seen_at.present? && last_seen_at >= 5.minutes.ago
   end
 
   private

@@ -15,6 +15,8 @@ Rails.application.routes.draw do
     post :run, on: :member
   end
   resources :users, except: :show
+  resources :activity_logs, only: :index, path: "atividades"
+  post "presenca", to: "presence#update", as: :presence
   post "articles/:id/rewrite", to: "article_rewrites#create", as: :rewrite_article
 
   namespace :api do

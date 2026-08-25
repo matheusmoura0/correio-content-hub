@@ -8,10 +8,20 @@
 
 <div class="card callout"><div><p class="eyebrow">Comece por aqui</p><h2>Encontre matérias para a próxima pauta</h2><p>Pesquise assuntos diretamente na web e reúna fontes para revisão.</p></div><%= link_to "Abrir pesca de matérias", topics_path, class: "button accent" %></div>
 
-<h2>Últimas importações</h2>
-<% @recent_articles.each do |article| %>
-  <div class="card">
-    <strong><%= link_to article.title, article_path(article) %></strong>
-    <div class="muted"><%= article.feed.name %> · <%= article_status_label(article.status) %></div>
-  </div>
-<% end %>
+<div class="dashboard-columns">
+  <section>
+    <div class="section-heading"><h2>Últimas matérias</h2><%= link_to "Ver todas", articles_path %></div>
+    <div class="news-list"><% @recent_articles.each do |article| %>
+      <article><strong><%= link_to article.title, article_path(article) %></strong><div class="muted"><%= article.feed.name %> · <%= article_status_label(article.status) %></div></article>
+    <% end %></div>
+  </section>
+  <aside>
+    <div class="section-heading"><h2>Equipe online</h2><span class="online-count"><%= @online_users.size %></span></div>
+    <div class="online-list"><% @online_users.each do |user| %>
+      <div><span class="presence-dot online"></span><strong><%= user.name.presence || user.email %></strong><small>Online agora</small></div>
+    <% end %><% if @online_users.empty? %><p class="muted">Nenhum usuário online.</p><% end %></div>
+
+    <% if current_user.admin? %><div class="section-heading activity-title"><h2>Atividade recente</h2><%= link_to "Ver histórico", activity_logs_path %></div>
+    <div class="mini-activity"><% @recent_activities.each do |activity| %><div><strong><%= activity.user.name.presence || activity.user.email %></strong><span><%= activity.description %></span><small><%= time_ago_in_words(activity.created_at) %> atrás</small></div><% end %></div><% end %>
+  </aside>
+</div>
