@@ -6,7 +6,7 @@ class TopicsController < ApplicationController
   end
 
   def new
-    @topic = Topic.new(match_mode: "any", active: true)
+    @topic = Topic.new(match_mode: "any", search_mode: "web", active: true)
   end
 
   def create
@@ -38,6 +38,9 @@ class TopicsController < ApplicationController
     message = "Pesca concluída: #{result.matches} nova(s) correspondência(s) e #{result.imported} matéria(s) importada(s)."
     message += " Não foi possível consultar: #{result.feed_errors.join(', ')}." if result.feed_errors.any?
     redirect_to topics_path(anchor: "topic-#{@topic.id}"), notice: message
+  rescue StandardError => error
+    Rails.logger.error("Falha na pesquisa #{@topic.id}: #{error.class}: #{error.message}")
+    redirect_to topics_path(anchor: "topic-#{@topic.id}"), alert: "Não foi possível concluir a pesca: #{error.message}"
   end
 
   private
@@ -47,6 +50,6 @@ class TopicsController < ApplicationController
   end
 
   def topic_params
-    params.require(:topic).permit(:name, :keywords, :match_mode, :active)
+    params.require(:topic).permit(:name, :keywords, :match_mode, :search_mode, :active)
   end
 end

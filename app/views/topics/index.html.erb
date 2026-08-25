@@ -12,7 +12,7 @@
     <div class="page-heading compact">
       <div>
         <h2><%= topic.name %></h2>
-        <p class="muted"><%= topic.keyword_list.join(" · ") %> · <%= topic.match_mode == "all" ? "todos os termos" : "qualquer termo" %></p>
+        <p class="muted"><%= topic.keyword_list.join(" · ") %> · <%= { "web" => "web", "rss" => "RSS", "both" => "web + RSS" }.fetch(topic.search_mode, topic.search_mode) %> · <%= topic.match_mode == "all" ? "todos os termos" : "qualquer termo" %></p>
       </div>
       <div class="actions">
         <%= button_to "Pescar matérias", run_topic_path(topic), method: :post, class: "button accent" %>

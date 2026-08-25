@@ -10,6 +10,7 @@ Beta privado para encontrar matérias por assunto, revisar conteúdos e produzir
 - cadastro de feeds RSS;
 - importação manual de RSS com Feedjira;
 - pesquisas salvas por palavras-chave, com correspondência por qualquer termo ou por todos;
+- pesquisa direta na web com descoberta de fontes pela OpenAI e extração do conteúdo das páginas;
 - pesca manual em todos os feeds ativos;
 - reescrita assistida por IA usando a OpenAI Responses API;
 - edição humana do título e texto gerados, mantendo a fonte original;
@@ -104,8 +105,8 @@ export ADMIN_PASSWORD=uma-senha-forte
 
 1. Entre no painel com a conta administrativa.
 2. Cadastre os feeds RSS que serão monitorados.
-3. Abra **Pescar matérias** e crie uma pesquisa com palavras-chave.
-4. Clique em **Pescar matérias** para atualizar os feeds e localizar correspondências.
+3. Abra **Pescar matérias**, crie uma pesquisa com palavras-chave e selecione Web, RSS ou ambos.
+4. Clique em **Pescar matérias** para localizar e coletar matérias atuais.
 5. Abra um resultado e clique em **Reescrever matéria**.
 6. Revise e edite a versão gerada antes de aprová-la.
 7. O administrador pode criar as demais contas em **Usuários**.

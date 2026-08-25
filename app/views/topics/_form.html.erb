@@ -7,6 +7,8 @@
   <%= form.label :keywords, "Palavras-chave" %>
   <%= form.text_area :keywords, rows: 5, placeholder: "inteligência artificial, IA generativa, redação automatizada", required: true %>
   <p class="muted">Separe os termos por vírgula ou coloque um por linha.</p>
+  <%= form.label :search_mode, "Onde pesquisar" %>
+  <%= form.select :search_mode, [["Web — recomendado", "web"], ["Web + feeds RSS", "both"], ["Somente feeds RSS", "rss"]] %>
   <%= form.label :match_mode, "Regra de correspondência" %>
   <%= form.select :match_mode, [["Encontrar qualquer termo", "any"], ["Exigir todos os termos", "all"]] %>
   <label class="check"><%= form.check_box :active %> Pesquisa ativa</label>

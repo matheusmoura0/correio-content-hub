@@ -11,22 +11,34 @@ module Topics
     end
 
     def call
+      matches_before = @topic.topic_articles.count
       imported = 0
       skipped = 0
       feed_errors = []
 
-      Feed.where(active: true).find_each do |feed|
-        result = Rss::ImportFeed.call(feed)
-        imported += result.imported
-        skipped += result.skipped
-      rescue StandardError => error
-        Rails.logger.error("Falha ao importar #{feed.url}: #{error.class}: #{error.message}")
-        feed_errors << feed.name
+      if @topic.searches_web?
+        web_result = Web::SearchTopic.call(@topic)
+        imported += web_result.imported
+        skipped += web_result.skipped
+        feed_errors.concat(web_result.errors.map { |item| "Web: #{item}" })
       end
 
-      matches = match_articles
+      if @topic.searches_rss?
+        Feed.where(active: true).find_each do |feed|
+          result = Rss::ImportFeed.call(feed)
+          imported += result.imported
+          skipped += result.skipped
+        rescue StandardError => error
+          Rails.logger.error("Falha ao importar #{feed.url}: #{error.class}: #{error.message}")
+          feed_errors << feed.name
+        end
+
+        match_articles
+      end
+
       @topic.update!(last_run_at: Time.current)
-      Result.new(matches:, imported:, skipped:, feed_errors:)
+      matches = @topic.topic_articles.count - matches_before
+      Result.new(matches: [matches, 0].max, imported:, skipped:, feed_errors:)
     end
 
     private

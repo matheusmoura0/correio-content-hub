@@ -20,6 +20,8 @@ services:
         generateValue: true
       - key: OPENAI_MODEL
         value: gpt-5.6-luna
+      - key: OPENAI_SEARCH_MODEL
+        value: gpt-5.6-luna
       - key: OPENAI_API_KEY
         sync: false
       - key: ADMIN_NAME
