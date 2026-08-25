@@ -21,6 +21,7 @@ Rails.application.routes.draw do
 
   namespace :api do
     namespace :v1 do
+      get "sites/by-domain/articles", to: "articles#index"
       get "sites/:site_id/articles", to: "articles#index"
       get "articles/:id", to: "articles#show"
     end

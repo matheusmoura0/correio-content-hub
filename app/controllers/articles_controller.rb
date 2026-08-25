@@ -36,11 +36,18 @@ class ArticlesController < ApplicationController
   end
 
   def sync_sites
+    placements = params.fetch(:site_placements, {}).to_unsafe_h
     selected_ids = Array(params[:site_ids]).reject(&:blank?).map(&:to_i)
     @article.site_articles.where.not(site_id: selected_ids).destroy_all
 
     selected_ids.each do |site_id|
       distribution = @article.site_articles.find_or_initialize_by(site_id:)
+      placement = placements.fetch(site_id.to_s, "latest")
+      placement = "latest" unless SiteArticle::PLACEMENTS.include?(placement)
+      if %w[hero editor_pick].include?(placement)
+        SiteArticle.where(site_id:, placement:).where.not(article_id: @article.id).update_all(placement: "latest", position: 0)
+      end
+      distribution.placement = placement
       distribution.status = @article.status == "published" ? "published" : "draft"
       distribution.published_at = Time.current if distribution.status == "published" && distribution.published_at.blank?
       distribution.published_at = nil if distribution.status == "draft"
