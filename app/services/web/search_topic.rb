@@ -72,12 +72,34 @@ module Web
       request["Content-Type"] = "application/json"
       request.body = request_body.to_json
       response = Net::HTTP.start(ENDPOINT.host, ENDPOINT.port, use_ssl: true, open_timeout: 10, read_timeout: 90) { |http| http.request(request) }
-      raise "A busca web respondeu com HTTP #{response.code}" unless response.is_a?(Net::HTTPSuccess)
+      raise api_error(response) unless response.is_a?(Net::HTTPSuccess)
 
       parsed = JSON.parse(response.body)
       raw = parsed.fetch("output", []).flat_map { |item| item.fetch("content", []) }
         .find { |content| content["type"] == "output_text" }&.fetch("text", "").to_s
       JSON.parse(raw).fetch("articles", [])
+    end
+
+    def api_error(response)
+      error = JSON.parse(response.body).fetch("error", {})
+      code = error["code"].presence || error["type"].presence
+
+      message = case code
+      when "credit_balance_exhausted", "insufficient_quota"
+        "A conta da OpenAI API está sem créditos. Adicione saldo em platform.openai.com/settings/organization/billing."
+      when "project_spend_limit_exceeded"
+        "O limite mensal do projeto da OpenAI foi atingido. Aumente-o em Project settings → Limits."
+      when "organization_spend_limit_exceeded", "organization_usage_limit_exceeded"
+        "O limite da organização na OpenAI foi atingido. Verifique Organization settings → Limits."
+      when "rate_limit_exceeded"
+        "A OpenAI limitou temporariamente as requisições. Aguarde um minuto e tente novamente."
+      else
+        error["message"].presence || "A busca web respondeu com HTTP #{response.code}."
+      end
+
+      "#{message} (#{code || "HTTP #{response.code}"})"
+    rescue JSON::ParserError
+      "A busca web respondeu com HTTP #{response.code}."
     end
 
     def request_body

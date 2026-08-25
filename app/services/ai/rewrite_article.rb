@@ -24,7 +24,7 @@ module Ai
       response = Net::HTTP.start(ENDPOINT.host, ENDPOINT.port, use_ssl: true, read_timeout: 90, open_timeout: 10) do |http|
         http.request(request(token))
       end
-      raise RequestError, "A IA respondeu com HTTP #{response.code}." unless response.is_a?(Net::HTTPSuccess)
+      raise RequestError, api_error(response) unless response.is_a?(Net::HTTPSuccess)
 
       parse_content(response.body)
     rescue JSON::ParserError
@@ -34,6 +34,18 @@ module Ai
     end
 
     private
+
+    def api_error(response)
+      error = JSON.parse(response.body).fetch("error", {})
+      code = error["code"].presence || error["type"].presence
+      return "A conta da OpenAI API está sem créditos." if code.in?(%w[credit_balance_exhausted insufficient_quota])
+      return "O limite de gastos da OpenAI API foi atingido." if code.to_s.include?("spend_limit") || code == "organization_usage_limit_exceeded"
+      return "A OpenAI limitou temporariamente as requisições. Tente novamente em um minuto." if code == "rate_limit_exceeded"
+
+      error["message"].presence || "A IA respondeu com HTTP #{response.code}."
+    rescue JSON::ParserError
+      "A IA respondeu com HTTP #{response.code}."
+    end
 
     def request(token)
       Net::HTTP::Post.new(ENDPOINT).tap do |request|
