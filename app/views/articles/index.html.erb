@@ -1,6 +1,6 @@
 <div class="page-heading">
   <div><h1>Matérias</h1><p class="muted">Revise as matérias encontradas e crie novas versões com IA.</p></div>
-  <div>
+  <div class="filter-links">
     <%= link_to "Todas", articles_path %> ·
     <%= link_to "Importadas", articles_path(status: "imported") %> ·
     <%= link_to "Aprovadas", articles_path(status: "approved") %> ·
@@ -13,14 +13,14 @@
   <%= form.submit "Buscar" %>
 <% end %>
 <table>
-  <thead><tr><th>Título</th><th>Fonte</th><th>Data</th><th>Status</th></tr></thead>
+  <thead><tr><th>Título</th><th>Fonte</th><th>Data</th><th>Situação</th></tr></thead>
   <tbody>
     <% @articles.each do |article| %>
       <tr>
-        <td><%= link_to article.title, article_path(article) %></td>
-        <td><%= article.feed.name %><% if article.topics.any? %><small><%= article.topics.map(&:name).join(", ") %></small><% end %></td>
-        <td><%= article.published_at&.strftime("%d/%m/%Y %H:%M") || "—" %></td>
-        <td><span class="badge"><%= article.status %></span><%= " · IA" if article.rewritten_at.present? %></td>
+        <td data-label="Título"><%= link_to article.title, article_path(article) %></td>
+        <td data-label="Fonte"><%= article.feed.name %><% if article.topics.any? %><small><%= article.topics.map(&:name).join(", ") %></small><% end %></td>
+        <td data-label="Data"><%= article.published_at&.strftime("%d/%m/%Y %H:%M") || "—" %></td>
+        <td data-label="Situação"><span class="<%= article_status_class(article.status) %>"><%= article_status_label(article.status) %></span><%= " · IA" if article.rewritten_at.present? %></td>
       </tr>
     <% end %>
   </tbody>

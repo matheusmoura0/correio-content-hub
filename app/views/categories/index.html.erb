@@ -1,5 +1,5 @@
-<div style="display:flex;justify-content:space-between;align-items:center">
-  <h1>Categorias</h1>
+<div class="page-heading">
+  <div><h1>Categorias</h1><p class="muted">Organização editorial dos sites cadastrados.</p></div>
   <%= link_to "Nova categoria", new_category_path, class: "button" %>
 </div>
 <table>
@@ -7,10 +7,10 @@
   <tbody>
     <% @categories.each do |category| %>
       <tr>
-        <td><%= category.site.name %></td>
-        <td><%= category.name %></td>
-        <td><%= category.slug %></td>
-        <td><%= link_to "Editar", edit_category_path(category) %></td>
+        <td data-label="Site"><%= category.site.name %></td>
+        <td data-label="Nome"><%= category.name %></td>
+        <td data-label="Identificador"><%= category.slug %></td>
+        <td data-label="Ações"><%= link_to "Editar", edit_category_path(category) %></td>
       </tr>
     <% end %>
   </tbody>

@@ -1,4 +1,4 @@
-<div class="page-heading"><div><p class="eyebrow">Matéria original</p><h1><%= @article.title %></h1></div><span class="badge"><%= @article.status %></span></div>
+<div class="page-heading"><div><p class="eyebrow">Matéria original</p><h1><%= @article.title %></h1></div><span class="<%= article_status_class(@article.status) %>"><%= article_status_label(@article.status) %></span></div>
 <p class="muted"><%= @article.feed.name %> · <%= @article.published_at&.strftime("%d/%m/%Y %H:%M") %></p>
 
 <div class="card">
@@ -32,7 +32,7 @@
 
 <div class="card"><%= form_with model: @article do |form| %>
   <%= form.label :status, "Status editorial" %>
-  <%= form.select :status, Article::STATUSES.map { |status| [status.humanize, status] } %>
+  <%= form.select :status, Article::STATUSES.map { |status| [article_status_label(status), status] } %>
 
   <h3>Distribuir para</h3>
   <%= hidden_field_tag "site_ids[]", "" %>

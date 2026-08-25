@@ -1,4 +1,4 @@
-<h1>Dashboard</h1>
+<div class="page-heading"><div><p class="eyebrow">Correio da Manhã</p><h1>Painel editorial</h1><p class="muted">Acompanhe as pesquisas, matérias coletadas e revisões da equipe.</p></div></div>
 <div class="grid">
   <div class="card stat"><strong><%= @topics_count %></strong><span>pesquisas ativas</span></div>
   <div class="card stat"><strong><%= @articles_count %></strong><span>matérias coletadas</span></div>
@@ -6,12 +6,12 @@
   <div class="card stat"><strong><%= @rewritten_count %></strong><span>reescritas com IA</span></div>
 </div>
 
-<div class="card callout"><div><p class="eyebrow">Comece por aqui</p><h2>Encontre matérias para a próxima pauta</h2><p>Crie pesquisas por assunto e consulte todos os feeds ativos em um clique.</p></div><%= link_to "Abrir pesca de matérias", topics_path, class: "button accent" %></div>
+<div class="card callout"><div><p class="eyebrow">Comece por aqui</p><h2>Encontre matérias para a próxima pauta</h2><p>Pesquise assuntos diretamente na web e reúna fontes para revisão.</p></div><%= link_to "Abrir pesca de matérias", topics_path, class: "button accent" %></div>
 
 <h2>Últimas importações</h2>
 <% @recent_articles.each do |article| %>
   <div class="card">
     <strong><%= link_to article.title, article_path(article) %></strong>
-    <div class="muted"><%= article.feed.name %> · <%= article.status %></div>
+    <div class="muted"><%= article.feed.name %> · <%= article_status_label(article.status) %></div>
   </div>
 <% end %>

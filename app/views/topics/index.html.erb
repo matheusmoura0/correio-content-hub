@@ -24,7 +24,7 @@
     <% topic.topic_articles.sort_by(&:created_at).reverse.first(5).each do |match| %>
       <div class="result-row">
         <div><%= link_to match.article.title, article_path(match.article) %><small><%= match.article.feed.name %> · termos: <%= match.matched_terms %></small></div>
-        <span class="badge"><%= match.article.status %></span>
+        <span class="<%= article_status_class(match.article.status) %>"><%= article_status_label(match.article.status) %></span>
       </div>
     <% end %>
     <% if topic.topic_articles.size > 5 %><%= link_to "Ver todas as matérias", articles_path(topic_id: topic.id) %><% end %>

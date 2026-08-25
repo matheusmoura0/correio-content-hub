@@ -1,5 +1,5 @@
-<div style="display:flex;justify-content:space-between;align-items:center">
-  <h1>Feeds RSS</h1>
+<div class="page-heading">
+  <div><h1>Fontes RSS</h1><p class="muted">Fontes complementares para monitoramento de conteúdo.</p></div>
   <%= link_to "Novo feed", new_feed_path, class: "button" %>
 </div>
 <table>
@@ -7,11 +7,11 @@
   <tbody>
     <% @feeds.each do |feed| %>
       <tr>
-        <td><%= feed.name %><br><span class="muted"><%= feed.url %></span></td>
-        <td><%= feed.site&.name || "—" %></td>
-        <td><%= feed.category&.name || "—" %></td>
-        <td><%= feed.last_imported_at&.strftime("%d/%m/%Y %H:%M") || "Nunca" %></td>
-        <td>
+        <td data-label="Nome"><%= feed.name %><br><span class="muted"><%= feed.url %></span></td>
+        <td data-label="Site"><%= feed.site&.name || "—" %></td>
+        <td data-label="Categoria"><%= feed.category&.name || "—" %></td>
+        <td data-label="Última importação"><%= feed.last_imported_at&.strftime("%d/%m/%Y %H:%M") || "Nunca" %></td>
+        <td data-label="Ações" class="actions">
           <%= button_to "Importar agora", import_feed_path(feed), method: :post %>
           <%= link_to "Editar", edit_feed_path(feed) %>
         </td>
