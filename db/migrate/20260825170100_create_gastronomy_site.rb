@@ -6,7 +6,7 @@ class CreateGastronomySite < ActiveRecord::Migration[8.0]
       ON CONFLICT (domain) DO NOTHING;
 
       INSERT INTO categories (site_id, name, slug, created_at, updated_at)
-      SELECT sites.id, values.name, values.slug, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+      SELECT sites.id, category_values.name, category_values.slug, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
       FROM sites
       CROSS JOIN (VALUES
         ('Receitas', 'receitas'),
@@ -15,7 +15,7 @@ class CreateGastronomySite < ActiveRecord::Migration[8.0]
         ('Viagens', 'viagens'),
         ('Bebidas', 'bebidas'),
         ('Curiosidades', 'curiosidades')
-      ) AS values(name, slug)
+      ) AS category_values(name, slug)
       WHERE sites.domain = 'revistadegastronomia.com.br'
       ON CONFLICT (site_id, slug) DO NOTHING;
     SQL
