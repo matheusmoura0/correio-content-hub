@@ -11,7 +11,7 @@ Beta privado para encontrar matérias por assunto, revisar conteúdos e produzir
 - importação manual de RSS com Feedjira;
 - pesquisas salvas por palavras-chave, com correspondência por qualquer termo ou por todos;
 - pesca manual em todos os feeds ativos;
-- reescrita assistida por IA usando GitHub Models;
+- reescrita assistida por IA usando a OpenAI Responses API;
 - edição humana do título e texto gerados, mantendo a fonte original;
 - gestão interna de até cinco usuários, sem cadastro público;
 - deduplicação por URL e GUID;
@@ -66,11 +66,17 @@ bundle exec rails server
 Para habilitar a reescrita por IA, configure no ambiente do servidor:
 
 ```bash
-export GITHUB_MODELS_TOKEN=seu_token_com_permissao_models_read
-export GITHUB_MODELS_MODEL=openai/gpt-4.1-mini
+export OPENAI_API_KEY=sua_chave_da_openai
+export OPENAI_MODEL=gpt-5.6-luna
 ```
 
 O token nunca deve ser salvo no repositório ou enviado ao navegador.
+
+## Deploy no Render
+
+O repositório inclui um Blueprint em `render.yaml`. Ele cria o serviço Rails e o PostgreSQL, executa as migrations e cria a primeira conta administrativa.
+
+No primeiro deploy, o Render solicitará `OPENAI_API_KEY`, `ADMIN_EMAIL` e `ADMIN_PASSWORD`. Use uma senha forte com pelo menos 12 caracteres. O plano gratuito é adequado apenas para validar o beta: o serviço pode hibernar e o banco gratuito não deve ser tratado como ambiente definitivo sem uma rotina de backup.
 
 Acesse:
 
