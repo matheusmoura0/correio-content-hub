@@ -1,17 +1,41 @@
-<h1><%= @article.title %></h1>
+<div class="page-heading"><div><p class="eyebrow">Matéria original</p><h1><%= @article.title %></h1></div><span class="badge"><%= @article.status %></span></div>
 <p class="muted"><%= @article.feed.name %> · <%= @article.published_at&.strftime("%d/%m/%Y %H:%M") %></p>
 
 <div class="card">
   <p><strong>Origem:</strong> <%= link_to @article.source_url, @article.source_url, target: "_blank", rel: "noopener" %></p>
   <% if @article.image_url.present? %><p><%= image_tag @article.image_url, style: "max-width:320px" %></p><% end %>
-  <p><%= @article.description %></p>
+  <div class="article-copy"><%= simple_format(@article.content.presence || @article.description) %></div>
 </div>
 
-<%= form_with model: @article do |form| %>
+<section class="card rewrite-panel">
+  <p class="eyebrow">Assistente editorial</p>
+  <h2>Reescrever com IA</h2>
+  <p class="muted">A IA usa somente o texto-fonte acima. O resultado precisa ser revisado antes de qualquer publicação.</p>
+  <%= form_with url: rewrite_article_path(@article), method: :post do |form| %>
+    <%= form.label :rewrite_instructions, "Orientações opcionais" %>
+    <%= form.text_area :rewrite_instructions, value: @article.rewrite_instructions, rows: 3, placeholder: "Ex.: texto de 500 palavras, tom econômico e intertítulos curtos" %>
+    <%= form.submit @article.rewritten_at.present? ? "Gerar nova versão" : "Reescrever matéria", class: "accent" %>
+  <% end %>
+</section>
+
+<% if @article.rewritten_at.present? %>
+  <section class="card rewritten">
+    <div class="page-heading compact"><div><p class="eyebrow">Versão gerada por IA</p><h2><%= @article.rewritten_title %></h2></div><span class="muted"><%= @article.rewritten_at.strftime("%d/%m/%Y %H:%M") %></span></div>
+    <%= form_with model: @article do |form| %>
+      <%= form.label :rewritten_title, "Título revisado" %><%= form.text_field :rewritten_title %>
+      <%= form.label :rewritten_content, "Texto revisado" %><%= form.text_area :rewritten_content, rows: 18 %>
+      <%= form.hidden_field :status, value: @article.status %>
+      <%= form.submit "Salvar alterações" %>
+    <% end %>
+  </section>
+<% end %>
+
+<div class="card"><%= form_with model: @article do |form| %>
   <%= form.label :status, "Status editorial" %>
   <%= form.select :status, Article::STATUSES.map { |status| [status.humanize, status] } %>
 
   <h3>Distribuir para</h3>
+  <%= hidden_field_tag "site_ids[]", "" %>
   <% selected_ids = @article.site_articles.pluck(:site_id) %>
   <% @sites.each do |site| %>
     <label style="display:block;margin:8px 0">
@@ -22,3 +46,4 @@
   <br>
   <%= form.submit "Salvar revisão" %>
 <% end %>
+</div>

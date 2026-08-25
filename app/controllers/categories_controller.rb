@@ -1,4 +1,5 @@
 class CategoriesController < ApplicationController
+  before_action :require_admin!
   before_action :set_category, only: %i[edit update destroy]
 
   def index

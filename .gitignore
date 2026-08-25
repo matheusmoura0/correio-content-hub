@@ -8,6 +8,7 @@
 .byebug_history
 .env
 .env.*
+!.env.example
 /config/master.key
 /config/credentials/*.key
 /vendor/bundle

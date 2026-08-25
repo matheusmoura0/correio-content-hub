@@ -1,6 +1,6 @@
 # Correio Content Hub
 
-MVP de uma ferramenta central para ingestão, gestão e distribuição de conteúdos via RSS para múltiplos portais do Correio.
+Beta privado para encontrar matérias por assunto, revisar conteúdos e produzir versões editoriais assistidas por IA.
 
 ## O que já existe no MVP
 
@@ -9,6 +9,11 @@ MVP de uma ferramenta central para ingestão, gestão e distribuição de conte�
 - cadastro de categorias por site;
 - cadastro de feeds RSS;
 - importação manual de RSS com Feedjira;
+- pesquisas salvas por palavras-chave, com correspondência por qualquer termo ou por todos;
+- pesca manual em todos os feeds ativos;
+- reescrita assistida por IA usando GitHub Models;
+- edição humana do título e texto gerados, mantendo a fonte original;
+- gestão interna de até cinco usuários, sem cadastro público;
 - deduplicação por URL e GUID;
 - fila de matérias com status editorial;
 - distribuição de uma matéria para múltiplos sites;
@@ -58,6 +63,15 @@ bundle exec rails db:seed
 bundle exec rails server
 ```
 
+Para habilitar a reescrita por IA, configure no ambiente do servidor:
+
+```bash
+export GITHUB_MODELS_TOKEN=seu_token_com_permissao_models_read
+export GITHUB_MODELS_MODEL=openai/gpt-4.1-mini
+```
+
+O token nunca deve ser salvo no repositório ou enviado ao navegador.
+
 Acesse:
 
 ```text
@@ -82,14 +96,13 @@ export ADMIN_PASSWORD=uma-senha-forte
 
 ## Fluxo de teste
 
-1. Entre no painel.
-2. Cadastre um site.
-3. Cadastre uma categoria para esse site.
-4. Cadastre um feed RSS e associe-o ao site/categoria.
-5. Clique em **Importar agora**.
-6. Abra **Matérias**.
-7. Revise a matéria, selecione os sites de distribuição e altere o status para `published`.
-8. Consulte a API.
+1. Entre no painel com a conta administrativa.
+2. Cadastre os feeds RSS que serão monitorados.
+3. Abra **Pescar matérias** e crie uma pesquisa com palavras-chave.
+4. Clique em **Pescar matérias** para atualizar os feeds e localizar correspondências.
+5. Abra um resultado e clique em **Reescrever matéria**.
+6. Revise e edite a versão gerada antes de aprová-la.
+7. O administrador pode criar as demais contas em **Usuários**.
 
 ## API
 
@@ -128,3 +141,5 @@ RSS → Importação → Banco de matérias → Revisão editorial → Distribui
 - logs de importação;
 - testes automatizados;
 - integração com o primeiro frontend do Correio Econômico.
+- busca externa na web por meio de uma API de pesquisa;
+- publicação de versões revisadas em sites estáticos.

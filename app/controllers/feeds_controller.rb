@@ -1,4 +1,5 @@
 class FeedsController < ApplicationController
+  before_action :require_admin!
   before_action :set_feed, only: %i[show edit update destroy import_feed]
 
   def index

@@ -2,8 +2,13 @@ class ArticlesController < ApplicationController
   before_action :set_article, only: %i[show update]
 
   def index
-    @articles = Article.includes(:feed).order(created_at: :desc)
+    @articles = Article.includes(:feed, :topics).order(created_at: :desc)
     @articles = @articles.where(status: params[:status]) if params[:status].present?
+    @articles = @articles.joins(:topic_articles).where(topic_articles: { topic_id: params[:topic_id] }).distinct if params[:topic_id].present?
+    if params[:q].present?
+      query = "%#{ActiveRecord::Base.sanitize_sql_like(params[:q])}%"
+      @articles = @articles.where("articles.title ILIKE :query OR articles.description ILIKE :query", query:)
+    end
   end
 
   def show
@@ -12,7 +17,7 @@ class ArticlesController < ApplicationController
 
   def update
     if @article.update(article_params)
-      sync_sites
+      sync_sites if params.key?(:site_ids)
       redirect_to @article, notice: "Matéria atualizada."
     else
       @sites = Site.where(active: true).order(:name)
@@ -27,7 +32,7 @@ class ArticlesController < ApplicationController
   end
 
   def article_params
-    params.require(:article).permit(:status)
+    params.require(:article).permit(:status, :rewritten_title, :rewritten_content)
   end
 
   def sync_sites

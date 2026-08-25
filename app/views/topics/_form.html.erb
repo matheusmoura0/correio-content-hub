@@ -1,0 +1,14 @@
+<%= form_with model: topic do |form| %>
+  <% if topic.errors.any? %>
+    <div class="alert"><%= topic.errors.full_messages.to_sentence %></div>
+  <% end %>
+  <%= form.label :name, "Nome da pesquisa" %>
+  <%= form.text_field :name, placeholder: "Ex.: Inteligência artificial no jornalismo", required: true %>
+  <%= form.label :keywords, "Palavras-chave" %>
+  <%= form.text_area :keywords, rows: 5, placeholder: "inteligência artificial, IA generativa, redação automatizada", required: true %>
+  <p class="muted">Separe os termos por vírgula ou coloque um por linha.</p>
+  <%= form.label :match_mode, "Regra de correspondência" %>
+  <%= form.select :match_mode, [["Encontrar qualquer termo", "any"], ["Exigir todos os termos", "all"]] %>
+  <label class="check"><%= form.check_box :active %> Pesquisa ativa</label>
+  <%= form.submit topic.persisted? ? "Salvar pesquisa" : "Criar pesquisa" %>
+<% end %>

@@ -1,5 +1,5 @@
-<div style="display:flex;justify-content:space-between;align-items:center">
-  <h1>Matérias</h1>
+<div class="page-heading">
+  <div><h1>Matérias</h1><p class="muted">Revise as matérias encontradas e crie novas versões com IA.</p></div>
   <div>
     <%= link_to "Todas", articles_path %> ·
     <%= link_to "Importadas", articles_path(status: "imported") %> ·
@@ -7,15 +7,20 @@
     <%= link_to "Publicadas", articles_path(status: "published") %>
   </div>
 </div>
+<%= form_with url: articles_path, method: :get, class: "search-bar" do |form| %>
+  <%= form.hidden_field :status, value: params[:status] if params[:status].present? %>
+  <%= form.search_field :q, value: params[:q], placeholder: "Buscar por título ou conteúdo" %>
+  <%= form.submit "Buscar" %>
+<% end %>
 <table>
   <thead><tr><th>Título</th><th>Fonte</th><th>Data</th><th>Status</th></tr></thead>
   <tbody>
     <% @articles.each do |article| %>
       <tr>
         <td><%= link_to article.title, article_path(article) %></td>
-        <td><%= article.feed.name %></td>
+        <td><%= article.feed.name %><% if article.topics.any? %><small><%= article.topics.map(&:name).join(", ") %></small><% end %></td>
         <td><%= article.published_at&.strftime("%d/%m/%Y %H:%M") || "—" %></td>
-        <td><%= article.status %></td>
+        <td><span class="badge"><%= article.status %></span><%= " · IA" if article.rewritten_at.present? %></td>
       </tr>
     <% end %>
   </tbody>

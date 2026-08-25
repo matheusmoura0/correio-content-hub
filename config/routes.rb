@@ -1,5 +1,5 @@
 Rails.application.routes.draw do
-  devise_for :users
+  devise_for :users, skip: :registrations
 
   root "dashboard#index"
 
@@ -9,6 +9,11 @@ Rails.application.routes.draw do
     post :import, on: :member, action: :import_feed
   end
   resources :articles, only: %i[index show update]
+  resources :topics, except: :show do
+    post :run, on: :member
+  end
+  resources :users, except: :show
+  post "articles/:id/rewrite", to: "article_rewrites#create", as: :rewrite_article
 
   namespace :api do
     namespace :v1 do

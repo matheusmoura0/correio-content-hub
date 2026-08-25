@@ -1,0 +1,32 @@
+<div class="page-heading">
+  <div><h1>Pesca de matérias</h1><p class="muted">Monitore assuntos nos feeds cadastrados e reúna os resultados para revisão.</p></div>
+  <%= link_to "Nova pesquisa", new_topic_path, class: "button" %>
+</div>
+
+<% if @topics.empty? %>
+  <div class="empty-state"><h2>Nenhuma pesquisa criada</h2><p>Crie uma pesquisa com os assuntos ou palavras-chave que deseja acompanhar.</p></div>
+<% end %>
+
+<% @topics.each do |topic| %>
+  <section class="card topic" id="topic-<%= topic.id %>">
+    <div class="page-heading compact">
+      <div>
+        <h2><%= topic.name %></h2>
+        <p class="muted"><%= topic.keyword_list.join(" · ") %> · <%= topic.match_mode == "all" ? "todos os termos" : "qualquer termo" %></p>
+      </div>
+      <div class="actions">
+        <%= button_to "Pescar matérias", run_topic_path(topic), method: :post, class: "button accent" %>
+        <%= link_to "Editar", edit_topic_path(topic), class: "button secondary" %>
+        <%= button_to "Excluir", topic_path(topic), method: :delete, class: "button danger", form: { data: { turbo_confirm: "Excluir esta pesquisa?" } } %>
+      </div>
+    </div>
+    <p class="metric"><strong><%= topic.topic_articles.size %></strong> matéria(s) encontrada(s) <span class="muted">· última busca: <%= topic.last_run_at&.strftime("%d/%m/%Y %H:%M") || "ainda não executada" %></span></p>
+    <% topic.topic_articles.sort_by(&:created_at).reverse.first(5).each do |match| %>
+      <div class="result-row">
+        <div><%= link_to match.article.title, article_path(match.article) %><small><%= match.article.feed.name %> · termos: <%= match.matched_terms %></small></div>
+        <span class="badge"><%= match.article.status %></span>
+      </div>
+    <% end %>
+    <% if topic.topic_articles.size > 5 %><%= link_to "Ver todas as matérias", articles_path(topic_id: topic.id) %><% end %>
+  </section>
+<% end %>

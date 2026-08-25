@@ -1,10 +1,12 @@
 <h1>Dashboard</h1>
 <div class="grid">
-  <div class="card"><strong><%= @sites_count %></strong><br><span class="muted">sites</span></div>
-  <div class="card"><strong><%= @feeds_count %></strong><br><span class="muted">feeds</span></div>
-  <div class="card"><strong><%= @articles_count %></strong><br><span class="muted">matérias</span></div>
-  <div class="card"><strong><%= @pending_count %></strong><br><span class="muted">aguardando revisão</span></div>
+  <div class="card stat"><strong><%= @topics_count %></strong><span>pesquisas ativas</span></div>
+  <div class="card stat"><strong><%= @articles_count %></strong><span>matérias coletadas</span></div>
+  <div class="card stat"><strong><%= @pending_count %></strong><span>aguardando revisão</span></div>
+  <div class="card stat"><strong><%= @rewritten_count %></strong><span>reescritas com IA</span></div>
 </div>
+
+<div class="card callout"><div><p class="eyebrow">Comece por aqui</p><h2>Encontre matérias para a próxima pauta</h2><p>Crie pesquisas por assunto e consulte todos os feeds ativos em um clique.</p></div><%= link_to "Abrir pesca de matérias", topics_path, class: "button accent" %></div>
 
 <h2>Últimas importações</h2>
 <% @recent_articles.each do |article| %>
