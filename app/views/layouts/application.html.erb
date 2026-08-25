@@ -6,12 +6,12 @@
     <%= csrf_meta_tags %>
     <%= csp_meta_tag %>
     <style>
-      :root { --cm-red:#b00016; --cm-red-dark:#82000f; --ink:#111; --paper:#f4f3f0; --white:#fff; --line:#d9d9d5; --muted:#666; --success:#176b3a; }
+      :root { --cm-red:#b00016; --cm-red-dark:#82000f; --ink:#151515; --paper:#f7f7f5; --white:#fff; --line:#e2e2de; --muted:#6b6b68; --success:#176b3a; }
       * { box-sizing:border-box; }
       body { margin:0; background:var(--paper); color:var(--ink); font-family:Arial, Helvetica, sans-serif; line-height:1.5; }
       a { color:var(--cm-red); text-decoration:none; }
       a:hover { text-decoration:underline; }
-      .site-header { background:var(--white); border-top:7px solid var(--cm-red); box-shadow:0 2px 8px rgba(0,0,0,.08); }
+      .site-header { background:var(--white); border-top:6px solid var(--cm-red); box-shadow:0 1px 0 rgba(0,0,0,.08); }
       .masthead { border-bottom:1px solid var(--line); }
       .header-inner { width:min(1240px, calc(100% - 40px)); margin:0 auto; display:flex; align-items:center; justify-content:space-between; gap:24px; }
       .masthead .header-inner { min-height:86px; }
@@ -23,20 +23,22 @@
       .session { display:flex; align-items:center; gap:14px; color:var(--muted); font-size:13px; }
       .session form { margin:0; }
       .logout { padding:8px 12px !important; border:1px solid #bbb !important; background:#fff !important; color:#222 !important; }
-      .main-nav { background:#151515; }
+      .main-nav { background:#fff; border-bottom:1px solid var(--line); }
       .main-nav .header-inner { min-height:46px; justify-content:flex-start; overflow-x:auto; }
-      .nav-link { display:flex; align-items:center; min-height:46px; padding:0 15px; color:#fff; font-size:14px; font-weight:700; white-space:nowrap; border-bottom:4px solid transparent; }
-      .nav-link:hover { background:#292929; text-decoration:none; }
-      .nav-link.active { border-bottom-color:#fff; background:var(--cm-red); }
-      main { max-width:1160px; margin:38px auto 70px; padding:0 22px; }
+      .nav-link { display:flex; align-items:center; min-height:48px; padding:0 15px; color:#292929; font-size:14px; font-weight:700; white-space:nowrap; border-bottom:3px solid transparent; }
+      .nav-link:hover { color:var(--cm-red); background:#fafafa; text-decoration:none; }
+      .nav-link.active { color:var(--cm-red); border-bottom-color:var(--cm-red); }
+      main { max-width:1240px; margin:44px auto 80px; padding:0 28px; }
       h1, h2, h3 { font-family:Georgia, "Times New Roman", serif; line-height:1.12; }
       h1 { margin:0 0 8px; font-size:clamp(32px,4vw,48px); letter-spacing:-.02em; }
       h2 { margin-top:0; }
-      .page-heading { display:flex; justify-content:space-between; align-items:flex-start; gap:24px; padding-bottom:17px; margin-bottom:24px; border-bottom:4px solid var(--cm-red); }
-      .page-heading.compact { padding-bottom:12px; border-bottom:1px solid var(--line); }
-      .card { margin-bottom:18px; padding:22px; background:#fff; border:1px solid var(--line); border-radius:3px; box-shadow:0 2px 6px rgba(0,0,0,.04); }
-      .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(190px,1fr)); gap:14px; }
-      table { width:100%; border-collapse:collapse; background:#fff; border-top:4px solid var(--cm-red); box-shadow:0 2px 6px rgba(0,0,0,.04); }
+      .page-heading { position:relative; display:flex; justify-content:space-between; align-items:flex-start; gap:28px; padding-bottom:22px; margin-bottom:30px; border-bottom:1px solid var(--line); }
+      .page-heading::after { content:""; position:absolute; left:0; bottom:-1px; width:86px; height:4px; background:var(--cm-red); }
+      .page-heading.compact { padding-bottom:15px; margin-bottom:16px; }
+      .page-heading.compact::after { width:54px; height:3px; }
+      .card { margin-bottom:22px; padding:26px; background:#fff; border:0; border-radius:5px; box-shadow:0 4px 18px rgba(20,20,20,.055); }
+      .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(190px,1fr)); gap:18px; }
+      table { width:100%; border-collapse:collapse; background:#fff; border-top:3px solid var(--cm-red); box-shadow:0 4px 18px rgba(20,20,20,.05); }
       th { background:#efefec; color:#333; font-size:12px; letter-spacing:.06em; text-transform:uppercase; }
       th, td { padding:13px 14px; border-bottom:1px solid #e5e5e2; text-align:left; vertical-align:top; }
       tbody tr:hover { background:#faf9f7; }
@@ -64,10 +66,10 @@
       .status-approved { background:#dff2e5; color:#176438; }
       .status-published { background:var(--cm-red); color:#fff; }
       .status-ignored { background:#e4e4e4; color:#555; }
-      .stat { border-top:4px solid var(--cm-red); }
+      .stat { position:relative; overflow:hidden; border-left:4px solid var(--cm-red); }
       .stat strong { display:block; color:var(--cm-red); font:700 40px Georgia,serif; }
       .stat span { color:#444; font-size:13px; font-weight:700; text-transform:uppercase; }
-      .callout { display:flex; align-items:center; justify-content:space-between; gap:24px; margin-top:20px; background:#181818; border:0; color:#fff; }
+      .callout { display:flex; align-items:center; justify-content:space-between; gap:32px; margin:28px 0 36px; padding:32px; background:linear-gradient(120deg,#181818,#2b2b2b); color:#fff; }
       .callout h2, .callout p { margin-bottom:5px; }
       .result-row { display:flex; justify-content:space-between; gap:16px; padding:14px 0; border-top:1px solid #e4e4e1; }
       .result-row small { display:block; color:var(--muted); }
@@ -84,6 +86,18 @@
       .link-danger { padding:0; background:transparent; color:var(--cm-red); }
       .auth-card { max-width:520px; margin:70px auto; border-top:5px solid var(--cm-red); }
       .auth-card input[type=submit] { width:100%; }
+      .topic { padding:30px; }
+      .topic .metric { display:inline-flex; align-items:center; gap:5px; padding:8px 11px; background:#f4f4f1; border-radius:3px; }
+      .button[disabled], button[disabled], input[type=submit][disabled] { cursor:wait; opacity:.72; }
+      .is-loading { position:relative; padding-left:38px !important; }
+      .is-loading::before { content:""; position:absolute; left:14px; top:50%; width:14px; height:14px; margin-top:-8px; border:2px solid rgba(255,255,255,.4); border-top-color:#fff; border-radius:50%; animation:spin .75s linear infinite; }
+      .loading-indicator { position:fixed; right:24px; bottom:24px; z-index:1000; display:flex; align-items:center; gap:13px; max-width:360px; padding:15px 18px; background:#171717; color:#fff; border-left:5px solid var(--cm-red); border-radius:3px; box-shadow:0 12px 32px rgba(0,0,0,.25); opacity:0; pointer-events:none; transform:translateY(18px); transition:.2s ease; }
+      .loading-indicator.visible { opacity:1; transform:translateY(0); }
+      .loading-spinner { width:20px; height:20px; flex:none; border:3px solid #555; border-top-color:#fff; border-radius:50%; animation:spin .8s linear infinite; }
+      .loading-copy strong, .loading-copy span { display:block; }
+      .loading-copy span { margin-top:2px; color:#bbb; font-size:12px; }
+      .turbo-progress-bar { height:4px; background:var(--cm-red); }
+      @keyframes spin { to { transform:rotate(360deg); } }
       @media (max-width:760px) {
         .header-inner { width:min(100% - 24px,1240px); }
         .masthead .header-inner { min-height:74px; }
@@ -109,13 +123,14 @@
         table { background:transparent; box-shadow:none; border-top:0; }
         thead { display:none; }
         tbody { display:grid; gap:12px; }
-        tr { padding:8px 14px; background:#fff; border-top:4px solid var(--cm-red); box-shadow:0 2px 6px rgba(0,0,0,.05); }
+        tr { padding:8px 14px; background:#fff; border-top:3px solid var(--cm-red); box-shadow:0 4px 14px rgba(0,0,0,.05); }
         td { display:grid; grid-template-columns:minmax(92px,35%) 1fr; gap:10px; padding:9px 0; border-bottom:1px solid #eee; overflow-wrap:anywhere; }
         td:last-child { border-bottom:0; }
         td::before { content:attr(data-label); color:#666; font-size:10px; font-weight:800; letter-spacing:.06em; text-transform:uppercase; }
         td.actions { align-items:start; }
         .actions { align-items:flex-start; }
         .result-row { align-items:flex-start; }
+        .loading-indicator { left:14px; right:14px; bottom:14px; max-width:none; }
       }
       @media (max-width:420px) { .grid { grid-template-columns:1fr; } .brand-product { letter-spacing:.1em; } .session .logout { padding:7px 9px !important; } }
     </style>
@@ -146,5 +161,65 @@
       <% if alert.present? %><div class="alert"><%= alert %></div><% end %>
       <%= yield %>
     </main>
+    <div class="loading-indicator" id="loading-indicator" role="status" aria-live="polite" aria-hidden="true">
+      <span class="loading-spinner"></span>
+      <span class="loading-copy"><strong id="loading-title">Processando solicitação</strong><span>Isso pode levar alguns segundos.</span></span>
+    </div>
+    <script>
+      (() => {
+        const indicator = () => document.getElementById("loading-indicator");
+        const title = () => document.getElementById("loading-title");
+
+        document.addEventListener("turbo:submit-start", (event) => {
+          const form = event.target;
+          if (form.dataset.loadingStarted === "true") return;
+          form.dataset.loadingStarted = "true";
+          const button = form.querySelector("button[type='submit'], input[type='submit']");
+          const label = button?.dataset.loadingLabel || form.dataset.loadingLabel || "Processando solicitação";
+          if (button) {
+            button.dataset.originalLabel = button.tagName === "INPUT" ? button.value : button.textContent;
+            if (button.tagName === "INPUT") button.value = label;
+            else button.textContent = label;
+            button.classList.add("is-loading");
+            button.disabled = true;
+          }
+          title().textContent = label;
+          indicator().classList.add("visible");
+          indicator().setAttribute("aria-hidden", "false");
+        });
+
+        document.addEventListener("submit", (event) => {
+          const form = event.target;
+          if (form.dataset.loadingStarted === "true") return;
+          form.dataset.loadingStarted = "true";
+          const button = form.querySelector("button[type='submit'], input[type='submit']");
+          const label = button?.dataset.loadingLabel || form.dataset.loadingLabel || "Processando solicitação";
+          if (button) {
+            button.dataset.originalLabel = button.tagName === "INPUT" ? button.value : button.textContent;
+            if (button.tagName === "INPUT") button.value = label;
+            else button.textContent = label;
+            button.classList.add("is-loading");
+            button.disabled = true;
+          }
+          title().textContent = label;
+          indicator().classList.add("visible");
+          indicator().setAttribute("aria-hidden", "false");
+        });
+
+        document.addEventListener("turbo:submit-end", (event) => {
+          const button = event.target.querySelector("button[type='submit'], input[type='submit']");
+          if (button?.dataset.originalLabel) {
+            if (button.tagName === "INPUT") button.value = button.dataset.originalLabel;
+            else button.textContent = button.dataset.originalLabel;
+          }
+          if (button) { button.classList.remove("is-loading"); button.disabled = false; }
+          delete event.target.dataset.loadingStarted;
+          indicator().classList.remove("visible");
+          indicator().setAttribute("aria-hidden", "true");
+        });
+
+        document.addEventListener("turbo:before-cache", () => indicator()?.classList.remove("visible"));
+      })();
+    </script>
   </body>
 </html>

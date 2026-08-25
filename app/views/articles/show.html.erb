@@ -14,7 +14,7 @@
   <%= form_with url: rewrite_article_path(@article), method: :post do |form| %>
     <%= form.label :rewrite_instructions, "Orientações opcionais" %>
     <%= form.text_area :rewrite_instructions, value: @article.rewrite_instructions, rows: 3, placeholder: "Ex.: texto de 500 palavras, tom econômico e intertítulos curtos" %>
-    <%= form.submit @article.rewritten_at.present? ? "Gerar nova versão" : "Reescrever matéria", class: "accent" %>
+    <%= form.submit @article.rewritten_at.present? ? "Gerar nova versão" : "Reescrever matéria", class: "accent", data: { loading_label: "Reescrevendo matéria…" } %>
   <% end %>
 </section>
 
