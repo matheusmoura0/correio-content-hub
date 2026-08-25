@@ -27,7 +27,7 @@ module Api
       end
 
       def allow_gastronomy_site
-        allowed = %w[https://revistadegastronomia.com.br https://www.revistadegastronomia.com.br]
+        allowed = %w[https://revistadegastronomia.com.br https://www.revistadegastronomia.com.br https://revista-de-gastronomia.vercel.app]
         origin = request.headers["Origin"]
         response.set_header("Access-Control-Allow-Origin", origin) if allowed.include?(origin)
         response.set_header("Vary", "Origin")
