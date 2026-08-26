@@ -2,10 +2,11 @@ module Api
   module V1
     class ArticlesController < ActionController::API
       after_action :allow_gastronomy_site
+      after_action :disable_cache
 
       def index
         site = params[:site_id].present? ? Site.find(params[:site_id]) : Site.find_by!(domain: params[:domain])
-        articles = site.site_articles.includes(article: :feed).where(status: "published")
+        articles = site.site_articles.includes(:category, article: :feed).where(status: "published")
           .order(Arel.sql("CASE placement WHEN 'hero' THEN 0 WHEN 'editor_pick' THEN 1 ELSE 2 END"), :position, published_at: :desc)
         render json: articles.map { |item| serialize(item.article, item) }
       end
@@ -22,12 +23,24 @@ module Api
           description: article.description, content: article.rewritten_content.presence || article.content,
           image_url: article.image_url, author: article.author, source_url: article.source_url,
           published_at: distribution&.published_at || article.published_at,
+          updated_at: [article.updated_at, distribution&.updated_at].compact.max,
           category: distribution&.category&.slug, placement: distribution&.placement || "latest",
           position: distribution&.position || 0, source: article.feed.name }
       end
 
+      def disable_cache
+        response.set_header("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0")
+        response.set_header("Pragma", "no-cache")
+        response.set_header("Expires", "0")
+      end
+
       def allow_gastronomy_site
-        allowed = %w[https://revistadegastronomia.com.br https://www.revistadegastronomia.com.br https://revista-de-gastronomia.vercel.app]
+        allowed = %w[
+          https://revistadegastronomia.com.br
+          https://www.revistadegastronomia.com.br
+          https://revista-de-gastronomia.vercel.app
+          https://revista-de-gastronomia.matheusmoura2110.chatgpt.site
+        ]
         origin = request.headers["Origin"]
         response.set_header("Access-Control-Allow-Origin", origin) if allowed.include?(origin)
         response.set_header("Vary", "Origin")
