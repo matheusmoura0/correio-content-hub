@@ -45,6 +45,11 @@ class ArticlesController < ApplicationController
     @article.site_articles.where.not(site_id: selected_ids).destroy_all
 
     selected_ids.each do |site_id|
+      site = Site.find(site_id)
+      if site.domain == "revistadegastronomia.com.br" && @article.image_url.blank?
+        @article.site_articles.where(site_id:).destroy_all
+        next
+      end
       distribution = @article.site_articles.find_or_initialize_by(site_id:)
       placement = placements.fetch(site_id.to_s, "latest")
       placement = "latest" unless SiteArticle::PLACEMENTS.include?(placement)
