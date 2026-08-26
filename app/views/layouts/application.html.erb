@@ -113,7 +113,7 @@
       .cover-slot:nth-child(2) { border-top-color:#222; }
       .slot-label { display:flex; align-items:center; gap:10px; color:var(--muted); font-size:12px; text-transform:uppercase; letter-spacing:.08em; }
       .slot-label span { color:var(--cm-red); font:700 24px Georgia,serif; }
-      .cover-slot h3 { margin:28px 0 8px; font-size:clamp(23px,3vw,34px); }
+      .cover-slot-image { height:150px; margin:20px -25px 0; overflow:hidden; background:#eee; }\n      .cover-slot-image img { width:100%; height:100%; object-fit:cover; }\n      .cover-slot h3 { margin:22px 0 8px; font-size:clamp(23px,3vw,34px); }
       .slot-empty { margin-top:30px; padding:28px; border:1px dashed #bbb; text-align:center; color:var(--muted); }
       .quick-publication-form { display:flex; align-items:center; gap:14px; margin-top:22px; }
       .inline-link { font-size:13px; font-weight:700; }
@@ -124,10 +124,10 @@
       .publication-thumb img { width:100%; height:100%; object-fit:cover; }
       .publication-copy h3 { margin:7px 0 4px; font-size:19px; }
       .publication-copy small { color:var(--muted); }
-      .publication-controls { display:grid; grid-template-columns:1fr 1fr 75px auto; gap:9px; align-items:end; }
+      .publication-actions { display:grid; grid-template-columns:1fr auto; gap:10px; align-items:end; }\n      .publication-actions > form { margin:0; }\n      .publication-controls { display:grid; grid-template-columns:1fr 1fr 75px 48px; gap:9px; align-items:end; }
       .publication-controls label { font-size:10px; text-transform:uppercase; letter-spacing:.06em; color:var(--muted); }
       .publication-controls input,.publication-controls select { margin:3px 0 0; padding:9px; }
-      .publication-controls input[type=submit] { height:40px; }
+      .auto-save-state { align-self:center; color:var(--success); font-size:11px; font-weight:700; text-transform:uppercase; }\n      .auto-save-state.saving { color:#8a6800; }\n      .publication-toggle { min-width:116px; height:40px; white-space:nowrap; }
       .available-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:14px; }
       .available-card { display:flex; flex-direction:column; align-items:flex-start; padding:20px; background:#fff; border:1px solid var(--line); }
       .available-card h3 { flex:1; margin:15px 0 8px; font-size:19px; }
@@ -299,6 +299,20 @@
           indicator().setAttribute("aria-hidden", "false");
         });
 
+        let autosaveTimer;
+        const queueAutosave = (event) => {
+          const form = event.target.closest(".auto-save-publication");
+          if (!form) return;
+          const state = form.querySelector(".auto-save-state");
+          if (state) { state.textContent = "Salvando…"; state.classList.add("saving"); }
+          clearTimeout(autosaveTimer);
+          autosaveTimer = setTimeout(() => form.requestSubmit(), event.target.matches("select") ? 120 : 650);
+        };
+        document.addEventListener("change", queueAutosave);
+        document.addEventListener("input", (event) => {
+          if (event.target.matches(".auto-save-publication input[type='number']")) queueAutosave(event);
+        });
+
         document.addEventListener("turbo:submit-end", (event) => {
           const button = event.target.querySelector("button[type='submit'], input[type='submit']");
           if (button?.dataset.originalLabel) {
@@ -306,7 +320,7 @@
             else button.textContent = button.dataset.originalLabel;
           }
           if (button) { button.classList.remove("is-loading"); button.disabled = false; }
-          delete event.target.dataset.loadingStarted;
+          const state = event.target.querySelector(".auto-save-state");\n          if (state) { state.textContent = event.detail.success ? "Salvo" : "Erro ao salvar"; state.classList.remove("saving"); }\n          delete event.target.dataset.loadingStarted;
           indicator().classList.remove("visible");
           indicator().setAttribute("aria-hidden", "true");
         });
