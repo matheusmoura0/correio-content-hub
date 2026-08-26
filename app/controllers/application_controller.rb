@@ -10,8 +10,6 @@ class ApplicationController < ActionController::Base
     ["topics", "run"] => "executou uma pesca de matérias",
     ["article_rewrites", "create"] => "reescreveu uma matéria com IA",
     ["articles", "update"] => "atualizou a revisão de uma matéria",
-    ["publications", "create"] => "adicionou uma matéria à fila da Revista de Gastronomia",
-    ["publications", "update"] => "atualizou a publicação na Revista de Gastronomia",
     ["feeds", "create"] => "adicionou uma fonte RSS",
     ["feeds", "update"] => "atualizou uma fonte RSS",
     ["feeds", "destroy"] => "excluiu uma fonte RSS",
