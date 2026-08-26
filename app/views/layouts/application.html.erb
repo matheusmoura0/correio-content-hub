@@ -96,6 +96,20 @@
       .distribution-fields { display:grid; grid-template-columns:1.2fr 1.2fr .5fr; gap:14px; margin:16px 0 0 28px; }
       .distribution-fields input,.distribution-fields select { margin-bottom:4px; }
       .publication-state { display:flex; align-items:center; gap:8px; margin:8px 0 0 28px; color:var(--muted); font-size:12px; }
+      .publication-requirement { padding:22px; background:#fff3d7; border-left:4px solid #d39b00; }
+      .publication-requirement strong,.publication-requirement p { display:block; margin:0; }
+      .publication-requirement p { margin-top:5px; color:#6d570d; }
+      .publication-preview { display:grid; grid-template-columns:150px 1fr; gap:18px; align-items:center; margin-bottom:22px; padding:14px; background:#f5f3ee; }
+      .publication-preview img { width:150px; height:100px; object-fit:cover; }
+      .publication-preview span,.publication-preview strong { display:block; }
+      .publication-preview span { margin-bottom:5px; color:var(--cm-red); font-size:11px; font-weight:800; text-transform:uppercase; }
+      .publication-preview strong { font:700 22px/1.2 Georgia,serif; }
+      .gastronomy-publish-form { display:grid; grid-template-columns:1.2fr 1.2fr .5fr auto; gap:12px; align-items:end; }
+      .gastronomy-publish-form input,.gastronomy-publish-form select { margin:5px 0 0; }
+      .gastronomy-publish-form input[type=submit] { min-height:44px; }
+      .unpublish-row { display:flex; justify-content:space-between; align-items:center; gap:16px; margin-top:20px; padding-top:18px; border-top:1px solid var(--line); color:var(--muted); font-size:12px; }
+      .unpublish-row form { margin:0; }
+
       .link-danger { padding:0; background:transparent; color:var(--cm-red); }
       .auth-card { max-width:520px; margin:70px auto; border-top:5px solid var(--cm-red); }
       .auth-card input[type=submit] { width:100%; }
@@ -174,7 +188,7 @@
         .loading-indicator { left:14px; right:14px; bottom:14px; max-width:none; }
         .dashboard-columns { grid-template-columns:1fr; gap:30px; }
         .distribution-fields { grid-template-columns:1fr; margin-left:0; }
-        .publication-state { margin-left:0; }
+        .publication-state { margin-left:0; }\n        .gastronomy-publish-form { grid-template-columns:1fr; }\n        .gastronomy-publish-form input[type=submit] { width:100%; }\n        .publication-preview { grid-template-columns:90px 1fr; }\n        .publication-preview img { width:90px; height:75px; }\n        .unpublish-row { align-items:flex-start; flex-direction:column; }
         .activity-filter > div { flex-direction:column; }
         .activity-filter input { width:100%; }
       }
