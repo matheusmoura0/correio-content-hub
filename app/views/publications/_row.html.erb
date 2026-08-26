@@ -1,15 +1,23 @@
 <article class="publication-row">
-  <div class="publication-thumb"><% if distribution.article.image_url.present? %><%= image_tag distribution.article.image_url, alt: "" %><% else %><span>RG</span><% end %></div>
+  <div class="publication-thumb"><%= image_tag distribution.article.image_url, alt: "" %></div>
   <div class="publication-copy">
     <span class="<%= distribution.status == "published" ? "badge status-published" : "badge status-reviewing" %>"><%= distribution.status == "published" ? "No ar" : "Na fila" %></span>
     <h3><%= link_to distribution.article.rewritten_title.presence || distribution.article.title, article_path(distribution.article) %></h3>
     <small><%= distribution.article.feed.name %> · atualizado <%= time_ago_in_words(distribution.updated_at) %> atrás</small>
   </div>
-  <%= form_with model: distribution, url: publication_path(distribution), method: :patch, class: "publication-controls" do |form| %>
-    <div><%= form.label :placement, "Posição" %><%= form.select :placement, [["Novidades", "latest"], ["Manchete", "hero"], ["Escolha do editor", "editor_pick"]] %></div>
-    <div><%= form.label :category_id, "Editoria" %><%= form.select :category_id, [["Sem editoria", ""]] + site.categories.order(:name).map { |category| [category.name, category.id] } %></div>
-    <div class="order-field"><%= form.label :position, "Ordem" %><%= form.number_field :position, min: 0, max: 999 %></div>
-    <%= form.hidden_field :status, value: distribution.status == "published" ? "draft" : "published" %>
-    <%= form.submit distribution.status == "published" ? "Retirar" : "Publicar", class: distribution.status == "published" ? "secondary" : "accent", data: { loading_label: "Atualizando revista…" } %>
-  <% end %>
+  <div class="publication-actions">
+    <%= form_with model: distribution, url: publication_path(distribution), method: :patch, class: "publication-controls auto-save-publication", data: { loading_label: "Salvando organização…" } do |form| %>
+      <%= form.hidden_field :status, value: distribution.status %>
+      <div><%= form.label :placement, "Posição" %><%= form.select :placement, [["Novidades", "latest"], ["Manchete", "hero"], ["Escolha do editor", "editor_pick"]] %></div>
+      <div><%= form.label :category_id, "Editoria" %><%= form.select :category_id, [["Sem editoria", ""]] + site.categories.order(:name).map { |category| [category.name, category.id] } %></div>
+      <div class="order-field"><%= form.label :position, "Ordem" %><%= form.number_field :position, min: 0, max: 999 %></div>
+      <span class="auto-save-state" aria-live="polite">Salvo</span>
+    <% end %>
+    <%= button_to distribution.status == "published" ? "Retirar do ar" : "Publicar agora",
+      publication_path(distribution),
+      method: :patch,
+      params: { site_article: { status: distribution.status == "published" ? "draft" : "published" } },
+      class: distribution.status == "published" ? "secondary publication-toggle" : "accent publication-toggle",
+      data: { loading_label: distribution.status == "published" ? "Retirando…" : "Publicando…" } %>
+  </div>
 </article>
