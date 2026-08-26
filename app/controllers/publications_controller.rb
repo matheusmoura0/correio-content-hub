@@ -1,20 +1,33 @@
 class PublicationsController < ApplicationController
+  MAX_DISTRIBUTIONS = 120
+  MAX_AVAILABLE_ARTICLES = 18
+
   before_action :set_site
   before_action :set_distribution, only: :update
 
   def index
-    @distributions = @site.site_articles.joins(:article).includes(:category, article: :feed)
-      .where.not(articles: { image_url: [nil, ""] })
-      .order(Arel.sql("CASE placement WHEN 'hero' THEN 0 WHEN 'editor_pick' THEN 1 ELSE 2 END"), :position, updated_at: :desc)
+    @distributions = @site.site_articles
+      .includes(:category, article: :feed)
+      .order(updated_at: :desc)
+      .limit(MAX_DISTRIBUTIONS)
+      .to_a
+      .select { |distribution| distribution.article.image_url.present? }
+      .sort_by { |distribution| [placement_order(distribution.placement), distribution.position.to_i, -distribution.updated_at.to_i] }
+
     @hero = @distributions.find { |item| item.placement == "hero" }
     @editor_pick = @distributions.find { |item| item.placement == "editor_pick" }
     @published = @distributions.select { |item| item.status == "published" && item.placement == "latest" }
     @drafts = @distributions.select { |item| item.status == "draft" }
+
+    distributed_ids = @distributions.map(&:article_id)
     @available_articles = Article.includes(:feed)
       .where.not(status: "ignored")
-      .where.not(image_url: [nil, ""])
-      .where.not(id: @distributions.map(&:article_id))
-      .order(updated_at: :desc).limit(30)
+      .where.not(id: distributed_ids)
+      .where.not(image_url: nil)
+      .where.not(image_url: "")
+      .order(updated_at: :desc)
+      .limit(MAX_AVAILABLE_ARTICLES)
+      .to_a
   end
 
   def create
@@ -61,7 +74,7 @@ class PublicationsController < ApplicationController
   end
 
   def set_distribution
-    @distribution = @site.site_articles.find(params[:id])
+    @distribution = @site.site_articles.includes(:article).find(params[:id])
   end
 
   def publication_params
@@ -70,5 +83,9 @@ class PublicationsController < ApplicationController
 
   def next_position
     @site.site_articles.maximum(:position).to_i + 1
+  end
+
+  def placement_order(placement)
+    { "hero" => 0, "editor_pick" => 1, "latest" => 2 }.fetch(placement, 3)
   end
 end
