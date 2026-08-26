@@ -3,7 +3,7 @@
     <div>
       <p class="eyebrow">Revista de Gastronomia</p>
       <h1>Mesa de publicação</h1>
-      <p class="muted">Organize a capa, revise a fila e controle o que está no ar em um único lugar.</p>
+      <p class="muted">Organize a capa, revise a fila e controle o que está no ar em um único lugar. Somente matérias com imagem aparecem aqui.</p>
     </div>
     <div class="actions">
       <%= link_to "Ver site ↗", "https://revista-de-gastronomia-j922.vercel.app", target: "_blank", rel: "noopener", class: "button secondary" %>
@@ -44,8 +44,8 @@
   </section>
 
   <section class="publication-section">
-    <div class="section-heading"><div><p class="eyebrow">Acervo</p><h2>Adicionar à revista</h2></div></div>
-    <div class="available-grid">
+    <div class="section-heading"><div><p class="eyebrow">Acervo com imagem</p><h2>Adicionar à revista</h2></div><span class="muted">Seleção automática</span></div>
+    <% if @available_articles.any? %><div class="available-grid">
       <% @available_articles.each do |article| %>
         <article class="available-card">
           <span class="<%= article_status_class(article.status) %>"><%= article_status_label(article.status) %></span>
@@ -54,6 +54,6 @@
           <%= button_to "Adicionar à fila", publications_path(article_id: article.id), method: :post, class: "secondary" %>
         </article>
       <% end %>
-    </div>
+    </div><% else %><div class="empty-state"><h3>Nenhuma matéria com imagem disponível</h3><p class="muted">Adicione uma imagem às matérias antes de enviá-las para a revista.</p></div><% end %>
   </section>
 </div>
