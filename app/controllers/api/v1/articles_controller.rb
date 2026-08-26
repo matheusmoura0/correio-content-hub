@@ -6,13 +6,15 @@ module Api
 
       def index
         site = params[:site_id].present? ? Site.find(params[:site_id]) : Site.find_by!(domain: params[:domain])
-        articles = site.site_articles.includes(:category, article: :feed).where(status: "published")
+        articles = site.site_articles.joins(:article).includes(:category, article: :feed)
+          .where(status: "published")
+          .where.not(articles: { image_url: [nil, ""] })
           .order(Arel.sql("CASE placement WHEN 'hero' THEN 0 WHEN 'editor_pick' THEN 1 ELSE 2 END"), :position, published_at: :desc)
         render json: articles.map { |item| serialize(item.article, item) }
       end
 
       def show
-        article = Article.find(params[:id])
+        article = Article.where.not(image_url: [nil, ""]).find(params[:id])
         render json: serialize(article, nil)
       end
 
@@ -39,6 +41,7 @@ module Api
           https://revistadegastronomia.com.br
           https://www.revistadegastronomia.com.br
           https://revista-de-gastronomia.vercel.app
+          https://revista-de-gastronomia-j922.vercel.app
           https://revista-de-gastronomia.matheusmoura2110.chatgpt.site
         ]
         origin = request.headers["Origin"]
