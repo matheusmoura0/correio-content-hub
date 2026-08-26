@@ -30,25 +30,32 @@
   </section>
 <% end %>
 
-<div class="card"><%= form_with model: @article do |form| %>
-  <%= form.label :status, "Status editorial" %>
-  <%= form.select :status, Article::STATUSES.map { |status| [article_status_label(status), status] } %>
-
-  <h3>Distribuir para</h3>
-  <%= hidden_field_tag "site_ids[]", "" %>
-  <% selected_ids = @article.site_articles.pluck(:site_id) %>
-  <% distributions = @article.site_articles.index_by(&:site_id) %>
-  <% @sites.each do |site| %>
-    <label style="display:block;margin:8px 0">
-      <%= check_box_tag "site_ids[]", site.id, selected_ids.include?(site.id) %>
-      <%= site.name %> — <%= site.domain %>
-      <% if site.domain == "revistadegastronomia.com.br" %>
-        <span class="muted" style="display:block;margin:4px 0 0 24px">Posição na capa</span>
-        <%= select_tag "site_placements[#{site.id}]", options_for_select([["Novidades", "latest"], ["Manchete principal", "hero"], ["Escolha do editor", "editor_pick"]], distributions[site.id]&.placement || "latest"), style: "max-width:320px;margin:5px 0 14px 24px" %>
-      <% end %>
-    </label>
+<section class="card publication-panel">
+  <div class="page-heading compact"><div><p class="eyebrow">Publicação</p><h2>Distribuir para os sites</h2></div></div>
+  <%= form_with model: @article do |form| %>
+    <%= form.label :status, "Status editorial" %>
+    <%= form.select :status, Article::STATUSES.map { |status| [article_status_label(status), status] } %>
+    <p class="muted publication-help">Para a matéria entrar no ar, escolha “Publicada” e marque o site abaixo.</p>
+    <%= hidden_field_tag "site_ids[]", "" %>
+    <% selected_ids = @article.site_articles.pluck(:site_id) %>
+    <% distributions = @article.site_articles.index_by(&:site_id) %>
+    <% @sites.each do |site| %>
+      <% distribution = distributions[site.id] %>
+      <div class="distribution-card <%= "selected" if selected_ids.include?(site.id) %>">
+        <label class="distribution-toggle">
+          <%= check_box_tag "site_ids[]", site.id, selected_ids.include?(site.id) %>
+          <span><strong><%= site.name %></strong><small><%= site.domain %></small></span>
+        </label>
+        <% if site.domain == "revistadegastronomia.com.br" %>
+          <div class="distribution-fields">
+            <div><%= label_tag "site_placements_#{site.id}", "Posição na capa" %><%= select_tag "site_placements[#{site.id}]", options_for_select([["Novidades", "latest"], ["Manchete principal", "hero"], ["Escolha do editor", "editor_pick"]], distribution&.placement || "latest"), id: "site_placements_#{site.id}" %></div>
+            <div><%= label_tag "site_categories_#{site.id}", "Editoria" %><%= select_tag "site_categories[#{site.id}]", options_for_select([["Sem editoria", ""]] + site.categories.order(:name).map { |category| [category.name, category.id] }, distribution&.category_id), id: "site_categories_#{site.id}" %></div>
+            <div><%= label_tag "site_positions_#{site.id}", "Ordem" %><%= number_field_tag "site_positions[#{site.id}]", distribution&.position || 0, min: 0, max: 999, id: "site_positions_#{site.id}" %></div>
+          </div>
+          <p class="publication-state"><span class="presence-dot <%= distribution&.status == "published" ? "online" : "offline" %>"></span><%= distribution&.status == "published" ? "Esta matéria está no ar na revista" : "Esta matéria ainda não está no ar" %></p>
+        <% end %>
+      </div>
+    <% end %>
+    <%= form.submit "Salvar e atualizar a revista", class: "accent", data: { loading_label: "Atualizando a revista…" } %>
   <% end %>
-  <br>
-  <%= form.submit "Salvar revisão" %>
-<% end %>
-</div>
+</section>
