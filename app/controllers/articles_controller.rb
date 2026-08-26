@@ -18,9 +18,14 @@ class ArticlesController < ApplicationController
   end
 
   def update
-    if @article.update(article_params)
+    @article.assign_attributes(article_params)
+    apply_image_rights_review if params[:image_rights_review].present?
+
+    if @article.save
       sync_sites if params.key?(:site_ids)
-      redirect_to @article, notice: "Matéria atualizada."
+      revoke_unsafe_gastronomy_distribution if params[:image_rights_review].present? && !@article.licensed_image_ready?
+      notice = params[:image_rights_review].present? ? "Dados e direitos da imagem atualizados." : "Matéria atualizada."
+      redirect_to @article, notice:
     else
       load_sites
       render :show, status: :unprocessable_entity
@@ -29,7 +34,7 @@ class ArticlesController < ApplicationController
 
   def publish_to_gastronomy
     site = gastronomy_site
-    return redirect_to(@article, alert: "Adicione uma imagem antes de publicar esta matéria.") if @article.image_url.blank?
+    return redirect_to(@article, alert: "Confirme a origem e os direitos da imagem antes de publicar.") unless @article.licensed_image_ready?
 
     settings = gastronomy_params
     placement = SiteArticle::PLACEMENTS.include?(settings[:placement]) ? settings[:placement] : "latest"
@@ -81,11 +86,26 @@ class ArticlesController < ApplicationController
   end
 
   def article_params
-    params.require(:article).permit(:status, :rewritten_title, :rewritten_content)
+    params.require(:article).permit(:status, :rewritten_title, :rewritten_content, :image_url, :image_source_url, :image_author, :image_license, :image_license_url)
   end
 
   def gastronomy_params
     params.fetch(:publication, ActionController::Parameters.new).permit(:placement, :category_id, :position)
+  end
+
+  def apply_image_rights_review
+    if params[:image_rights_confirmed] == "1"
+      @article.image_rights_confirmed_at = Time.current
+      @article.image_rights_confirmed_by = current_user
+    else
+      @article.image_rights_confirmed_at = nil
+      @article.image_rights_confirmed_by = nil
+    end
+  end
+
+  def revoke_unsafe_gastronomy_distribution
+    distribution = @article.site_articles.find_by(site: Site.find_by(domain: "revistadegastronomia.com.br"))
+    distribution&.update!(status: "draft", published_at: nil)
   end
 
   def sync_sites
