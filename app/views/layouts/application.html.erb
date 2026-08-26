@@ -83,6 +83,19 @@
       .article-copy { max-width:780px; font:18px/1.7 Georgia,serif; }
       .article-copy img { max-width:100%; }
       .rewrite-panel { border-left:5px solid var(--cm-red); }
+      .publication-tabs { margin-bottom:18px; padding:12px 15px; background:#fff; border-left:4px solid var(--cm-red); }
+      .publication-stats { margin-bottom:22px; }
+      .publication-panel { border-top:5px solid var(--cm-red); }
+      .publication-help { margin-top:-4px; }
+      .distribution-card { margin:16px 0; padding:18px; border:1px solid var(--line); background:#fafaf8; }
+      .distribution-card.selected { border-color:#c8a3a8; background:#fffafa; }
+      .distribution-toggle { display:flex; align-items:flex-start; gap:8px; font-size:16px; }
+      .distribution-toggle input { margin-top:5px; }
+      .distribution-toggle span,.distribution-toggle small { display:block; }
+      .distribution-toggle small { color:var(--muted); font-weight:400; }
+      .distribution-fields { display:grid; grid-template-columns:1.2fr 1.2fr .5fr; gap:14px; margin:16px 0 0 28px; }
+      .distribution-fields input,.distribution-fields select { margin-bottom:4px; }
+      .publication-state { display:flex; align-items:center; gap:8px; margin:8px 0 0 28px; color:var(--muted); font-size:12px; }
       .link-danger { padding:0; background:transparent; color:var(--cm-red); }
       .auth-card { max-width:520px; margin:70px auto; border-top:5px solid var(--cm-red); }
       .auth-card input[type=submit] { width:100%; }
@@ -160,6 +173,8 @@
         .result-row { align-items:flex-start; }
         .loading-indicator { left:14px; right:14px; bottom:14px; max-width:none; }
         .dashboard-columns { grid-template-columns:1fr; gap:30px; }
+        .distribution-fields { grid-template-columns:1fr; margin-left:0; }
+        .publication-state { margin-left:0; }
         .activity-filter > div { flex-direction:column; }
         .activity-filter input { width:100%; }
       }
@@ -179,6 +194,7 @@
         <%= link_to "Painel", root_path, class: nav_link_class(root_path) %>
         <%= link_to "Pescar matérias", topics_path, class: nav_link_class(topics_path) %>
         <%= link_to "Matérias", articles_path, class: nav_link_class(articles_path) %>
+        <%= link_to "Revista de Gastronomia", articles_path(site_domain: "revistadegastronomia.com.br"), class: "nav-link #{'active' if params[:site_domain] == 'revistadegastronomia.com.br'}" %>
         <% if current_user.admin? %>
           <%= link_to "Fontes RSS", feeds_path, class: nav_link_class(feeds_path) %>
           <%= link_to "Sites", sites_path, class: nav_link_class(sites_path) %>
