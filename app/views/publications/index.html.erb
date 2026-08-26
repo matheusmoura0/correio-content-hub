@@ -1,0 +1,59 @@
+<div class="publication-workspace">
+  <div class="page-heading publication-heading">
+    <div>
+      <p class="eyebrow">Revista de Gastronomia</p>
+      <h1>Mesa de publicação</h1>
+      <p class="muted">Organize a capa, revise a fila e controle o que está no ar em um único lugar.</p>
+    </div>
+    <div class="actions">
+      <%= link_to "Ver site ↗", "https://revista-de-gastronomia-j922.vercel.app", target: "_blank", rel: "noopener", class: "button secondary" %>
+      <%= link_to "Todas as matérias", articles_path, class: "button" %>
+    </div>
+  </div>
+
+  <div class="publication-health">
+    <div><span class="presence-dot online"></span><strong>Integração ativa</strong><small>Última organização: <%= @distributions.maximum_by(&:updated_at)&.updated_at&.strftime("%d/%m às %H:%M") || "sem publicações" %></small></div>
+    <div><strong><%= @published.size + [@hero, @editor_pick].compact.count { |item| item.status == "published" } %></strong><small>matérias no ar</small></div>
+    <div><strong><%= @drafts.size %></strong><small>na fila</small></div>
+  </div>
+
+  <section class="publication-section">
+    <div class="section-heading"><div><p class="eyebrow">Capa</p><h2>Destaques principais</h2></div><span class="muted">Uma matéria por posição</span></div>
+    <div class="cover-slots">
+      <%= render "slot", title: "Manchete principal", distribution: @hero, placement: "hero", site: @site %>
+      <%= render "slot", title: "Escolha do editor", distribution: @editor_pick, placement: "editor_pick", site: @site %>
+    </div>
+  </section>
+
+  <section class="publication-section">
+    <div class="section-heading"><div><p class="eyebrow">No ar</p><h2>Novidades da revista</h2></div><span class="online-count"><%= @published.size %></span></div>
+    <% if @published.any? %>
+      <div class="publication-list">
+        <% @published.each do |distribution| %><%= render "row", distribution:, site: @site %><% end %>
+      </div>
+    <% else %><div class="empty-state"><h3>Nenhuma matéria em novidades</h3><p class="muted">Publique uma matéria da fila abaixo.</p></div><% end %>
+  </section>
+
+  <section class="publication-section">
+    <div class="section-heading"><div><p class="eyebrow">Preparação</p><h2>Fila editorial</h2></div><span class="online-count"><%= @drafts.size %></span></div>
+    <% if @drafts.any? %>
+      <div class="publication-list draft-list">
+        <% @drafts.each do |distribution| %><%= render "row", distribution:, site: @site %><% end %>
+      </div>
+    <% else %><div class="empty-state"><h3>A fila está vazia</h3><p class="muted">Adicione uma matéria disponível abaixo.</p></div><% end %>
+  </section>
+
+  <section class="publication-section">
+    <div class="section-heading"><div><p class="eyebrow">Acervo</p><h2>Adicionar à revista</h2></div></div>
+    <div class="available-grid">
+      <% @available_articles.each do |article| %>
+        <article class="available-card">
+          <span class="<%= article_status_class(article.status) %>"><%= article_status_label(article.status) %></span>
+          <h3><%= article.rewritten_title.presence || article.title %></h3>
+          <small><%= article.feed.name %> · <%= article.updated_at.strftime("%d/%m %H:%M") %></small>
+          <%= button_to "Adicionar à fila", publications_path(article_id: article.id), method: :post, class: "secondary" %>
+        </article>
+      <% end %>
+    </div>
+  </section>
+</div>
