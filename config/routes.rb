@@ -10,7 +10,10 @@ Rails.application.routes.draw do
   resources :feeds, except: :show do
     post :import, on: :member, action: :import_feed
   end
-  resources :articles, only: %i[index show update]
+  resources :articles, only: %i[index show update] do
+    patch :publish_to_gastronomy, on: :member
+    patch :unpublish_from_gastronomy, on: :member
+  end
   resources :topics, except: :show do
     post :run, on: :member
   end
