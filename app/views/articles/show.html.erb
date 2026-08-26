@@ -3,9 +3,41 @@
 
 <div class="card">
   <p><strong>Origem:</strong> <%= link_to @article.source_url, @article.source_url, target: "_blank", rel: "noopener" %></p>
-  <% if @article.image_url.present? %><p><%= image_tag @article.image_url, style: "max-width:320px" %></p><% end %>
+  <% if (@article.original_image_url.presence || @article.image_url).present? %><div class="source-image-reference"><%= image_tag(@article.original_image_url.presence || @article.image_url, alt: "") %><span>Imagem coletada da fonte — apenas referência, sem autorização automática de publicação</span></div><% end %>
   <div class="article-copy"><%= simple_format(@article.content.presence || @article.description) %></div>
 </div>
+
+<section class="card image-rights-panel">
+  <div class="page-heading compact">
+    <div><p class="eyebrow">Direitos de imagem</p><h2>Imagem licenciada para publicação</h2></div>
+    <% if @article.licensed_image_ready? %><span class="badge status-approved">Direitos confirmados</span><% else %><span class="badge status-reviewing">Revisão necessária</span><% end %>
+  </div>
+  <p class="muted">Não use automaticamente a imagem coletada da fonte. Escolha uma imagem própria, autorizada ou de um banco com licença compatível.</p>
+  <div class="licensed-image-sources">
+    <%= link_to "Buscar no Pexels ↗", "https://www.pexels.com/search/#{@article.title.parameterize}/", target: "_blank", rel: "noopener", class: "button secondary" %>
+    <%= link_to "Buscar no Unsplash ↗", "https://unsplash.com/s/photos/#{@article.title.parameterize}", target: "_blank", rel: "noopener", class: "button secondary" %>
+  </div>
+
+  <% if @article.errors.any? %><div class="alert"><%= @article.errors.full_messages.to_sentence %></div><% end %>
+
+  <%= form_with model: @article, class: "image-rights-form" do |form| %>
+    <%= hidden_field_tag :image_rights_review, "1" %>
+    <div class="image-rights-grid">
+      <div class="wide"><%= form.label :image_url, "URL direta da imagem licenciada" %><%= form.url_field :image_url, placeholder: "https://..." %></div>
+      <div class="wide"><%= form.label :image_source_url, "Página de origem da imagem" %><%= form.url_field :image_source_url, placeholder: "Página do Pexels, Unsplash ou autorização" %></div>
+      <div><%= form.label :image_author, "Fotógrafo ou autor" %><%= form.text_field :image_author, placeholder: "Nome do autor" %></div>
+      <div><%= form.label :image_license, "Licença" %><%= form.select :image_license, [["Selecione", ""]] + Article::IMAGE_LICENSES.map { |value, label| [label, value] } %></div>
+      <div class="wide"><%= form.label :image_license_url, "Link da licença ou autorização" %><%= form.url_field :image_license_url, placeholder: "Opcional para imagem própria; recomendado nos demais casos" %></div>
+    </div>
+    <% if @article.image_url.present? %><div class="licensed-image-preview"><%= image_tag @article.image_url, alt: "" %><span><%= @article.image_credit.presence || "Crédito ainda não informado" %></span></div><% end %>
+    <label class="rights-confirmation">
+      <%= check_box_tag :image_rights_confirmed, "1", @article.image_rights_confirmed_at.present? %>
+      <span>Confirmo que a imagem possui autorização ou licença compatível com publicação editorial e comercial.</span>
+    </label>
+    <% if @article.image_rights_confirmed_at.present? %><p class="rights-audit">Confirmado por <%= @article.image_rights_confirmed_by&.name.presence || @article.image_rights_confirmed_by&.email %> em <%= @article.image_rights_confirmed_at.strftime("%d/%m/%Y às %H:%M") %>.</p><% end %>
+    <%= form.submit "Salvar direitos da imagem", class: "accent", data: { loading_label: "Validando imagem…" } %>
+  <% end %>
+</section>
 
 <section class="card rewrite-panel">
   <p class="eyebrow">Assistente editorial</p>
@@ -38,15 +70,15 @@
 
   <% if @gastronomy_site.nil? %>
     <div class="alert">O site Revista de Gastronomia ainda não está configurado no Content Hub.</div>
-  <% elsif @article.image_url.blank? %>
+  <% elsif !@article.licensed_image_ready? %>
     <div class="publication-requirement">
-      <strong>Imagem obrigatória</strong>
-      <p>Esta matéria não pode ser publicada na revista até possuir uma imagem.</p>
+      <strong>Direitos de imagem pendentes</strong>
+      <p>Preencha e confirme a origem, a licença e o autor da imagem antes de publicar.</p>
     </div>
   <% else %>
     <div class="publication-preview">
       <%= image_tag @article.image_url, alt: "" %>
-      <div><span><%= @gastronomy_distribution&.category&.name || "Sem editoria" %></span><strong><%= @article.rewritten_title.presence || @article.title %></strong></div>
+      <div><span><%= @gastronomy_distribution&.category&.name || "Sem editoria" %></span><strong><%= @article.rewritten_title.presence || @article.title %></strong><small><%= @article.image_credit %></small></div>
     </div>
 
     <%= form_with url: publish_to_gastronomy_article_path(@article), method: :patch, scope: :publication, class: "gastronomy-publish-form" do |form| %>
