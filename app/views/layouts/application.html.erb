@@ -96,44 +96,6 @@
       .distribution-fields { display:grid; grid-template-columns:1.2fr 1.2fr .5fr; gap:14px; margin:16px 0 0 28px; }
       .distribution-fields input,.distribution-fields select { margin-bottom:4px; }
       .publication-state { display:flex; align-items:center; gap:8px; margin:8px 0 0 28px; color:var(--muted); font-size:12px; }
-      .publication-workspace { display:grid; gap:34px; }
-      .publication-heading { margin-bottom:0; }
-      .publication-health { display:grid; grid-template-columns:2fr 1fr 1fr; gap:1px; background:var(--line); border:1px solid var(--line); }
-      .publication-health > div { min-height:88px; padding:19px 22px; background:#fff; display:flex; flex-direction:column; justify-content:center; }
-      .publication-health > div:first-child { display:grid; grid-template-columns:auto 1fr; align-content:center; column-gap:10px; }
-      .publication-health > div:first-child small { grid-column:2; }
-      .publication-health strong { font:700 28px Georgia,serif; }
-      .publication-health small { color:var(--muted); }
-      .publication-section { display:grid; gap:18px; }
-      .publication-section .section-heading { align-items:flex-end; }
-      .publication-section .section-heading div p { margin-bottom:4px; }
-      .publication-section .section-heading h2 { font-size:28px; }
-      .cover-slots { display:grid; grid-template-columns:1.5fr 1fr; gap:18px; }
-      .cover-slot { min-height:245px; padding:25px; background:#fff; border:1px solid var(--line); border-top:5px solid var(--cm-red); box-shadow:0 5px 20px rgba(0,0,0,.045); }
-      .cover-slot:nth-child(2) { border-top-color:#222; }
-      .slot-label { display:flex; align-items:center; gap:10px; color:var(--muted); font-size:12px; text-transform:uppercase; letter-spacing:.08em; }
-      .slot-label span { color:var(--cm-red); font:700 24px Georgia,serif; }
-      .cover-slot-image { height:150px; margin:20px -25px 0; overflow:hidden; background:#eee; }\n      .cover-slot-image img { width:100%; height:100%; object-fit:cover; }\n      .cover-slot h3 { margin:22px 0 8px; font-size:clamp(23px,3vw,34px); }
-      .slot-empty { margin-top:30px; padding:28px; border:1px dashed #bbb; text-align:center; color:var(--muted); }
-      .quick-publication-form { display:flex; align-items:center; gap:14px; margin-top:22px; }
-      .inline-link { font-size:13px; font-weight:700; }
-      .publication-list { display:grid; gap:12px; }
-      .publication-row { display:grid; grid-template-columns:96px minmax(240px,1fr) minmax(440px,1.4fr); gap:18px; align-items:center; padding:15px; background:#fff; border-left:4px solid var(--success); box-shadow:0 3px 14px rgba(0,0,0,.04); }
-      .draft-list .publication-row { border-left-color:#d4a100; }
-      .publication-thumb { width:96px; height:76px; overflow:hidden; background:#eee; display:flex; align-items:center; justify-content:center; color:var(--cm-red); font:700 25px Georgia,serif; }
-      .publication-thumb img { width:100%; height:100%; object-fit:cover; }
-      .publication-copy h3 { margin:7px 0 4px; font-size:19px; }
-      .publication-copy small { color:var(--muted); }
-      .publication-actions { display:grid; grid-template-columns:1fr auto; gap:10px; align-items:end; }\n      .publication-actions > form { margin:0; }\n      .publication-controls { display:grid; grid-template-columns:1fr 1fr 75px 48px; gap:9px; align-items:end; }
-      .publication-controls label { font-size:10px; text-transform:uppercase; letter-spacing:.06em; color:var(--muted); }
-      .publication-controls input,.publication-controls select { margin:3px 0 0; padding:9px; }
-      .auto-save-state { align-self:center; color:var(--success); font-size:11px; font-weight:700; text-transform:uppercase; }\n      .auto-save-state.saving { color:#8a6800; }\n      .publication-toggle { min-width:116px; height:40px; white-space:nowrap; }
-      .available-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:14px; }
-      .available-card { display:flex; flex-direction:column; align-items:flex-start; padding:20px; background:#fff; border:1px solid var(--line); }
-      .available-card h3 { flex:1; margin:15px 0 8px; font-size:19px; }
-      .available-card small { color:var(--muted); margin-bottom:16px; }
-      .available-card form { margin-top:auto; }
-
       .link-danger { padding:0; background:transparent; color:var(--cm-red); }
       .auth-card { max-width:520px; margin:70px auto; border-top:5px solid var(--cm-red); }
       .auth-card input[type=submit] { width:100%; }
@@ -213,13 +175,6 @@
         .dashboard-columns { grid-template-columns:1fr; gap:30px; }
         .distribution-fields { grid-template-columns:1fr; margin-left:0; }
         .publication-state { margin-left:0; }
-        .publication-health,.cover-slots,.available-grid { grid-template-columns:1fr; }
-        .publication-row { grid-template-columns:72px 1fr; }
-        .publication-thumb { width:72px; height:64px; }
-        .publication-controls { grid-column:1 / -1; grid-template-columns:1fr 1fr; }
-        .publication-controls input[type=submit] { width:100%; }
-        .publication-heading .actions { width:100%; }
-        .publication-heading .actions .button { flex:1; text-align:center; }
         .activity-filter > div { flex-direction:column; }
         .activity-filter input { width:100%; }
       }
@@ -239,7 +194,7 @@
         <%= link_to "Painel", root_path, class: nav_link_class(root_path) %>
         <%= link_to "Pescar matérias", topics_path, class: nav_link_class(topics_path) %>
         <%= link_to "Matérias", articles_path, class: nav_link_class(articles_path) %>
-        <%= link_to "Revista de Gastronomia", gastronomy_publications_path, class: nav_link_class(gastronomy_publications_path) %>
+        <%= link_to "Revista de Gastronomia", articles_path(site_domain: "revistadegastronomia.com.br"), class: "nav-link #{'active' if params[:site_domain] == 'revistadegastronomia.com.br'}" %>
         <% if current_user.admin? %>
           <%= link_to "Fontes RSS", feeds_path, class: nav_link_class(feeds_path) %>
           <%= link_to "Sites", sites_path, class: nav_link_class(sites_path) %>
@@ -299,20 +254,6 @@
           indicator().setAttribute("aria-hidden", "false");
         });
 
-        let autosaveTimer;
-        const queueAutosave = (event) => {
-          const form = event.target.closest(".auto-save-publication");
-          if (!form) return;
-          const state = form.querySelector(".auto-save-state");
-          if (state) { state.textContent = "Salvando…"; state.classList.add("saving"); }
-          clearTimeout(autosaveTimer);
-          autosaveTimer = setTimeout(() => form.requestSubmit(), event.target.matches("select") ? 120 : 650);
-        };
-        document.addEventListener("change", queueAutosave);
-        document.addEventListener("input", (event) => {
-          if (event.target.matches(".auto-save-publication input[type='number']")) queueAutosave(event);
-        });
-
         document.addEventListener("turbo:submit-end", (event) => {
           const button = event.target.querySelector("button[type='submit'], input[type='submit']");
           if (button?.dataset.originalLabel) {
@@ -320,7 +261,7 @@
             else button.textContent = button.dataset.originalLabel;
           }
           if (button) { button.classList.remove("is-loading"); button.disabled = false; }
-          const state = event.target.querySelector(".auto-save-state");\n          if (state) { state.textContent = event.detail.success ? "Salvo" : "Erro ao salvar"; state.classList.remove("saving"); }\n          delete event.target.dataset.loadingStarted;
+          delete event.target.dataset.loadingStarted;
           indicator().classList.remove("visible");
           indicator().setAttribute("aria-hidden", "true");
         });
