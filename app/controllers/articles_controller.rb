@@ -1,5 +1,5 @@
 class ArticlesController < ApplicationController
-  before_action :set_article, only: %i[show update]
+  before_action :set_article, only: %i[show update publish_to_gastronomy unpublish_from_gastronomy]
 
   def index
     @site = Site.find_by(domain: params[:site_domain]) if params[:site_domain].present?
@@ -14,17 +14,54 @@ class ArticlesController < ApplicationController
   end
 
   def show
-    @sites = Site.where(active: true).includes(:categories).order(:name)
+    load_sites
   end
 
   def update
     if @article.update(article_params)
       sync_sites if params.key?(:site_ids)
-      redirect_to @article, notice: "Matéria e distribuição atualizadas."
+      redirect_to @article, notice: "Matéria atualizada."
     else
-      @sites = Site.where(active: true).includes(:categories).order(:name)
+      load_sites
       render :show, status: :unprocessable_entity
     end
+  end
+
+  def publish_to_gastronomy
+    site = gastronomy_site
+    return redirect_to(@article, alert: "Adicione uma imagem antes de publicar esta matéria.") if @article.image_url.blank?
+
+    settings = gastronomy_params
+    placement = SiteArticle::PLACEMENTS.include?(settings[:placement]) ? settings[:placement] : "latest"
+    category = site.categories.find_by(id: settings[:category_id].presence)
+
+    Article.transaction do
+      if %w[hero editor_pick].include?(placement)
+        site.site_articles.where(placement:).where.not(article_id: @article.id)
+          .update_all(placement: "latest", position: 0, updated_at: Time.current)
+      end
+
+      @article.update!(status: "published")
+      distribution = @article.site_articles.find_or_initialize_by(site:)
+      distribution.assign_attributes(
+        status: "published",
+        placement:,
+        category:,
+        position: settings[:position].to_i.clamp(0, 999),
+        published_at: Time.current
+      )
+      distribution.save!
+    end
+
+    redirect_to @article, notice: "Matéria publicada na Revista de Gastronomia."
+  rescue ActiveRecord::RecordInvalid => error
+    redirect_to @article, alert: "Não foi possível publicar: #{error.record.errors.full_messages.to_sentence}"
+  end
+
+  def unpublish_from_gastronomy
+    distribution = @article.site_articles.find_by(site: gastronomy_site)
+    distribution&.update!(status: "draft", published_at: nil)
+    redirect_to @article, notice: "Matéria retirada da Revista de Gastronomia."
   end
 
   private
@@ -33,8 +70,22 @@ class ArticlesController < ApplicationController
     @article = Article.find(params[:id])
   end
 
+  def load_sites
+    @sites = Site.where(active: true).includes(:categories).order(:name)
+    @gastronomy_site = @sites.find { |site| site.domain == "revistadegastronomia.com.br" }
+    @gastronomy_distribution = @article.site_articles.find_by(site: @gastronomy_site) if @gastronomy_site
+  end
+
+  def gastronomy_site
+    Site.find_by!(domain: "revistadegastronomia.com.br")
+  end
+
   def article_params
     params.require(:article).permit(:status, :rewritten_title, :rewritten_content)
+  end
+
+  def gastronomy_params
+    params.fetch(:publication, {}).permit(:placement, :category_id, :position)
   end
 
   def sync_sites
@@ -46,18 +97,12 @@ class ArticlesController < ApplicationController
 
     selected_ids.each do |site_id|
       site = Site.find(site_id)
-      if site.domain == "revistadegastronomia.com.br" && @article.image_url.blank?
-        @article.site_articles.where(site_id:).destroy_all
-        next
-      end
+      next if site.domain == "revistadegastronomia.com.br"
+
       distribution = @article.site_articles.find_or_initialize_by(site_id:)
       placement = placements.fetch(site_id.to_s, "latest")
       placement = "latest" unless SiteArticle::PLACEMENTS.include?(placement)
-      if %w[hero editor_pick].include?(placement)
-        SiteArticle.where(site_id:, placement:).where.not(article_id: @article.id).update_all(placement: "latest", position: 0, updated_at: Time.current)
-      end
-      category_id = categories[site_id.to_s].presence
-      category = Category.find_by(id: category_id, site_id:)
+      category = Category.find_by(id: categories[site_id.to_s].presence, site_id:)
       distribution.assign_attributes(
         placement:,
         position: positions.fetch(site_id.to_s, 0).to_i.clamp(0, 999),
