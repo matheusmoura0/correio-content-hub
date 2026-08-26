@@ -35,7 +35,7 @@
     <% @articles.each do |article| %>
       <% distribution = @site && article.site_articles.find { |item| item.site_id == @site.id } %>
       <tr>
-        <td data-label="Título"><%= link_to article.rewritten_title.presence || article.title, article_path(article) %><% if article.rewritten_at.present? %><small>Versão revisada com IA</small><% end %></td>
+        <td data-label="Título"><%= link_to article.rewritten_title.presence || article.title, article_path(article) %><% if article.rewritten_at.present? %><small>Versão revisada com IA</small><% end %><small class="<%= article.licensed_image_ready? ? "image-ok" : "image-pending" %>"><%= article.licensed_image_ready? ? "Imagem licenciada" : "Direitos da imagem pendentes" %></small></td>
         <td data-label="Fonte"><%= article.feed.name %><% if article.topics.any? %><small><%= article.topics.map(&:name).join(", ") %></small><% end %></td>
         <td data-label="Data"><%= article.updated_at.strftime("%d/%m/%Y %H:%M") %></td>
         <td data-label="Situação"><span class="<%= article_status_class(article.status) %>"><%= article_status_label(article.status) %></span></td>
