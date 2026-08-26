@@ -1,0 +1,17 @@
+<div class="cover-slot">
+  <div class="slot-label"><span><%= placement == "hero" ? "01" : "02" %></span><strong><%= title %></strong></div>
+  <% if distribution %>
+    <h3><%= distribution.article.rewritten_title.presence || distribution.article.title %></h3>
+    <p class="muted"><%= distribution.category&.name || "Sem editoria" %> · <%= distribution.status == "published" ? "No ar" : "Rascunho" %></p>
+    <%= form_with model: distribution, url: publication_path(distribution), method: :patch, class: "quick-publication-form" do |form| %>
+      <%= form.hidden_field :placement, value: placement %>
+      <%= form.hidden_field :position, value: distribution.position %>
+      <%= form.hidden_field :category_id, value: distribution.category_id %>
+      <%= form.hidden_field :status, value: distribution.status == "published" ? "draft" : "published" %>
+      <%= form.submit distribution.status == "published" ? "Retirar do ar" : "Publicar destaque", class: distribution.status == "published" ? "secondary" : "accent" %>
+      <%= link_to "Editar matéria", article_path(distribution.article), class: "inline-link" %>
+    <% end %>
+  <% else %>
+    <div class="slot-empty"><strong>Posição livre</strong><p>Na fila editorial, escolha esta posição para uma matéria.</p></div>
+  <% end %>
+</div>
