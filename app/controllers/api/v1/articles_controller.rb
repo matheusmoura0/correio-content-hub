@@ -27,7 +27,9 @@ module Api
           published_at: distribution&.published_at || article.published_at,
           updated_at: [article.updated_at, distribution&.updated_at].compact.max,
           category: distribution&.category&.slug, placement: distribution&.placement || "latest",
-          position: distribution&.position || 0, source: article.feed.name }
+          position: distribution&.position || 0, source: article.feed.name,
+          image_credit: article.image_credit, image_source_url: article.image_source_url,
+          image_license: article.image_license, image_rights_confirmed: article.licensed_image_ready? }
       end
 
       def disable_cache
