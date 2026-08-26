@@ -1,16 +1,18 @@
 <div class="cover-slot">
   <div class="slot-label"><span><%= placement == "hero" ? "01" : "02" %></span><strong><%= title %></strong></div>
   <% if distribution %>
+    <div class="cover-slot-image"><%= image_tag distribution.article.image_url, alt: "" %></div>
     <h3><%= distribution.article.rewritten_title.presence || distribution.article.title %></h3>
     <p class="muted"><%= distribution.category&.name || "Sem editoria" %> · <%= distribution.status == "published" ? "No ar" : "Rascunho" %></p>
-    <%= form_with model: distribution, url: publication_path(distribution), method: :patch, class: "quick-publication-form" do |form| %>
-      <%= form.hidden_field :placement, value: placement %>
-      <%= form.hidden_field :position, value: distribution.position %>
-      <%= form.hidden_field :category_id, value: distribution.category_id %>
-      <%= form.hidden_field :status, value: distribution.status == "published" ? "draft" : "published" %>
-      <%= form.submit distribution.status == "published" ? "Retirar do ar" : "Publicar destaque", class: distribution.status == "published" ? "secondary" : "accent" %>
+    <div class="quick-publication-form">
+      <%= button_to distribution.status == "published" ? "Retirar do ar" : "Publicar destaque",
+        publication_path(distribution),
+        method: :patch,
+        params: { site_article: { status: distribution.status == "published" ? "draft" : "published", placement: placement } },
+        class: distribution.status == "published" ? "secondary" : "accent",
+        data: { loading_label: distribution.status == "published" ? "Retirando…" : "Publicando…" } %>
       <%= link_to "Editar matéria", article_path(distribution.article), class: "inline-link" %>
-    <% end %>
+    </div>
   <% else %>
     <div class="slot-empty"><strong>Posição livre</strong><p>Na fila editorial, escolha esta posição para uma matéria.</p></div>
   <% end %>
