@@ -2,25 +2,27 @@ class ArticlesController < ApplicationController
   before_action :set_article, only: %i[show update]
 
   def index
-    @articles = Article.includes(:feed, :topics).order(created_at: :desc)
+    @site = Site.find_by(domain: params[:site_domain]) if params[:site_domain].present?
+    @articles = Article.includes(:feed, :topics, site_articles: [:site, :category]).order(created_at: :desc)
+    @articles = @articles.joins(:site_articles).where(site_articles: { site_id: @site.id }).distinct if @site
     @articles = @articles.where(status: params[:status]) if params[:status].present?
     @articles = @articles.joins(:topic_articles).where(topic_articles: { topic_id: params[:topic_id] }).distinct if params[:topic_id].present?
     if params[:q].present?
       query = "%#{ActiveRecord::Base.sanitize_sql_like(params[:q])}%"
-      @articles = @articles.where("articles.title ILIKE :query OR articles.description ILIKE :query", query:)
+      @articles = @articles.where("articles.title ILIKE :query OR articles.description ILIKE :query OR articles.rewritten_title ILIKE :query", query:)
     end
   end
 
   def show
-    @sites = Site.where(active: true).order(:name)
+    @sites = Site.where(active: true).includes(:categories).order(:name)
   end
 
   def update
     if @article.update(article_params)
       sync_sites if params.key?(:site_ids)
-      redirect_to @article, notice: "Matéria atualizada."
+      redirect_to @article, notice: "Matéria e distribuição atualizadas."
     else
-      @sites = Site.where(active: true).order(:name)
+      @sites = Site.where(active: true).includes(:categories).order(:name)
       render :show, status: :unprocessable_entity
     end
   end
@@ -37,6 +39,8 @@ class ArticlesController < ApplicationController
 
   def sync_sites
     placements = params.fetch(:site_placements, {}).to_unsafe_h
+    positions = params.fetch(:site_positions, {}).to_unsafe_h
+    categories = params.fetch(:site_categories, {}).to_unsafe_h
     selected_ids = Array(params[:site_ids]).reject(&:blank?).map(&:to_i)
     @article.site_articles.where.not(site_id: selected_ids).destroy_all
 
@@ -45,11 +49,17 @@ class ArticlesController < ApplicationController
       placement = placements.fetch(site_id.to_s, "latest")
       placement = "latest" unless SiteArticle::PLACEMENTS.include?(placement)
       if %w[hero editor_pick].include?(placement)
-        SiteArticle.where(site_id:, placement:).where.not(article_id: @article.id).update_all(placement: "latest", position: 0)
+        SiteArticle.where(site_id:, placement:).where.not(article_id: @article.id).update_all(placement: "latest", position: 0, updated_at: Time.current)
       end
-      distribution.placement = placement
-      distribution.status = @article.status == "published" ? "published" : "draft"
-      distribution.published_at = Time.current if distribution.status == "published" && distribution.published_at.blank?
+      category_id = categories[site_id.to_s].presence
+      category = Category.find_by(id: category_id, site_id:)
+      distribution.assign_attributes(
+        placement:,
+        position: positions.fetch(site_id.to_s, 0).to_i.clamp(0, 999),
+        category:,
+        status: @article.status == "published" ? "published" : "draft"
+      )
+      distribution.published_at ||= Time.current if distribution.status == "published"
       distribution.published_at = nil if distribution.status == "draft"
       distribution.save!
     end
