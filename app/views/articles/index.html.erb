@@ -1,26 +1,45 @@
 <div class="page-heading">
-  <div><h1>Matérias</h1><p class="muted">Revise as matérias encontradas e crie novas versões com IA.</p></div>
-  <div class="filter-links">
-    <%= link_to "Todas", articles_path %> ·
-    <%= link_to "Importadas", articles_path(status: "imported") %> ·
-    <%= link_to "Aprovadas", articles_path(status: "approved") %> ·
-    <%= link_to "Publicadas", articles_path(status: "published") %>
+  <div>
+    <p class="eyebrow"><%= @site ? "Canal de publicação" : "Produção editorial" %></p>
+    <h1><%= @site ? @site.name : "Matérias" %></h1>
+    <p class="muted"><%= @site ? "Controle as matérias, posições e o estado publicado na revista." : "Revise as matérias encontradas e crie novas versões com IA." %></p>
   </div>
+  <% if @site %><%= link_to "Abrir revista ↗", "https://revistadegastronomia.com.br", target: "_blank", rel: "noopener", class: "button secondary" %><% end %>
+</div>
+
+<% if @site %>
+  <% distributions = SiteArticle.where(site: @site) %>
+  <div class="grid publication-stats">
+    <div class="card stat"><strong><%= distributions.where(status: "published").count %></strong><span>Publicadas</span></div>
+    <div class="card stat"><strong><%= distributions.where(status: "draft").count %></strong><span>Rascunhos</span></div>
+    <div class="card stat"><strong><%= distributions.where(placement: "hero").count %></strong><span>Manchete</span></div>
+    <div class="card stat"><strong><%= distributions.where(placement: "editor_pick").count %></strong><span>Escolha do editor</span></div>
+  </div>
+<% end %>
+
+<div class="filter-links publication-tabs">
+  <%= link_to "Todas", articles_path(site_domain: params[:site_domain]) %>
+  <%= link_to "Importadas", articles_path(status: "imported", site_domain: params[:site_domain]) %>
+  <%= link_to "Aprovadas", articles_path(status: "approved", site_domain: params[:site_domain]) %>
+  <%= link_to "Publicadas", articles_path(status: "published", site_domain: params[:site_domain]) %>
 </div>
 <%= form_with url: articles_path, method: :get, class: "search-bar" do |form| %>
+  <%= form.hidden_field :site_domain, value: params[:site_domain] if params[:site_domain].present? %>
   <%= form.hidden_field :status, value: params[:status] if params[:status].present? %>
   <%= form.search_field :q, value: params[:q], placeholder: "Buscar por título ou conteúdo" %>
   <%= form.submit "Buscar" %>
 <% end %>
 <table>
-  <thead><tr><th>Título</th><th>Fonte</th><th>Data</th><th>Situação</th></tr></thead>
+  <thead><tr><th>Título</th><th>Fonte</th><th>Data</th><th>Situação</th><% if @site %><th>Na revista</th><% end %></tr></thead>
   <tbody>
     <% @articles.each do |article| %>
+      <% distribution = @site && article.site_articles.find { |item| item.site_id == @site.id } %>
       <tr>
-        <td data-label="Título"><%= link_to article.title, article_path(article) %></td>
+        <td data-label="Título"><%= link_to article.rewritten_title.presence || article.title, article_path(article) %><% if article.rewritten_at.present? %><small>Versão revisada com IA</small><% end %></td>
         <td data-label="Fonte"><%= article.feed.name %><% if article.topics.any? %><small><%= article.topics.map(&:name).join(", ") %></small><% end %></td>
-        <td data-label="Data"><%= article.published_at&.strftime("%d/%m/%Y %H:%M") || "—" %></td>
-        <td data-label="Situação"><span class="<%= article_status_class(article.status) %>"><%= article_status_label(article.status) %></span><%= " · IA" if article.rewritten_at.present? %></td>
+        <td data-label="Data"><%= article.updated_at.strftime("%d/%m/%Y %H:%M") %></td>
+        <td data-label="Situação"><span class="<%= article_status_class(article.status) %>"><%= article_status_label(article.status) %></span></td>
+        <% if @site %><td data-label="Na revista"><span class="badge <%= distribution&.status == "published" ? "status-published" : "" %>"><%= distribution&.status == "published" ? "No ar" : "Rascunho" %></span><small><%= {"hero"=>"Manchete", "editor_pick"=>"Escolha do editor", "latest"=>"Novidades"}[distribution&.placement] %><%= " · #{distribution.category.name}" if distribution&.category %></small></td><% end %>
       </tr>
     <% end %>
   </tbody>
