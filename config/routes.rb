@@ -11,8 +11,6 @@ Rails.application.routes.draw do
     post :import, on: :member, action: :import_feed
   end
   resources :articles, only: %i[index show update]
-  get "publicacoes/revista-de-gastronomia", to: "publications#index", as: :gastronomy_publications
-  resources :publications, only: %i[create update]
   resources :topics, except: :show do
     post :run, on: :member
   end
