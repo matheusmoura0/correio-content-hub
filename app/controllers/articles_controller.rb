@@ -85,7 +85,7 @@ class ArticlesController < ApplicationController
   end
 
   def gastronomy_params
-    params.fetch(:publication, {}).permit(:placement, :category_id, :position)
+    params.fetch(:publication, ActionController::Parameters.new).permit(:placement, :category_id, :position)
   end
 
   def sync_sites
