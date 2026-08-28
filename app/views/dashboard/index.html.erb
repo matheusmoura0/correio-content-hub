@@ -1,18 +1,18 @@
-<div class="page-heading"><div><p class="eyebrow">Correio da Manhã</p><h1>Painel editorial</h1><p class="muted">Acompanhe as pesquisas, matérias coletadas e revisões da equipe.</p></div></div>
+<div class="page-heading"><div><p class="eyebrow">Rede de Conteúdo</p><h1>Distribuição editorial</h1><p class="muted">Acompanhe a entrada por RSS, a revisão e a publicação nos sites da rede.</p></div></div>
 <div class="grid">
-  <div class="card stat"><strong><%= @topics_count %></strong><span>pesquisas ativas</span></div>
-  <div class="card stat"><strong><%= @articles_count %></strong><span>matérias coletadas</span></div>
+  <div class="card stat"><strong><%= @feeds_count %></strong><span>canais RSS ativos</span></div>
+  <div class="card stat"><strong><%= @articles_count %></strong><span>matérias no acervo</span></div>
   <div class="card stat"><strong><%= @pending_count %></strong><span>aguardando revisão</span></div>
-  <div class="card stat"><strong><%= @rewritten_count %></strong><span>reescritas com IA</span></div>
+  <div class="card stat"><strong><%= @published_count %></strong><span>distribuições no ar</span></div>
 </div>
 
-<div class="card callout"><div><p class="eyebrow">Comece por aqui</p><h2>Encontre matérias para a próxima pauta</h2><p>Pesquise assuntos diretamente na web e reúna fontes para revisão.</p></div><%= link_to "Abrir pesca de matérias", topics_path, class: "button accent" %></div>
+<div class="card callout"><div><p class="eyebrow">Fluxo principal</p><h2>Abasteça a rede pelos canais oficiais</h2><p>Atualize os feeds RSS do Correio, revise as matérias e distribua com crédito e link para a publicação original.</p></div><%= link_to "Gerenciar canais RSS", feeds_path, class: "button accent" %></div>
 
 <div class="dashboard-columns">
   <section>
-    <div class="section-heading"><h2>Últimas matérias</h2><%= link_to "Ver todas", articles_path %></div>
+    <div class="section-heading"><h2>Entradas mais recentes</h2><%= link_to "Abrir acervo", articles_path %></div>
     <div class="news-list"><% @recent_articles.each do |article| %>
-      <article><strong><%= link_to article.title, article_path(article) %></strong><div class="muted"><%= article.feed.name %> · <%= article_status_label(article.status) %></div></article>
+      <article><strong><%= link_to article.title, article_path(article) %></strong><div class="muted"><%= article.feed.publisher_name %> · <%= article_status_label(article.status) %></div></article>
     <% end %></div>
   </section>
   <aside>
