@@ -1,34 +1,35 @@
 <div class="page-heading">
-  <div><p class="eyebrow">Entrada de conteúdo</p><h1>Canais RSS do Correio</h1><p class="muted">Gerencie as fontes oficiais que abastecem o acervo e publicam nos sites da rede.</p></div>
+  <div><p class="eyebrow">Importação manual</p><h1>Canais RSS do Correio</h1><p class="muted">Busque manualmente todos os itens disponíveis em cada XML, sem filtro de assunto ou palavra-chave.</p></div>
   <div class="actions">
-    <%= button_to "Sincronizar editorias do Correio", sync_correio_rss_catalog_path, method: :post, class: "button secondary", data: { loading_label: "Sincronizando catálogo…" } %>
+    <%= button_to "Sincronizar lista de editorias", sync_correio_rss_catalog_path, method: :post, class: "button secondary", data: { loading_label: "Sincronizando canais…" } %>
     <%= link_to "Adicionar canal RSS", new_feed_path, class: "button" %>
   </div>
 </div>
 
 <div class="grid publication-stats">
   <div class="card stat"><strong><%= @feeds.count %></strong><span>Canais cadastrados</span></div>
-  <div class="card stat"><strong><%= @feeds.count(&:active?) %></strong><span>Canais ativos</span></div>
+  <div class="card stat"><strong><%= @feeds.count(&:active?) %></strong><span>Disponíveis para busca</span></div>
   <div class="card stat"><strong><%= @feeds.count(&:correio_source?) %></strong><span>Fontes oficiais</span></div>
-  <div class="card stat"><strong><%= @feeds.sum { |feed| feed.articles.size } %></strong><span>Matérias recebidas</span></div>
+  <div class="card stat"><strong><%= @feeds.sum { |feed| feed.articles.size } %></strong><span>Matérias importadas</span></div>
 </div>
 
 <div class="card rss-guidance">
-  <strong>Publicação automática com crédito</strong>
-  <p class="muted">Matérias dos domínios do Correio usam a imagem original como conteúdo próprio. Quando o canal possui um site de destino, itens com imagem são publicados diretamente com crédito “Correio da Manhã” e URL canônica.</p>
+  <strong>Como funciona</strong>
+  <p class="muted">Clique em “Buscar matérias” no canal desejado. O Hub percorrerá todas as entradas presentes no XML e importará tudo que ainda não estiver no acervo. Não há busca automática, limite por termo ou monitoramento por assunto para os feeds do Correio.</p>
+  <p class="muted">As imagens são tratadas como conteúdo próprio do Correio. Se o canal tiver um site de destino configurado, as matérias com imagem serão publicadas nesse site com crédito e URL canônica.</p>
 </div>
 
 <table>
-  <thead><tr><th>Canal</th><th>Origem</th><th>Publicação</th><th>Última atualização</th><th></th></tr></thead>
+  <thead><tr><th>Canal</th><th>Origem</th><th>Destino</th><th>Última busca manual</th><th></th></tr></thead>
   <tbody>
     <% @feeds.each do |feed| %>
       <tr>
         <td data-label="Canal"><strong><%= feed.name %></strong><small><%= feed.url %></small></td>
-        <td data-label="Origem"><span class="badge <%= feed.correio_source? ? "status-approved" : "status-reviewing" %>"><%= feed.correio_source? ? "Correio da Manhã" : "Fonte externa" %></span><small><%= feed.active? ? "Recebendo conteúdo" : "Canal pausado" %></small></td>
-        <td data-label="Publicação"><%= feed.site&.name || "Somente acervo" %><small><%= feed.site && feed.correio_source? ? "Publicação automática" : "Revisão manual" %><%= " · #{feed.category.name}" if feed.category %></small></td>
-        <td data-label="Última atualização"><%= feed.last_imported_at&.strftime("%d/%m/%Y %H:%M") || "Nunca atualizado" %></td>
+        <td data-label="Origem"><span class="badge <%= feed.correio_source? ? "status-approved" : "status-reviewing" %>"><%= feed.correio_source? ? "Correio da Manhã" : "Fonte externa" %></span><small><%= feed.active? ? "Disponível para busca manual" : "Canal pausado" %></small></td>
+        <td data-label="Destino"><%= feed.site&.name || "Somente acervo" %><small><%= feed.site && feed.correio_source? ? "Publica após a importação" : "Revisão manual" %><%= " · #{feed.category.name}" if feed.category %></small></td>
+        <td data-label="Última busca"><%= feed.last_imported_at&.strftime("%d/%m/%Y %H:%M") || "Ainda não executada" %></td>
         <td data-label="Ações" class="actions">
-          <%= button_to "Atualizar agora", import_feed_path(feed), method: :post, data: { loading_label: "Importando e publicando…" } %>
+          <%= button_to "Buscar matérias", import_feed_path(feed), method: :post, data: { loading_label: "Lendo todas as matérias do XML…" } %>
           <%= link_to "Configurar", edit_feed_path(feed), class: "button secondary" %>
         </td>
       </tr>
