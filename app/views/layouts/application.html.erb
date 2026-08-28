@@ -122,6 +122,68 @@
       .gastronomy-publish-form { display:grid; grid-template-columns:1.2fr 1.2fr .5fr auto; gap:12px; align-items:end; }
       .gastronomy-publish-form input,.gastronomy-publish-form select { margin:5px 0 0; }
       .gastronomy-publish-form input[type=submit] { min-height:44px; }
+
+      .visual-publication-editor { margin-top:22px; }
+      .editor-workspace { display:grid; grid-template-columns:minmax(0,1.25fr) minmax(340px,.75fr); gap:24px; align-items:start; }
+      .cover-map-panel,.publication-customizer { min-width:0; padding:20px; border:1px solid var(--line); background:#fafaf7; }
+      .publication-customizer { position:sticky; top:18px; background:#fff; }
+      .editor-section-heading { display:flex; justify-content:space-between; align-items:flex-start; gap:12px; margin-bottom:16px; }
+      .editor-section-heading > div { display:flex; align-items:flex-start; gap:10px; }
+      .editor-section-heading span { display:flex; align-items:center; justify-content:center; width:26px; height:26px; flex:none; border-radius:50%; background:var(--cm-red); color:#fff; font-weight:800; }
+      .editor-section-heading strong,.editor-section-heading small { display:block; }
+      .editor-section-heading small { margin-top:2px; color:var(--muted); font-weight:400; }
+      .gastronomy-cover-map { overflow:hidden; border:1px solid #d8d0c4; background:#fdfaf5; box-shadow:0 12px 26px rgba(40,25,12,.1); }
+      .mock-masthead { padding:17px; border-top:7px solid #7c1d2b; color:#7c1d2b; text-align:center; font:12px Georgia,serif; letter-spacing:.22em; }
+      .mock-masthead b { display:block; margin-top:3px; font-size:25px; letter-spacing:-.04em; }
+      .mock-breaking { display:grid; grid-template-columns:auto repeat(3,1fr); align-items:stretch; border-block:1px solid #e2d8ca; }
+      .mock-breaking > span { padding:8px; background:#ef5a38; color:#fff; font-size:9px; font-weight:800; }
+      .mock-breaking button,.mock-popular button { margin:0; padding:8px; border-radius:0; border-left:1px solid #e2d8ca; background:transparent; color:#302a25; font-size:9px; font-weight:700; }
+      .mock-breaking button:hover,.mock-popular button:hover { background:#fff0e9; color:#7c1d2b; }
+      .mock-cover-body { display:grid; grid-template-columns:minmax(0,1.75fr) minmax(150px,.75fr); gap:12px; padding:14px; }
+      .mock-slot { position:relative; display:flex; flex-direction:column; justify-content:flex-end; width:100%; min-height:105px; margin:0; padding:12px; overflow:hidden; border:2px solid transparent; border-radius:2px; background:linear-gradient(145deg,#857367,#3c3029); color:#fff; text-align:left; transition:.15s ease; }
+      .mock-slot:hover { border-color:#ef5a38; transform:translateY(-1px); }
+      .mock-slot span { font-size:8px; font-weight:800; letter-spacing:.1em; text-transform:uppercase; }
+      .mock-slot strong { margin-top:3px; font:700 14px/1.12 Georgia,serif; }
+      .mock-hero { min-height:220px; background:linear-gradient(145deg,#71825a,#293a25); }
+      .mock-hero strong { max-width:80%; font-size:24px; }
+      .mock-fresh-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:8px; margin-top:8px; }
+      .mock-fresh-grid .mock-slot { min-height:88px; background:linear-gradient(145deg,#b49372,#624b38); }
+      .mock-cover-body aside { display:flex; flex-direction:column; gap:10px; }
+      .mock-editor-pick { min-height:150px; background:linear-gradient(145deg,#9b584c,#4d2722); }
+      .mock-popular { padding:10px; border-top:3px solid #7c1d2b; background:#fff; }
+      .mock-popular > b { display:block; margin-bottom:6px; color:#7c1d2b; font:11px Georgia,serif; }
+      .mock-popular button { display:block; width:100%; border-left:0; border-top:1px solid #eee6dd; text-align:left; }
+      .mock-popular em { color:#ef5a38; font:700 15px Georgia,serif; }
+      .gastronomy-cover-map [data-slot].selected { z-index:1; outline:3px solid #ef5a38; outline-offset:-3px; background-color:#7c1d2b; box-shadow:inset 0 0 0 2px #fff; }
+      .selected-slot-summary { display:flex; align-items:center; gap:10px; margin-top:12px; padding:12px; background:#fff; border:1px solid var(--line); }
+      .selection-dot { width:11px; height:11px; border-radius:50%; background:#ef5a38; box-shadow:0 0 0 4px #ffe5dc; }
+      .selected-slot-summary small,.selected-slot-summary strong { display:block; }
+      .selected-slot-summary small { color:var(--muted); font-size:9px; letter-spacing:.1em; }
+      .accessible-slot-select { margin-top:12px; }
+      .accessible-slot-select select { margin-bottom:0; }
+      .live-card-preview { overflow:hidden; margin-bottom:20px; border:1px solid #d8d0c4; background:#fdfaf5; }
+      .live-image-frame { height:230px; overflow:hidden; background:#ddd; }
+      .live-image-frame img { width:100%; height:100%; object-fit:cover; transition:transform .18s ease,object-position .18s ease; }
+      .live-preview-copy { padding:17px; }
+      .live-preview-copy span,.live-preview-copy strong,.live-preview-copy small { display:block; }
+      .live-preview-copy span { color:#ef5a38; font-size:9px; font-weight:800; letter-spacing:.12em; text-transform:uppercase; }
+      .live-preview-copy strong { margin:5px 0 8px; font:700 25px/1.08 Georgia,serif; overflow-wrap:anywhere; }
+      .live-preview-copy small { color:var(--muted); }
+      .control-label { display:flex; align-items:center; justify-content:space-between; gap:12px; }
+      .control-label label { margin:0; }
+      .text-action { padding:4px 0; background:transparent; color:var(--cm-red); font-size:11px; }
+      .text-action:hover { background:transparent; text-decoration:underline; }
+      .title-control textarea { resize:vertical; }
+      .title-control > small { display:block; margin:-11px 0 18px; color:var(--muted); }
+      .image-composer { margin:4px 0 18px; padding:14px; border:1px solid var(--line); background:#fafaf8; }
+      .crop-actions { display:flex; gap:6px; flex-wrap:wrap; margin-top:10px; }
+      .crop-actions button { padding:7px 10px; }
+      .range-control { display:grid; grid-template-columns:auto 1fr auto; gap:10px; align-items:center; margin-top:10px; }
+      .range-control input { margin:0; }
+      .range-control output { min-width:40px; font-size:12px; font-weight:700; }
+      .image-empty-note { margin-bottom:18px; padding:13px; border-left:4px solid #aaa; background:#f2f2ef; color:var(--muted); }
+      .publish-visual-button { width:100% !important; min-height:48px; margin-top:4px; }
+
       .unpublish-row { display:flex; justify-content:space-between; align-items:center; gap:16px; margin-top:20px; padding-top:18px; border-top:1px solid var(--line); color:var(--muted); font-size:12px; }
       .unpublish-row form { margin:0; }
 
@@ -203,7 +265,14 @@
         .loading-indicator { left:14px; right:14px; bottom:14px; max-width:none; }
         .dashboard-columns { grid-template-columns:1fr; gap:30px; }
         .distribution-fields { grid-template-columns:1fr; margin-left:0; }
-        .publication-state { margin-left:0; }\n        .image-rights-grid { grid-template-columns:1fr; }\n        .image-rights-grid .wide { grid-column:auto; }\n        .licensed-image-preview { grid-template-columns:90px 1fr; }\n        .licensed-image-preview img { width:90px; height:75px; }\n        .gastronomy-publish-form { grid-template-columns:1fr; }\n        .gastronomy-publish-form input[type=submit] { width:100%; }\n        .publication-preview { grid-template-columns:90px 1fr; }\n        .publication-preview img { width:90px; height:75px; }\n        .unpublish-row { align-items:flex-start; flex-direction:column; }
+        .publication-state { margin-left:0; }\n        .image-rights-grid { grid-template-columns:1fr; }\n        .image-rights-grid .wide { grid-column:auto; }\n        .licensed-image-preview { grid-template-columns:90px 1fr; }\n        .licensed-image-preview img { width:90px; height:75px; }\n        .gastronomy-publish-form { grid-template-columns:1fr; }
+        .editor-workspace { grid-template-columns:1fr; }
+        .publication-customizer { position:static; }
+        .mock-cover-body { grid-template-columns:1fr; }
+        .mock-breaking { grid-template-columns:auto 1fr; }
+        .mock-breaking button:nth-of-type(n+2) { display:none; }
+        .mock-fresh-grid { grid-template-columns:1fr 1fr; }
+        .mock-hero { min-height:185px; }\n        .gastronomy-publish-form input[type=submit] { width:100%; }\n        .publication-preview { grid-template-columns:90px 1fr; }\n        .publication-preview img { width:90px; height:75px; }\n        .unpublish-row { align-items:flex-start; flex-direction:column; }
         .activity-filter > div { flex-direction:column; }
         .activity-filter input { width:100%; }
       }
