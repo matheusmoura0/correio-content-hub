@@ -14,22 +14,45 @@ module Api
       end
 
       def show
-        article = Article.where.not(image_url: [nil, ""]).find(params[:id])
+        article = Article.includes(:feed).where.not(image_url: [nil, ""]).find(params[:id])
         render json: serialize(article, nil)
       end
 
       private
 
       def serialize(article, distribution)
-        { id: article.id, title: article.rewritten_title.presence || article.title,
-          description: article.description, content: article.rewritten_content.presence || article.content,
-          image_url: article.image_url, author: article.author, source_url: article.source_url,
+        publisher = article.feed.publisher_name
+        publisher_url = article.feed.publisher_url
+
+        {
+          id: article.id,
+          title: article.rewritten_title.presence || article.title,
+          description: article.description,
+          content: article.rewritten_content.presence || article.content,
+          image_url: article.image_url,
+          author: article.author,
+          source_url: article.source_url,
+          canonical_url: article.source_url,
           published_at: distribution&.published_at || article.published_at,
           updated_at: [article.updated_at, distribution&.updated_at].compact.max,
-          category: distribution&.category&.slug, placement: distribution&.placement || "latest",
-          position: distribution&.position || 0, source: article.feed.name,
-          image_credit: article.image_credit, image_source_url: article.image_source_url,
-          image_license: article.image_license, image_rights_confirmed: article.licensed_image_ready? }
+          category: distribution&.category&.slug,
+          placement: distribution&.placement || "latest",
+          position: distribution&.position || 0,
+          source: article.feed.name,
+          publisher: publisher,
+          publisher_url: publisher_url,
+          credit: "Publicado originalmente por #{publisher}",
+          attribution: {
+            name: publisher,
+            url: publisher_url,
+            canonical_url: article.source_url,
+            required: true
+          },
+          image_credit: article.image_credit,
+          image_source_url: article.image_source_url,
+          image_license: article.image_license,
+          image_rights_confirmed: article.licensed_image_ready?
+        }
       end
 
       def disable_cache
