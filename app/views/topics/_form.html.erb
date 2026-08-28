@@ -2,15 +2,16 @@
   <% if topic.errors.any? %>
     <div class="alert"><%= topic.errors.full_messages.to_sentence %></div>
   <% end %>
-  <%= form.label :name, "Nome da pesquisa" %>
-  <%= form.text_field :name, placeholder: "Ex.: Inteligência artificial no jornalismo", required: true %>
+  <%= form.label :name, "Nome do monitoramento" %>
+  <%= form.text_field :name, placeholder: "Ex.: Economia brasileira", required: true %>
   <%= form.label :keywords, "Palavras-chave" %>
-  <%= form.text_area :keywords, rows: 5, placeholder: "inteligência artificial, IA generativa, redação automatizada", required: true %>
+  <%= form.text_area :keywords, rows: 5, placeholder: "economia, mercado, investimentos", required: true %>
   <p class="muted">Separe os termos por vírgula ou coloque um por linha.</p>
-  <%= form.label :search_mode, "Onde pesquisar" %>
-  <%= form.select :search_mode, [["Web — recomendado", "web"], ["Web + feeds RSS", "both"], ["Somente feeds RSS", "rss"]] %>
+  <%= form.label :search_mode, "Origem do conteúdo" %>
+  <%= form.select :search_mode, [["Feeds RSS — recomendado", "rss"], ["Feeds RSS + web", "both"], ["Somente web", "web"]] %>
+  <p class="muted">Para redistribuição com crédito e URL canônica, prefira os feeds RSS oficiais do Correio.</p>
   <%= form.label :match_mode, "Regra de correspondência" %>
   <%= form.select :match_mode, [["Encontrar qualquer termo", "any"], ["Exigir todos os termos", "all"]] %>
-  <label class="check"><%= form.check_box :active %> Pesquisa ativa</label>
-  <%= form.submit topic.persisted? ? "Salvar pesquisa" : "Criar pesquisa" %>
+  <label class="check"><%= form.check_box :active %> Monitoramento ativo</label>
+  <%= form.submit topic.persisted? ? "Salvar monitoramento" : "Criar monitoramento" %>
 <% end %>
