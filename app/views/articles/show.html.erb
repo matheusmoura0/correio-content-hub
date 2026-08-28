@@ -101,11 +101,16 @@
       <div class="editor-workspace">
         <div class="cover-map-panel">
           <div class="editor-section-heading">
-            <div><span>1</span><div><strong>Escolha o local na capa</strong><small>Clique diretamente em uma área do mock.</small></div></div>
+            <div><span>1</span><div><strong>Escolha onde a matéria aparece</strong><small>Use a capa principal ou uma página de editoria.</small></div></div>
             <button type="button" class="secondary auto-slot-button" data-slot="">Usar automático</button>
           </div>
 
-          <div class="gastronomy-cover-map" aria-label="Mapa visual dos slots da capa">
+          <div class="publication-destination-tabs" role="tablist">
+            <button type="button" class="destination-tab active" data-map-target="home">Capa principal</button>
+            <button type="button" class="destination-tab" data-map-target="category">Página de editoria</button>
+          </div>
+
+          <div class="gastronomy-cover-map" data-publication-map="home" aria-label="Mapa visual dos slots da capa">
             <div class="mock-masthead">REVISTA DE <b>GASTRONOMIA</b></div>
             <div class="mock-breaking">
               <span>AGORA</span>
@@ -125,13 +130,30 @@
             </div>
           </div>
 
+          <div class="gastronomy-cover-map category-page-map" data-publication-map="category" aria-label="Mapa visual dos slots da página de editoria" hidden>
+            <div class="mock-masthead">REVISTA DE <b>GASTRONOMIA</b></div>
+            <div class="mock-category-nav">RECEITAS&nbsp;&nbsp; RESTAURANTES&nbsp;&nbsp; TENDÊNCIAS&nbsp;&nbsp; VIAGENS&nbsp;&nbsp; BEBIDAS</div>
+            <div class="mock-category-title"><span>EDITORIA</span><strong id="mock-category-name">Gastronomia</strong></div>
+            <div class="mock-category-leads">
+              <button type="button" class="mock-slot mock-category-hero" data-slot="section_hero"><span>Destaque principal</span><strong>Grande chamada da editoria</strong></button>
+              <div>
+                <button type="button" class="mock-slot" data-slot="section_feature_1"><span>Destaque secundário 1</span><strong>Chamada lateral</strong></button>
+                <button type="button" class="mock-slot" data-slot="section_feature_2"><span>Destaque secundário 2</span><strong>Chamada lateral</strong></button>
+              </div>
+            </div>
+            <div class="mock-category-list">
+              <b>ÚLTIMAS DA EDITORIA</b>
+              <% 9.times do |index| %><button type="button" data-slot="section_list_<%= index + 1 %>"><i></i><span>Matéria da lista <%= index + 1 %></span></button><% end %>
+            </div>
+          </div>
+
           <div class="selected-slot-summary">
             <span class="selection-dot"></span>
             <div><small>POSIÇÃO SELECIONADA</small><strong id="selected-slot-label"><%= selected_slot ? SiteArticle::SLOT_LABELS[selected_slot] : "Automático" %></strong></div>
           </div>
           <div class="accessible-slot-select">
             <%= form.label :slot_key, "Posição da matéria" %>
-            <%= form.select :slot_key, grouped_options_for_select(SiteArticle::SLOT_GROUPS, selected_slot), { include_blank: "Automático — posição disponível" } %>
+            <%= form.select :slot_key, grouped_options_for_select(SiteArticle::SLOT_GROUPS.merge(SiteArticle::CATEGORY_SLOT_GROUPS), selected_slot), { include_blank: "Automático — posição disponível" } %>
           </div>
         </div>
 
@@ -182,6 +204,9 @@
         const editor = document.getElementById("visual-publication-editor");
         if (!editor) return;
         const slotSelect = editor.querySelector("#publication_slot_key");
+        const categorySelect = editor.querySelector("#publication-category");
+        const maps = [...editor.querySelectorAll("[data-publication-map]")];
+        const destinationTabs = [...editor.querySelectorAll("[data-map-target]")];
         const slotButtons = [...editor.querySelectorAll("[data-slot]")];
         const slotLabel = document.getElementById("selected-slot-label");
         const slotCaption = document.getElementById("live-slot-caption");
@@ -191,8 +216,15 @@
         const originalTitle = <%= raw((@article.rewritten_title.presence || @article.title).to_json) %>;
         const labels = <%= raw(SiteArticle::SLOT_LABELS.to_json) %>;
 
+        const showMap = (name) => {
+          maps.forEach(map => { map.hidden = map.dataset.publicationMap !== name; });
+          destinationTabs.forEach(tab => tab.classList.toggle("active", tab.dataset.mapTarget === name));
+        };
+        destinationTabs.forEach(tab => tab.addEventListener("click", () => showMap(tab.dataset.mapTarget)));
+
         const selectSlot = (value) => {
           slotSelect.value = value;
+          showMap(value.startsWith("section_") ? "category" : "home");
           slotButtons.forEach(button => button.classList.toggle("selected", button.dataset.slot === value));
           const label = labels[value] || "Automático";
           slotLabel.textContent = label;
@@ -201,6 +233,12 @@
         slotButtons.forEach(button => button.addEventListener("click", () => selectSlot(button.dataset.slot)));
         slotSelect.addEventListener("change", () => selectSlot(slotSelect.value));
         selectSlot(slotSelect.value);
+        categorySelect?.addEventListener("change", () => {
+          const label = categorySelect.options[categorySelect.selectedIndex]?.text || "Gastronomia";
+          document.getElementById("mock-category-name").textContent = label;
+          document.getElementById("live-category").textContent = label;
+        });
+        categorySelect?.dispatchEvent(new Event("change"));
 
         const updateTitle = () => {
           titlePreview.textContent = titleInput.value.trim() || originalTitle;
