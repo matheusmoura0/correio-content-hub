@@ -7,6 +7,7 @@ Rails.application.routes.draw do
 
   resources :sites, except: :show
   resources :categories, except: :show
+  post "feeds/sincronizar-correio", to: "correio_rss_catalog#create", as: :sync_correio_rss_catalog
   resources :feeds, except: :show do
     post :import, on: :member, action: :import_feed
   end
