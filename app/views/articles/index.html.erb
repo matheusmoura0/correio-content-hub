@@ -12,8 +12,8 @@
   <div class="grid publication-stats">
     <div class="card stat"><strong><%= distributions.where(status: "published").count %></strong><span>Publicadas</span></div>
     <div class="card stat"><strong><%= distributions.where(status: "draft").count %></strong><span>Rascunhos</span></div>
-    <div class="card stat"><strong><%= distributions.where(placement: "hero").count %></strong><span>Manchete</span></div>
-    <div class="card stat"><strong><%= distributions.where(placement: "editor_pick").count %></strong><span>Escolha do editor</span></div>
+    <div class="card stat"><strong><%= distributions.where(status: "published", slot_key: SiteArticle::SLOT_KEYS).count %>/16</strong><span>Slots ocupados</span></div>
+    <div class="card stat"><strong><%= distributions.where(status: "published", assignment_mode: "manual").count %></strong><span>Posições manuais</span></div>
   </div>
 <% end %>
 
@@ -48,7 +48,7 @@
           <td data-label="Fonte"><%= article.feed.name %><% if article.topics.any? %><small><%= article.topics.map(&:name).join(", ") %></small><% end %></td>
           <td data-label="Data"><%= article.updated_at.strftime("%d/%m/%Y %H:%M") %></td>
           <td data-label="Situação"><span class="<%= article_status_class(article.status) %>"><%= article_status_label(article.status) %></span></td>
-          <% if @site %><td data-label="No site"><span class="badge <%= distribution&.status == "published" ? "status-published" : "" %>"><%= distribution&.status == "published" ? "No ar" : "Rascunho" %></span><small><%= {"hero"=>"Manchete", "editor_pick"=>"Escolha do editor", "latest"=>"Novidades"}[distribution&.placement] %><%= " · #{distribution.category.name}" if distribution&.category %></small></td><% end %>
+          <% if @site %><td data-label="No site"><span class="badge <%= distribution&.status == "published" ? "status-published" : "" %>"><%= distribution&.status == "published" ? "No ar" : "Rascunho" %></span><small><%= distribution&.slot_label || "Sem posição fixa" %><%= distribution ? " · #{distribution.assignment_mode == "manual" ? "Manual" : "Automático"}" : "" %><%= " · #{distribution.category.name}" if distribution&.category %></small></td><% end %>
         </tr>
       <% end %>
     </tbody>
