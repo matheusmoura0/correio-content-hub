@@ -96,24 +96,30 @@
     </div>
 
     <%= form_with url: publish_to_gastronomy_article_path(@article), method: :patch, scope: :publication, class: "gastronomy-publish-form" do |form| %>
-      <div>
-        <%= form.label :placement, "Posição na revista" %>
-        <%= form.select :placement, [["Novidades", "latest"], ["Manchete principal", "hero"], ["Escolha do editor", "editor_pick"]], selected: @gastronomy_distribution&.placement || "latest" %>
+      <div class="wide">
+        <%= form.label :slot_key, "Local exato na capa" %>
+        <% slot_options = SiteArticle::SLOT_GROUPS.transform_values do |slots| %>
+          <% slots.map do |label, key| %>
+            <% occupant = @gastronomy_slot_occupancy[key] %>
+            <% suffix = occupant && occupant.article_id != @article.id ? " — ocupado por: #{occupant.article.title.truncate(42)}" : (occupant ? " — esta matéria" : " — livre") %>
+            <% ["#{label}#{suffix}", key] %>
+          <% end %>
+        <% end %>
+        <%= form.select :slot_key,
+          grouped_options_for_select(slot_options, @gastronomy_distribution&.slot_key),
+          { include_blank: "Automático — preencher uma posição disponível" } %>
+        <small>Na escolha manual, a matéria passa a ocupar exatamente este local. Se já houver conteúdo, ele volta para a fila automática.</small>
       </div>
       <div>
         <%= form.label :category_id, "Editoria" %>
         <%= form.select :category_id, [["Sem editoria", ""]] + @gastronomy_site.categories.order(:name).map { |category| [category.name, category.id] }, selected: @gastronomy_distribution&.category_id %>
-      </div>
-      <div>
-        <%= form.label :position, "Ordem" %>
-        <%= form.number_field :position, value: @gastronomy_distribution&.position || 0, min: 0, max: 999 %>
       </div>
       <%= form.submit @gastronomy_distribution&.status == "published" ? "Atualizar publicação" : "Publicar na revista", class: "accent", data: { loading_label: "Publicando na revista…" } %>
     <% end %>
 
     <% if @gastronomy_distribution&.status == "published" %>
       <div class="unpublish-row">
-        <span>Publicada em <%= @gastronomy_distribution.published_at&.strftime("%d/%m/%Y às %H:%M") %></span>
+        <span>Publicada em <%= @gastronomy_distribution.published_at&.strftime("%d/%m/%Y às %H:%M") %> · <%= @gastronomy_distribution.slot_label %> · <%= @gastronomy_distribution.assignment_mode == "manual" ? "Manual" : "Automático" %></span>
         <%= button_to "Retirar do ar", unpublish_from_gastronomy_article_path(@article), method: :patch, class: "secondary", data: { loading_label: "Retirando do ar…" } %>
       </div>
     <% end %>
