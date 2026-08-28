@@ -40,7 +40,6 @@ class ArticlesController < ApplicationController
     articles = Article.where(id: ids)
     deleted = articles.count
     Article.transaction { articles.find_each(&:destroy!) }
-
     redirect_back fallback_location: articles_path, notice: "#{deleted} matéria(s) excluída(s) do Hub e retirada(s) dos sites associados."
   rescue ActiveRecord::RecordNotDestroyed => error
     redirect_back fallback_location: articles_path, alert: "Não foi possível concluir a exclusão: #{error.record.errors.full_messages.to_sentence}"
@@ -51,35 +50,41 @@ class ArticlesController < ApplicationController
     return redirect_to(@article, alert: "A matéria ainda não está pronta para publicação.") unless @article.publication_ready?
 
     settings = gastronomy_params
-    placement = SiteArticle::PLACEMENTS.include?(settings[:placement]) ? settings[:placement] : "latest"
+    slot_key = settings[:slot_key].presence
+    slot_key = nil unless SiteArticle::SLOT_KEYS.include?(slot_key)
     category = site.categories.find_by(id: settings[:category_id].presence)
 
     Article.transaction do
-      if %w[hero editor_pick].include?(placement)
-        site.site_articles.where(placement:).where.not(article_id: @article.id)
-          .update_all(placement: "latest", position: 0, updated_at: Time.current)
+      distribution = @article.site_articles.find_or_initialize_by(site:)
+      if slot_key
+        site.site_articles.where(status: "published", slot_key:).where.not(article_id: @article.id)
+          .update_all(slot_key: nil, placement: "latest", position: 0, assignment_mode: "automatic", updated_at: Time.current)
+        distribution.slot_key = slot_key
+        distribution.assignment_mode = "manual"
+        distribution.placement = SiteArticle.placement_for(slot_key)
+        distribution.position = SiteArticle::SLOT_KEYS.index(slot_key).to_i + 1
+      else
+        SiteArticle.claim_automatic_slot!(distribution)
       end
 
       @article.update!(status: "published")
-      distribution = @article.site_articles.find_or_initialize_by(site:)
       distribution.assign_attributes(
         status: "published",
-        placement:,
         category:,
-        position: settings[:position].to_i.clamp(0, 999),
         published_at: Time.current
       )
       distribution.save!
     end
 
-    redirect_to @article, notice: "Matéria publicada na Revista de Gastronomia."
+    message = slot_key ? "Matéria publicada em #{SiteArticle::SLOT_LABELS[slot_key]}." : "Matéria publicada em uma posição automática."
+    redirect_to @article, notice: message
   rescue ActiveRecord::RecordInvalid => error
     redirect_to @article, alert: "Não foi possível publicar: #{error.record.errors.full_messages.to_sentence}"
   end
 
   def unpublish_from_gastronomy
     distribution = @article.site_articles.find_by(site: gastronomy_site)
-    distribution&.update!(status: "draft", published_at: nil)
+    distribution&.update!(status: "draft", published_at: nil, slot_key: nil)
     redirect_to @article, notice: "Matéria retirada da Revista de Gastronomia."
   end
 
@@ -93,6 +98,7 @@ class ArticlesController < ApplicationController
     @sites = Site.where(active: true).includes(:categories).order(:name)
     @gastronomy_site = @sites.find { |site| site.domain == "revistadegastronomia.com.br" }
     @gastronomy_distribution = @article.site_articles.find_by(site: @gastronomy_site) if @gastronomy_site
+    @gastronomy_slot_occupancy = @gastronomy_site&.site_articles&.includes(:article)&.where(status: "published", slot_key: SiteArticle::SLOT_KEYS)&.index_by(&:slot_key) || {}
   end
 
   def gastronomy_site
@@ -104,7 +110,7 @@ class ArticlesController < ApplicationController
   end
 
   def gastronomy_params
-    params.fetch(:publication, ActionController::Parameters.new).permit(:placement, :category_id, :position)
+    params.fetch(:publication, ActionController::Parameters.new).permit(:slot_key, :category_id)
   end
 
   def apply_image_rights_review
@@ -119,7 +125,7 @@ class ArticlesController < ApplicationController
 
   def revoke_unsafe_gastronomy_distribution
     distribution = @article.site_articles.find_by(site: Site.find_by(domain: "revistadegastronomia.com.br"))
-    distribution&.update!(status: "draft", published_at: nil)
+    distribution&.update!(status: "draft", published_at: nil, slot_key: nil)
   end
 
   def sync_sites
