@@ -1,5 +1,5 @@
 <div class="page-heading">
-  <div><p class="eyebrow">Entrada de conteúdo</p><h1>Canais RSS do Correio</h1><p class="muted">Gerencie as fontes oficiais que abastecem o acervo e podem ser distribuídas aos sites da rede.</p></div>
+  <div><p class="eyebrow">Entrada de conteúdo</p><h1>Canais RSS do Correio</h1><p class="muted">Gerencie as fontes oficiais que abastecem o acervo e publicam nos sites da rede.</p></div>
   <div class="actions">
     <%= button_to "Sincronizar editorias do Correio", sync_correio_rss_catalog_path, method: :post, class: "button secondary", data: { loading_label: "Sincronizando catálogo…" } %>
     <%= link_to "Adicionar canal RSS", new_feed_path, class: "button" %>
@@ -14,21 +14,21 @@
 </div>
 
 <div class="card rss-guidance">
-  <strong>Crédito preservado na distribuição</strong>
-  <p class="muted">As matérias originadas em domínios do Correio saem pela API com publisher, crédito obrigatório e URL canônica da publicação original.</p>
+  <strong>Publicação automática com crédito</strong>
+  <p class="muted">Matérias dos domínios do Correio usam a imagem original como conteúdo próprio. Quando o canal possui um site de destino, itens com imagem são publicados diretamente com crédito “Correio da Manhã” e URL canônica.</p>
 </div>
 
 <table>
-  <thead><tr><th>Canal</th><th>Origem</th><th>Destino padrão</th><th>Última atualização</th><th></th></tr></thead>
+  <thead><tr><th>Canal</th><th>Origem</th><th>Publicação</th><th>Última atualização</th><th></th></tr></thead>
   <tbody>
     <% @feeds.each do |feed| %>
       <tr>
         <td data-label="Canal"><strong><%= feed.name %></strong><small><%= feed.url %></small></td>
         <td data-label="Origem"><span class="badge <%= feed.correio_source? ? "status-approved" : "status-reviewing" %>"><%= feed.correio_source? ? "Correio da Manhã" : "Fonte externa" %></span><small><%= feed.active? ? "Recebendo conteúdo" : "Canal pausado" %></small></td>
-        <td data-label="Destino"><%= feed.site&.name || "Acervo geral" %><small><%= feed.category&.name || "Sem categoria padrão" %></small></td>
+        <td data-label="Publicação"><%= feed.site&.name || "Somente acervo" %><small><%= feed.site && feed.correio_source? ? "Publicação automática" : "Revisão manual" %><%= " · #{feed.category.name}" if feed.category %></small></td>
         <td data-label="Última atualização"><%= feed.last_imported_at&.strftime("%d/%m/%Y %H:%M") || "Nunca atualizado" %></td>
         <td data-label="Ações" class="actions">
-          <%= button_to "Atualizar agora", import_feed_path(feed), method: :post, data: { loading_label: "Lendo canal RSS…" } %>
+          <%= button_to "Atualizar agora", import_feed_path(feed), method: :post, data: { loading_label: "Importando e publicando…" } %>
           <%= link_to "Configurar", edit_feed_path(feed), class: "button secondary" %>
         </td>
       </tr>
