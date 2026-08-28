@@ -48,7 +48,7 @@ class ArticlesController < ApplicationController
 
   def publish_to_gastronomy
     site = gastronomy_site
-    return redirect_to(@article, alert: "Confirme a origem e os direitos da imagem antes de publicar.") unless @article.licensed_image_ready?
+    return redirect_to(@article, alert: "A matéria ainda não está pronta para publicação.") unless @article.publication_ready?
 
     settings = gastronomy_params
     placement = SiteArticle::PLACEMENTS.include?(settings[:placement]) ? settings[:placement] : "latest"
