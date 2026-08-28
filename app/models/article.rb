@@ -29,7 +29,12 @@ class Article < ApplicationRecord
 
   def licensed_image_ready?
     image_url.present? && image_source_url.present? && image_license.present? &&
-      image_rights_confirmed_at.present? && image_rights_confirmed_by.present?
+      image_rights_confirmed_at.present? &&
+      (image_rights_confirmed_by.present? || trusted_correio_image?)
+  end
+
+  def trusted_correio_image?
+    feed.correio_source? && image_license == "owned"
   end
 
   private
