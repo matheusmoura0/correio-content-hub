@@ -215,17 +215,17 @@
       <div class="masthead"><div class="header-inner">
         <%= link_to root_path, class: "brand" do %>
           <span class="brand-mark">CM</span>
-          <span><span class="brand-name">Correio da Manhã</span><span class="brand-product">Content Hub</span></span>
+          <span><span class="brand-name">Correio da Manhã</span><span class="brand-product">Rede de Conteúdo</span></span>
         <% end %>
         <% if user_signed_in? %><div class="session"><span class="presence"><span class="presence-dot online"></span><%= current_user.name.presence || current_user.email %></span><%= button_to "Sair", destroy_user_session_path, method: :delete, class: "logout" %></div><% end %>
       </div></div>
       <% if user_signed_in? %><nav class="main-nav"><div class="header-inner">
         <%= link_to "Painel", root_path, class: nav_link_class(root_path) %>
-        <%= link_to "Pescar matérias", topics_path, class: nav_link_class(topics_path) %>
-        <%= link_to "Matérias", articles_path, class: nav_link_class(articles_path) %>
+        <%= link_to "Monitoramento", topics_path, class: nav_link_class(topics_path) %>
+        <%= link_to "Acervo", articles_path, class: nav_link_class(articles_path) %>
         <%= link_to "Revista de Gastronomia", articles_path(site_domain: "revistadegastronomia.com.br"), class: "nav-link #{'active' if params[:site_domain] == 'revistadegastronomia.com.br'}" %>
         <% if current_user.admin? %>
-          <%= link_to "Fontes RSS", feeds_path, class: nav_link_class(feeds_path) %>
+          <%= link_to "Canais RSS", feeds_path, class: nav_link_class(feeds_path) %>
           <%= link_to "Sites", sites_path, class: nav_link_class(sites_path) %>
           <%= link_to "Categorias", categories_path, class: nav_link_class(categories_path) %>
           <%= link_to "Usuários", users_path, class: nav_link_class(users_path) %>
