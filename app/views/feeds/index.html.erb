@@ -1,19 +1,32 @@
 <div class="page-heading">
-  <div><h1>Fontes RSS</h1><p class="muted">Fontes complementares para monitoramento de conteúdo.</p></div>
-  <%= link_to "Novo feed", new_feed_path, class: "button" %>
+  <div><p class="eyebrow">Entrada de conteúdo</p><h1>Canais RSS do Correio</h1><p class="muted">Gerencie as fontes oficiais que abastecem o acervo e podem ser distribuídas aos sites da rede.</p></div>
+  <%= link_to "Adicionar canal RSS", new_feed_path, class: "button" %>
 </div>
+
+<div class="grid publication-stats">
+  <div class="card stat"><strong><%= @feeds.count %></strong><span>Canais cadastrados</span></div>
+  <div class="card stat"><strong><%= @feeds.count(&:active?) %></strong><span>Canais ativos</span></div>
+  <div class="card stat"><strong><%= @feeds.count(&:correio_source?) %></strong><span>Fontes oficiais</span></div>
+  <div class="card stat"><strong><%= @feeds.sum { |feed| feed.articles.size } %></strong><span>Matérias recebidas</span></div>
+</div>
+
+<div class="card rss-guidance">
+  <strong>Crédito preservado na distribuição</strong>
+  <p class="muted">As matérias originadas em domínios do Correio saem pela API com publisher, crédito obrigatório e URL canônica da publicação original.</p>
+</div>
+
 <table>
-  <thead><tr><th>Nome</th><th>Site</th><th>Categoria</th><th>Última importação</th><th></th></tr></thead>
+  <thead><tr><th>Canal</th><th>Origem</th><th>Destino padrão</th><th>Última atualização</th><th></th></tr></thead>
   <tbody>
     <% @feeds.each do |feed| %>
       <tr>
-        <td data-label="Nome"><%= feed.name %><br><span class="muted"><%= feed.url %></span></td>
-        <td data-label="Site"><%= feed.site&.name || "—" %></td>
-        <td data-label="Categoria"><%= feed.category&.name || "—" %></td>
-        <td data-label="Última importação"><%= feed.last_imported_at&.strftime("%d/%m/%Y %H:%M") || "Nunca" %></td>
+        <td data-label="Canal"><strong><%= feed.name %></strong><small><%= feed.url %></small></td>
+        <td data-label="Origem"><span class="badge <%= feed.correio_source? ? "status-approved" : "status-reviewing" %>"><%= feed.correio_source? ? "Correio da Manhã" : "Fonte externa" %></span><small><%= feed.active? ? "Recebendo conteúdo" : "Canal pausado" %></small></td>
+        <td data-label="Destino"><%= feed.site&.name || "Acervo geral" %><small><%= feed.category&.name || "Sem categoria padrão" %></small></td>
+        <td data-label="Última atualização"><%= feed.last_imported_at&.strftime("%d/%m/%Y %H:%M") || "Nunca atualizado" %></td>
         <td data-label="Ações" class="actions">
-          <%= button_to "Importar agora", import_feed_path(feed), method: :post, data: { loading_label: "Importando matérias…" } %>
-          <%= link_to "Editar", edit_feed_path(feed) %>
+          <%= button_to "Atualizar agora", import_feed_path(feed), method: :post, data: { loading_label: "Lendo canal RSS…" } %>
+          <%= link_to "Configurar", edit_feed_path(feed), class: "button secondary" %>
         </td>
       </tr>
     <% end %>
