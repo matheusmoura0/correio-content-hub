@@ -155,6 +155,28 @@
       .mock-popular button { display:block; width:100%; border-left:0; border-top:1px solid #eee6dd; text-align:left; }
       .mock-popular em { color:#ef5a38; font:700 15px Georgia,serif; }
       .gastronomy-cover-map [data-slot].selected { z-index:1; outline:3px solid #ef5a38; outline-offset:-3px; background-color:#7c1d2b; box-shadow:inset 0 0 0 2px #fff; }
+
+      .publication-destination-tabs { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:12px; padding:5px; border-radius:4px; background:#e9e6df; }
+      .destination-tab { margin:0; background:transparent; color:#514b44; }
+      .destination-tab:hover { background:#f5f1ea; color:#7c1d2b; }
+      .destination-tab.active { background:#7c1d2b; color:#fff; box-shadow:0 3px 10px rgba(60,20,22,.18); }
+      .mock-category-nav { padding:8px 12px; border-block:1px solid #e2d8ca; color:#655b52; font-size:8px; font-weight:800; text-align:center; word-spacing:8px; }
+      .mock-category-title { position:relative; padding:20px 14px 13px; border-bottom:1px solid #e2d8ca; }
+      .mock-category-title::after { content:""; position:absolute; left:14px; bottom:-2px; width:48px; height:4px; background:#ef5a38; }
+      .mock-category-title span,.mock-category-title strong { display:block; }
+      .mock-category-title span { color:#ef5a38; font-size:8px; font-weight:800; letter-spacing:.14em; }
+      .mock-category-title strong { color:#7c1d2b; font:700 27px Georgia,serif; text-transform:capitalize; }
+      .mock-category-leads { display:grid; grid-template-columns:minmax(0,1.6fr) minmax(140px,.8fr); gap:8px; padding:14px; }
+      .mock-category-leads > div { display:grid; gap:8px; }
+      .mock-category-hero { min-height:230px; background:linear-gradient(145deg,#71825a,#293a25); }
+      .mock-category-leads > div .mock-slot { min-height:111px; background:linear-gradient(145deg,#9b584c,#4d2722); }
+      .mock-category-list { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; padding:0 14px 14px; }
+      .mock-category-list > b { grid-column:1/-1; padding-block:9px 5px; border-top:3px solid #7c1d2b; color:#7c1d2b; font:11px Georgia,serif; }
+      .mock-category-list button { display:grid; grid-template-columns:42px 1fr; gap:8px; align-items:center; min-height:54px; margin:0; padding:7px; border:1px solid #e2d8ca; border-radius:0; background:#fff; color:#302a25; text-align:left; }
+      .mock-category-list button i { width:42px; height:38px; background:linear-gradient(145deg,#b49372,#624b38); }
+      .mock-category-list button span { font:700 10px/1.2 Georgia,serif; }
+      .mock-category-list button:hover { border-color:#ef5a38; background:#fff8f4; }
+
       .selected-slot-summary { display:flex; align-items:center; gap:10px; margin-top:12px; padding:12px; background:#fff; border:1px solid var(--line); }
       .selection-dot { width:11px; height:11px; border-radius:50%; background:#ef5a38; box-shadow:0 0 0 4px #ffe5dc; }
       .selected-slot-summary small,.selected-slot-summary strong { display:block; }
@@ -269,6 +291,8 @@
         .editor-workspace { grid-template-columns:1fr; }
         .publication-customizer { position:static; }
         .mock-cover-body { grid-template-columns:1fr; }
+        .mock-category-leads { grid-template-columns:1fr; }
+        .mock-category-list { grid-template-columns:1fr 1fr; }
         .mock-breaking { grid-template-columns:auto 1fr; }
         .mock-breaking button:nth-of-type(n+2) { display:none; }
         .mock-fresh-grid { grid-template-columns:1fr 1fr; }
