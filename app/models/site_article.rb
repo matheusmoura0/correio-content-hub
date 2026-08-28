@@ -28,6 +28,9 @@ class SiteArticle < ApplicationRecord
   validates :placement, inclusion: { in: PLACEMENTS }
   validates :assignment_mode, inclusion: { in: ASSIGNMENT_MODES }
   validates :slot_key, inclusion: { in: SLOT_KEYS }, allow_blank: true
+  validates :display_title, length: { maximum: 180 }, allow_blank: true
+  validates :image_focus_x, :image_focus_y, inclusion: { in: 0..100 }
+  validates :image_zoom, numericality: { greater_than_or_equal_to: 1, less_than_or_equal_to: 2 }
   validates :article_id, uniqueness: { scope: :site_id }
 
   def self.placement_for(slot_key)
