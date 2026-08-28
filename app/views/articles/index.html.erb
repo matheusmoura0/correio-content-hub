@@ -1,10 +1,10 @@
 <div class="page-heading">
   <div>
-    <p class="eyebrow"><%= @site ? "Canal de publicação" : "Produção editorial" %></p>
+    <p class="eyebrow"><%= @site ? "Canal de publicação" : "Acervo editorial" %></p>
     <h1><%= @site ? @site.name : "Matérias" %></h1>
-    <p class="muted"><%= @site ? "Controle as matérias, posições e o estado publicado na revista." : "Revise as matérias encontradas e crie novas versões com IA." %></p>
+    <p class="muted"><%= @site ? "Controle as matérias, posições e o estado publicado no site." : "Revise, distribua e organize as matérias recebidas pelos canais RSS." %></p>
   </div>
-  <% if @site %><%= link_to "Abrir revista ↗", "https://revistadegastronomia.com.br", target: "_blank", rel: "noopener", class: "button secondary" %><% end %>
+  <% if @site %><%= link_to "Abrir site ↗", "https://#{@site.domain}", target: "_blank", rel: "noopener", class: "button secondary" %><% end %>
 </div>
 
 <% if @site %>
@@ -29,18 +29,56 @@
   <%= form.search_field :q, value: params[:q], placeholder: "Buscar por título ou conteúdo" %>
   <%= form.submit "Buscar" %>
 <% end %>
-<table>
-  <thead><tr><th>Título</th><th>Fonte</th><th>Data</th><th>Situação</th><% if @site %><th>Na revista</th><% end %></tr></thead>
-  <tbody>
-    <% @articles.each do |article| %>
-      <% distribution = @site && article.site_articles.find { |item| item.site_id == @site.id } %>
-      <tr>
-        <td data-label="Título"><%= link_to article.rewritten_title.presence || article.title, article_path(article) %><% if article.rewritten_at.present? %><small>Versão revisada com IA</small><% end %><small class="<%= article.licensed_image_ready? ? "image-ok" : "image-pending" %>"><%= article.licensed_image_ready? ? "Imagem licenciada" : "Direitos da imagem pendentes" %></small></td>
-        <td data-label="Fonte"><%= article.feed.name %><% if article.topics.any? %><small><%= article.topics.map(&:name).join(", ") %></small><% end %></td>
-        <td data-label="Data"><%= article.updated_at.strftime("%d/%m/%Y %H:%M") %></td>
-        <td data-label="Situação"><span class="<%= article_status_class(article.status) %>"><%= article_status_label(article.status) %></span></td>
-        <% if @site %><td data-label="Na revista"><span class="badge <%= distribution&.status == "published" ? "status-published" : "" %>"><%= distribution&.status == "published" ? "No ar" : "Rascunho" %></span><small><%= {"hero"=>"Manchete", "editor_pick"=>"Escolha do editor", "latest"=>"Novidades"}[distribution&.placement] %><%= " · #{distribution.category.name}" if distribution&.category %></small></td><% end %>
-      </tr>
-    <% end %>
-  </tbody>
-</table>
+
+<%= form_with url: destroy_bulk_articles_path, method: :delete, id: "bulk-delete-form", data: { turbo_confirm: "Excluir permanentemente as matérias selecionadas? Elas também serão retiradas de todos os sites associados." } do %>
+  <% if current_user.admin? %>
+    <div class="bulk-toolbar">
+      <label><input type="checkbox" id="select-all-articles"> Selecionar todas desta lista</label>
+      <button type="submit" class="danger" id="bulk-delete-button" disabled>Excluir selecionadas <span id="selected-count">(0)</span></button>
+    </div>
+  <% end %>
+  <table>
+    <thead><tr><% if current_user.admin? %><th class="selection-cell">Selecionar</th><% end %><th>Título</th><th>Fonte</th><th>Data</th><th>Situação</th><% if @site %><th>No site</th><% end %></tr></thead>
+    <tbody>
+      <% @articles.each do |article| %>
+        <% distribution = @site && article.site_articles.find { |item| item.site_id == @site.id } %>
+        <tr>
+          <% if current_user.admin? %><td data-label="Selecionar" class="selection-cell"><%= check_box_tag "article_ids[]", article.id, false, class: "article-selector", aria: { label: "Selecionar #{article.title}" } %></td><% end %>
+          <td data-label="Título"><%= link_to article.rewritten_title.presence || article.title, article_path(article) %><% if article.rewritten_at.present? %><small>Versão revisada com IA</small><% end %><small class="<%= article.licensed_image_ready? ? "image-ok" : "image-pending" %>"><%= article.licensed_image_ready? ? "Imagem autorizada" : "Direitos da imagem pendentes" %></small></td>
+          <td data-label="Fonte"><%= article.feed.name %><% if article.topics.any? %><small><%= article.topics.map(&:name).join(", ") %></small><% end %></td>
+          <td data-label="Data"><%= article.updated_at.strftime("%d/%m/%Y %H:%M") %></td>
+          <td data-label="Situação"><span class="<%= article_status_class(article.status) %>"><%= article_status_label(article.status) %></span></td>
+          <% if @site %><td data-label="No site"><span class="badge <%= distribution&.status == "published" ? "status-published" : "" %>"><%= distribution&.status == "published" ? "No ar" : "Rascunho" %></span><small><%= {"hero"=>"Manchete", "editor_pick"=>"Escolha do editor", "latest"=>"Novidades"}[distribution&.placement] %><%= " · #{distribution.category.name}" if distribution&.category %></small></td><% end %>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+<% end %>
+
+<script>
+  (() => {
+    const form = document.getElementById("bulk-delete-form");
+    if (!form) return;
+    const all = form.querySelector("#select-all-articles");
+    const boxes = [...form.querySelectorAll(".article-selector")];
+    const button = form.querySelector("#bulk-delete-button");
+    const count = form.querySelector("#selected-count");
+
+    const refresh = () => {
+      const selected = boxes.filter(box => box.checked).length;
+      if (count) count.textContent = `(${selected})`;
+      if (button) button.disabled = selected === 0;
+      if (all) {
+        all.checked = boxes.length > 0 && selected === boxes.length;
+        all.indeterminate = selected > 0 && selected < boxes.length;
+      }
+    };
+
+    all?.addEventListener("change", () => {
+      boxes.forEach(box => { box.checked = all.checked; });
+      refresh();
+    });
+    boxes.forEach(box => box.addEventListener("change", refresh));
+    refresh();
+  })();
+</script>
