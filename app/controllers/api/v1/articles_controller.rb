@@ -26,7 +26,7 @@ module Api
 
         {
           id: article.id,
-          title: article.rewritten_title.presence || article.title,
+          title: distribution&.display_title.presence || article.rewritten_title.presence || article.title,
           description: article.description,
           content: article.rewritten_content.presence || article.content,
           image_url: article.image_url,
@@ -41,6 +41,9 @@ module Api
           slot: distribution&.slot_key,
           slot_label: distribution&.slot_label,
           assignment_mode: distribution&.assignment_mode || "automatic",
+          image_focus_x: distribution&.image_focus_x || 50,
+          image_focus_y: distribution&.image_focus_y || 50,
+          image_zoom: (distribution&.image_zoom || 1).to_f,
           position: distribution&.position || 0,
           source: article.feed.name,
           publisher: publisher,
