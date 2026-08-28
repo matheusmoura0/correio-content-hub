@@ -53,12 +53,16 @@ class ArticlesController < ApplicationController
     slot_key = settings[:slot_key].presence
     slot_key = nil unless SiteArticle::SLOT_KEYS.include?(slot_key)
     category = site.categories.find_by(id: settings[:category_id].presence)
+    if SiteArticle.category_slot?(slot_key) && category.nil?
+      return redirect_to(@article, alert: "Escolha uma editoria para usar uma posição da página de editoria.")
+    end
 
     Article.transaction do
       distribution = @article.site_articles.find_or_initialize_by(site:)
       if slot_key
-        site.site_articles.where(status: "published", slot_key:).where.not(article_id: @article.id)
-          .update_all(slot_key: nil, placement: "latest", position: 0, assignment_mode: "automatic", updated_at: Time.current)
+        occupied = site.site_articles.where(status: "published", slot_key:).where.not(article_id: @article.id)
+        occupied = occupied.where(category:) if SiteArticle.category_slot?(slot_key)
+        occupied.update_all(slot_key: nil, placement: "latest", position: 0, assignment_mode: "automatic", updated_at: Time.current)
         distribution.slot_key = slot_key
         distribution.assignment_mode = "manual"
         distribution.placement = SiteArticle.placement_for(slot_key)
