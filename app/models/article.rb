@@ -37,6 +37,14 @@ class Article < ApplicationRecord
     feed.correio_source? && image_license == "owned"
   end
 
+  def publication_ready?
+    feed.correio_source? || licensed_image_ready?
+  end
+
+  def image_optional?
+    feed.correio_source?
+  end
+
   private
 
   def separate_unverified_imported_image
