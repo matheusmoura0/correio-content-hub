@@ -71,6 +71,10 @@ class ArticlesController < ApplicationController
       distribution.assign_attributes(
         status: "published",
         category:,
+        display_title: settings[:display_title].presence,
+        image_focus_x: settings[:image_focus_x].to_i.clamp(0, 100),
+        image_focus_y: settings[:image_focus_y].to_i.clamp(0, 100),
+        image_zoom: settings[:image_zoom].to_f.clamp(1.0, 2.0),
         published_at: Time.current
       )
       distribution.save!
@@ -110,7 +114,7 @@ class ArticlesController < ApplicationController
   end
 
   def gastronomy_params
-    params.fetch(:publication, ActionController::Parameters.new).permit(:slot_key, :category_id)
+    params.fetch(:publication, ActionController::Parameters.new).permit(:slot_key, :category_id, :display_title, :image_focus_x, :image_focus_y, :image_zoom)
   end
 
   def apply_image_rights_review
