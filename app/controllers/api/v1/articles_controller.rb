@@ -13,9 +13,12 @@ module Api
       end
 
       def show
-        article = Article.includes(:feed).joins(:site_articles)
+        article = Article.includes(:feed, site_articles: :category).joins(:site_articles)
           .where(site_articles: { status: "published" }).distinct.find(params[:id])
-        render json: serialize(article, nil)
+        gastronomy = Site.find_by(domain: "revistadegastronomia.com.br")
+        distribution = article.site_articles.find { |item| item.site_id == gastronomy&.id && item.status == "published" } ||
+          article.site_articles.find { |item| item.status == "published" }
+        render json: serialize(article, distribution)
       end
 
       private
