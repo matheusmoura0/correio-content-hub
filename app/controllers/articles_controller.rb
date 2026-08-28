@@ -1,5 +1,6 @@
 class ArticlesController < ApplicationController
   before_action :set_article, only: %i[show update publish_to_gastronomy unpublish_from_gastronomy]
+  before_action :require_admin!, only: :destroy_bulk
 
   def index
     @site = Site.find_by(domain: params[:site_domain]) if params[:site_domain].present?
@@ -30,6 +31,19 @@ class ArticlesController < ApplicationController
       load_sites
       render :show, status: :unprocessable_entity
     end
+  end
+
+  def destroy_bulk
+    ids = Array(params[:article_ids]).filter_map { |id| Integer(id, exception: false) }.uniq
+    return redirect_back(fallback_location: articles_path, alert: "Selecione ao menos uma matéria para excluir.") if ids.empty?
+
+    articles = Article.where(id: ids)
+    deleted = articles.count
+    Article.transaction { articles.find_each(&:destroy!) }
+
+    redirect_back fallback_location: articles_path, notice: "#{deleted} matéria(s) excluída(s) do Hub e retirada(s) dos sites associados."
+  rescue ActiveRecord::RecordNotDestroyed => error
+    redirect_back fallback_location: articles_path, alert: "Não foi possível concluir a exclusão: #{error.record.errors.full_messages.to_sentence}"
   end
 
   def publish_to_gastronomy
