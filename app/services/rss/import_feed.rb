@@ -124,11 +124,16 @@ module Rss
 
       publish_now = article.publication_ready?
       distribution = article.site_articles.find_or_initialize_by(site: @feed.site)
+      if publish_now && @feed.site.domain == "revistadegastronomia.com.br" &&
+          (distribution.new_record? || distribution.assignment_mode != "manual")
+        SiteArticle.claim_automatic_slot!(distribution)
+      end
       distribution.assign_attributes(
         category: @feed.category,
         status: publish_now ? "published" : "draft",
         published_at: publish_now ? (distribution.published_at || Time.current) : nil
       )
+      distribution.slot_key = nil unless publish_now
       distribution.save!
       article.update!(status: "published") if publish_now && article.status != "published"
     end
