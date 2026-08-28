@@ -12,6 +12,7 @@ Rails.application.routes.draw do
     post :import, on: :member, action: :import_feed
   end
   resources :articles, only: %i[index show update] do
+    delete :bulk_delete, on: :collection, action: :destroy_bulk, as: :destroy_bulk
     patch :publish_to_gastronomy, on: :member
     patch :unpublish_from_gastronomy, on: :member
   end
