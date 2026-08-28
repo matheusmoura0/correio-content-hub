@@ -1,10 +1,10 @@
 <div class="page-heading">
-  <div><h1>Pesca de matérias</h1><p class="muted">Monitore assuntos nos feeds cadastrados e reúna os resultados para revisão.</p></div>
-  <%= link_to "Nova pesquisa", new_topic_path, class: "button" %>
+  <div><p class="eyebrow">Monitoramento editorial</p><h1>Monitoramento de pautas</h1><p class="muted">Acompanhe assuntos nos canais RSS e reúna matérias do Correio para revisão e distribuição.</p></div>
+  <%= link_to "Novo monitoramento", new_topic_path, class: "button" %>
 </div>
 
 <% if @topics.empty? %>
-  <div class="empty-state"><h2>Nenhuma pesquisa criada</h2><p>Crie uma pesquisa com os assuntos ou palavras-chave que deseja acompanhar.</p></div>
+  <div class="empty-state"><h2>Nenhum monitoramento criado</h2><p>Crie um monitoramento com os assuntos ou palavras-chave que deseja acompanhar nos canais cadastrados.</p></div>
 <% end %>
 
 <% @topics.each do |topic| %>
@@ -15,12 +15,12 @@
         <p class="muted"><%= topic.keyword_list.join(" · ") %> · <%= { "web" => "web", "rss" => "RSS", "both" => "web + RSS" }.fetch(topic.search_mode, topic.search_mode) %> · <%= topic.match_mode == "all" ? "todos os termos" : "qualquer termo" %></p>
       </div>
       <div class="actions">
-        <%= button_to "Pescar matérias", run_topic_path(topic), method: :post, class: "button accent", data: { loading_label: "Buscando matérias…" } %>
+        <%= button_to "Atualizar resultados", run_topic_path(topic), method: :post, class: "button accent", data: { loading_label: "Atualizando monitoramento…" } %>
         <%= link_to "Editar", edit_topic_path(topic), class: "button secondary" %>
-        <%= button_to "Excluir", topic_path(topic), method: :delete, class: "button danger", form: { data: { turbo_confirm: "Excluir esta pesquisa?" } } %>
+        <%= button_to "Excluir", topic_path(topic), method: :delete, class: "button danger", form: { data: { turbo_confirm: "Excluir este monitoramento?" } } %>
       </div>
     </div>
-    <p class="metric"><strong><%= topic.topic_articles.size %></strong> matéria(s) encontrada(s) <span class="muted">· última busca: <%= topic.last_run_at&.strftime("%d/%m/%Y %H:%M") || "ainda não executada" %></span></p>
+    <p class="metric"><strong><%= topic.topic_articles.size %></strong> matéria(s) encontrada(s) <span class="muted">· última atualização: <%= topic.last_run_at&.strftime("%d/%m/%Y %H:%M") || "ainda não executada" %></span></p>
     <% topic.topic_articles.sort_by(&:created_at).reverse.first(5).each do |match| %>
       <div class="result-row">
         <div><%= link_to match.article.title, article_path(match.article) %><small><%= match.article.feed.name %> · termos: <%= match.matched_terms %></small></div>
