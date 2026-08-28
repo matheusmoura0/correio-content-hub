@@ -95,27 +95,145 @@
       <div><span><%= @gastronomy_distribution&.category&.name || "Sem editoria" %></span><strong><%= @article.rewritten_title.presence || @article.title %></strong><small><%= @article.image_url.present? ? @article.image_credit : "Publicação sem imagem" %></small></div>
     </div>
 
-    <%= form_with url: publish_to_gastronomy_article_path(@article), method: :patch, scope: :publication, class: "gastronomy-publish-form" do |form| %>
-      <div class="wide">
-        <%= form.label :slot_key, "Local exato na capa" %>
-        <% slot_options = SiteArticle::SLOT_GROUPS.transform_values do |slots| %>
-          <% slots.map do |label, key| %>
-            <% occupant = @gastronomy_slot_occupancy[key] %>
-            <% suffix = occupant && occupant.article_id != @article.id ? " — ocupado por: #{occupant.article.title.truncate(42)}" : (occupant ? " — esta matéria" : " — livre") %>
-            <% ["#{label}#{suffix}", key] %>
+    <%= form_with url: publish_to_gastronomy_article_path(@article), method: :patch, scope: :publication, class: "visual-publication-editor", id: "visual-publication-editor" do |form| %>
+      <% selected_slot = @gastronomy_distribution&.slot_key %>
+      <% preview_title = @gastronomy_distribution&.display_title.presence || @article.rewritten_title.presence || @article.title %>
+      <div class="editor-workspace">
+        <div class="cover-map-panel">
+          <div class="editor-section-heading">
+            <div><span>1</span><div><strong>Escolha o local na capa</strong><small>Clique diretamente em uma área do mock.</small></div></div>
+            <button type="button" class="secondary auto-slot-button" data-slot="">Usar automático</button>
+          </div>
+
+          <div class="gastronomy-cover-map" aria-label="Mapa visual dos slots da capa">
+            <div class="mock-masthead">REVISTA DE <b>GASTRONOMIA</b></div>
+            <div class="mock-breaking">
+              <span>AGORA</span>
+              <% 3.times do |index| %><button type="button" data-slot="breaking_<%= index + 1 %>">Ticker <%= index + 1 %></button><% end %>
+            </div>
+            <div class="mock-cover-body">
+              <div class="mock-primary">
+                <button type="button" class="mock-slot mock-hero" data-slot="hero"><span>Manchete principal</span><strong>Imagem e título em destaque</strong></button>
+                <div class="mock-fresh-grid">
+                  <% 6.times do |index| %><button type="button" class="mock-slot" data-slot="fresh_<%= index + 1 %>"><span>Novidades <%= index + 1 %></span><i></i><strong>Card de matéria</strong></button><% end %>
+                </div>
+              </div>
+              <aside>
+                <button type="button" class="mock-slot mock-editor-pick" data-slot="editor_pick"><span>Escolha do editor</span><strong>Destaque lateral</strong></button>
+                <div class="mock-popular"><b>MAIS LIDAS</b><% 5.times do |index| %><button type="button" data-slot="popular_<%= index + 1 %>"><em><%= index + 1 %></em> Matéria mais lida</button><% end %></div>
+              </aside>
+            </div>
+          </div>
+
+          <div class="selected-slot-summary">
+            <span class="selection-dot"></span>
+            <div><small>POSIÇÃO SELECIONADA</small><strong id="selected-slot-label"><%= selected_slot ? SiteArticle::SLOT_LABELS[selected_slot] : "Automático" %></strong></div>
+          </div>
+          <div class="accessible-slot-select">
+            <%= form.label :slot_key, "Posição da matéria" %>
+            <%= form.select :slot_key, grouped_options_for_select(SiteArticle::SLOT_GROUPS, selected_slot), { include_blank: "Automático — posição disponível" } %>
+          </div>
+        </div>
+
+        <div class="publication-customizer">
+          <div class="editor-section-heading"><div><span>2</span><div><strong>Ajuste a apresentação</strong><small>A prévia responde aos controles em tempo real.</small></div></div></div>
+
+          <div class="live-card-preview <%= "without-image" if @article.image_url.blank? %>" id="live-card-preview">
+            <% if @article.image_url.present? %><div class="live-image-frame"><%= image_tag @article.image_url, alt: "", id: "live-preview-image" %></div><% end %>
+            <div class="live-preview-copy"><span id="live-category">Gastronomia</span><strong id="live-preview-title"><%= preview_title %></strong><small id="live-slot-caption"><%= selected_slot ? SiteArticle::SLOT_LABELS[selected_slot] : "Posição automática" %></small></div>
+          </div>
+
+          <div class="title-control">
+            <div class="control-label"><%= form.label :display_title, "Título exibido na Revista" %><button type="button" class="text-action" id="reset-publication-title">Restaurar original</button></div>
+            <%= form.text_area :display_title, value: preview_title, rows: 3, maxlength: 180, id: "publication-display-title" %>
+            <small><span id="title-character-count"><%= preview_title.length %></span>/180 caracteres. O conteúdo original não será alterado.</small>
+          </div>
+
+          <% if @article.image_url.present? %>
+            <div class="image-composer">
+              <div class="control-label"><strong>Enquadramento da imagem</strong><button type="button" class="text-action" id="reset-image-crop">Centralizar</button></div>
+              <div class="crop-actions">
+                <button type="button" class="secondary crop-button" data-dx="-5" aria-label="Mover imagem para esquerda">←</button>
+                <button type="button" class="secondary crop-button" data-dy="-5" aria-label="Mover imagem para cima">↑</button>
+                <button type="button" class="secondary crop-button" data-dy="5" aria-label="Mover imagem para baixo">↓</button>
+                <button type="button" class="secondary crop-button" data-dx="5" aria-label="Mover imagem para direita">→</button>
+                <button type="button" class="secondary zoom-button" data-zoom="-0.1">− Menor</button>
+                <button type="button" class="secondary zoom-button" data-zoom="0.1">+ Maior</button>
+              </div>
+              <div class="range-control"><span>Zoom</span><%= form.range_field :image_zoom, min: 1, max: 2, step: 0.05, value: @gastronomy_distribution&.image_zoom || 1, id: "publication-image-zoom" %><output id="zoom-output"><%= ((@gastronomy_distribution&.image_zoom || 1).to_f * 100).round %>%</output></div>
+              <%= form.hidden_field :image_focus_x, value: @gastronomy_distribution&.image_focus_x || 50, id: "publication-image-focus-x" %>
+              <%= form.hidden_field :image_focus_y, value: @gastronomy_distribution&.image_focus_y || 50, id: "publication-image-focus-y" %>
+            </div>
+          <% else %>
+            <div class="image-empty-note">Esta matéria será apresentada no layout sem imagem.</div>
           <% end %>
-        <% end %>
-        <%= form.select :slot_key,
-          grouped_options_for_select(slot_options, @gastronomy_distribution&.slot_key),
-          { include_blank: "Automático — preencher uma posição disponível" } %>
-        <small>Na escolha manual, a matéria passa a ocupar exatamente este local. Se já houver conteúdo, ele volta para a fila automática.</small>
+
+          <div class="category-control">
+            <%= form.label :category_id, "Editoria" %>
+            <%= form.select :category_id, [["Sem editoria", ""]] + @gastronomy_site.categories.order(:name).map { |category| [category.name, category.id] }, selected: @gastronomy_distribution&.category_id, id: "publication-category" %>
+          </div>
+          <%= form.submit @gastronomy_distribution&.status == "published" ? "Salvar e atualizar na Revista" : "Publicar na Revista", class: "accent publish-visual-button", data: { loading_label: "Publicando na revista…" } %>
+        </div>
       </div>
-      <div>
-        <%= form.label :category_id, "Editoria" %>
-        <%= form.select :category_id, [["Sem editoria", ""]] + @gastronomy_site.categories.order(:name).map { |category| [category.name, category.id] }, selected: @gastronomy_distribution&.category_id %>
-      </div>
-      <%= form.submit @gastronomy_distribution&.status == "published" ? "Atualizar publicação" : "Publicar na revista", class: "accent", data: { loading_label: "Publicando na revista…" } %>
     <% end %>
+
+    <script>
+      (() => {
+        const editor = document.getElementById("visual-publication-editor");
+        if (!editor) return;
+        const slotSelect = editor.querySelector("#publication_slot_key");
+        const slotButtons = [...editor.querySelectorAll("[data-slot]")];
+        const slotLabel = document.getElementById("selected-slot-label");
+        const slotCaption = document.getElementById("live-slot-caption");
+        const titleInput = document.getElementById("publication-display-title");
+        const titlePreview = document.getElementById("live-preview-title");
+        const titleCount = document.getElementById("title-character-count");
+        const originalTitle = <%= raw((@article.rewritten_title.presence || @article.title).to_json) %>;
+        const labels = <%= raw(SiteArticle::SLOT_LABELS.to_json) %>;
+
+        const selectSlot = (value) => {
+          slotSelect.value = value;
+          slotButtons.forEach(button => button.classList.toggle("selected", button.dataset.slot === value));
+          const label = labels[value] || "Automático";
+          slotLabel.textContent = label;
+          slotCaption.textContent = value ? label : "Posição automática";
+        };
+        slotButtons.forEach(button => button.addEventListener("click", () => selectSlot(button.dataset.slot)));
+        slotSelect.addEventListener("change", () => selectSlot(slotSelect.value));
+        selectSlot(slotSelect.value);
+
+        const updateTitle = () => {
+          titlePreview.textContent = titleInput.value.trim() || originalTitle;
+          titleCount.textContent = titleInput.value.length;
+        };
+        titleInput.addEventListener("input", updateTitle);
+        document.getElementById("reset-publication-title")?.addEventListener("click", () => { titleInput.value = originalTitle; updateTitle(); });
+
+        const image = document.getElementById("live-preview-image");
+        const focusX = document.getElementById("publication-image-focus-x");
+        const focusY = document.getElementById("publication-image-focus-y");
+        const zoom = document.getElementById("publication-image-zoom");
+        const zoomOutput = document.getElementById("zoom-output");
+        const refreshImage = () => {
+          if (!image) return;
+          image.style.objectPosition = `${focusX.value}% ${focusY.value}%`;
+          image.style.transform = `scale(${zoom.value})`;
+          zoomOutput.textContent = `${Math.round(Number(zoom.value) * 100)}%`;
+        };
+        editor.querySelectorAll(".crop-button").forEach(button => button.addEventListener("click", () => {
+          focusX.value = Math.max(0, Math.min(100, Number(focusX.value) + Number(button.dataset.dx || 0)));
+          focusY.value = Math.max(0, Math.min(100, Number(focusY.value) + Number(button.dataset.dy || 0)));
+          refreshImage();
+        }));
+        editor.querySelectorAll(".zoom-button").forEach(button => button.addEventListener("click", () => {
+          zoom.value = Math.max(1, Math.min(2, Number(zoom.value) + Number(button.dataset.zoom)));
+          refreshImage();
+        }));
+        zoom?.addEventListener("input", refreshImage);
+        document.getElementById("reset-image-crop")?.addEventListener("click", () => { focusX.value = 50; focusY.value = 50; zoom.value = 1; refreshImage(); });
+        refreshImage();
+      })();
+    </script>
 
     <% if @gastronomy_distribution&.status == "published" %>
       <div class="unpublish-row">
