@@ -12,7 +12,19 @@ class SiteArticle < ApplicationRecord
     "Agora" => (1..3).map { |number| ["Chamada do ticker #{number}", "breaking_#{number}"] },
     "Mais lidas" => (1..5).map { |number| ["Item mais lido #{number}", "popular_#{number}"] }
   }.freeze
-  SLOT_LABELS = SLOT_GROUPS.values.flatten(1).to_h { |label, key| [key, label] }.freeze
+  CATEGORY_SLOT_GROUPS = {
+    "Destaques da editoria" => [
+      ["Destaque principal da editoria", "section_hero"],
+      ["Destaque secundário 1", "section_feature_1"],
+      ["Destaque secundário 2", "section_feature_2"]
+    ],
+    "Lista da editoria" => (1..9).map { |number| ["Matéria da lista #{number}", "section_list_#{number}"] }
+  }.freeze
+  HOME_SLOT_LABELS = SLOT_GROUPS.values.flatten(1).to_h { |label, key| [key, label] }.freeze
+  CATEGORY_SLOT_LABELS = CATEGORY_SLOT_GROUPS.values.flatten(1).to_h { |label, key| [key, label] }.freeze
+  SLOT_LABELS = HOME_SLOT_LABELS.merge(CATEGORY_SLOT_LABELS).freeze
+  HOME_SLOT_KEYS = HOME_SLOT_LABELS.keys.freeze
+  CATEGORY_SLOT_KEYS = CATEGORY_SLOT_LABELS.keys.freeze
   SLOT_KEYS = SLOT_LABELS.keys.freeze
   AUTOMATIC_SLOT_ORDER = %w[
     fresh_1 fresh_2 fresh_3 fresh_4 fresh_5 fresh_6
@@ -32,6 +44,10 @@ class SiteArticle < ApplicationRecord
   validates :image_focus_x, :image_focus_y, inclusion: { in: 0..100 }
   validates :image_zoom, numericality: { greater_than_or_equal_to: 1, less_than_or_equal_to: 2 }
   validates :article_id, uniqueness: { scope: :site_id }
+
+  def self.category_slot?(slot_key)
+    CATEGORY_SLOT_KEYS.include?(slot_key)
+  end
 
   def self.placement_for(slot_key)
     return "hero" if slot_key == "hero"
