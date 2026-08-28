@@ -1,6 +1,9 @@
 <div class="page-heading">
   <div><p class="eyebrow">Entrada de conteúdo</p><h1>Canais RSS do Correio</h1><p class="muted">Gerencie as fontes oficiais que abastecem o acervo e podem ser distribuídas aos sites da rede.</p></div>
-  <%= link_to "Adicionar canal RSS", new_feed_path, class: "button" %>
+  <div class="actions">
+    <%= button_to "Sincronizar editorias do Correio", sync_correio_rss_catalog_path, method: :post, class: "button secondary", data: { loading_label: "Sincronizando catálogo…" } %>
+    <%= link_to "Adicionar canal RSS", new_feed_path, class: "button" %>
+  </div>
 </div>
 
 <div class="grid publication-stats">
