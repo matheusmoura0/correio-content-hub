@@ -3,10 +3,23 @@
 
 <div class="card">
   <p><strong>Origem:</strong> <%= link_to @article.source_url, @article.source_url, target: "_blank", rel: "noopener" %></p>
-  <% if (@article.original_image_url.presence || @article.image_url).present? %><div class="source-image-reference"><%= image_tag(@article.original_image_url.presence || @article.image_url, alt: "") %><span>Imagem coletada da fonte — apenas referência, sem autorização automática de publicação</span></div><% end %>
+  <% if (@article.original_image_url.presence || @article.image_url).present? %><div class="source-image-reference"><%= image_tag(@article.image_url.presence || @article.original_image_url, alt: "") %><span><%= @article.feed.correio_source? ? "Imagem original do Correio — autorizada para uso e opcional na publicação" : "Imagem coletada da fonte — apenas referência, sem autorização automática de publicação" %></span></div><% end %>
   <div class="article-copy"><%= simple_format(@article.content.presence || @article.description) %></div>
 </div>
 
+<% if @article.feed.correio_source? %>
+<section class="card image-rights-panel">
+  <div class="page-heading compact">
+    <div><p class="eyebrow">Imagem da matéria</p><h2>Imagem opcional</h2></div>
+    <span class="badge status-approved">Conteúdo próprio</span>
+  </div>
+  <% if @article.image_url.present? %>
+    <div class="licensed-image-preview"><%= image_tag @article.image_url, alt: "" %><span>Correio da Manhã · imagem obtida automaticamente da matéria original.</span></div>
+  <% else %>
+    <p class="muted">A página original não forneceu uma imagem. Isso não impede a publicação: o site deverá usar o layout sem imagem.</p>
+  <% end %>
+</section>
+<% else %>
 <section class="card image-rights-panel">
   <div class="page-heading compact">
     <div><p class="eyebrow">Direitos de imagem</p><h2>Imagem licenciada para publicação</h2></div>
@@ -38,6 +51,7 @@
     <%= form.submit "Salvar direitos da imagem", class: "accent", data: { loading_label: "Validando imagem…" } %>
   <% end %>
 </section>
+<% end %>
 
 <section class="card rewrite-panel">
   <p class="eyebrow">Assistente editorial</p>
@@ -70,15 +84,15 @@
 
   <% if @gastronomy_site.nil? %>
     <div class="alert">O site Revista de Gastronomia ainda não está configurado no Content Hub.</div>
-  <% elsif !@article.licensed_image_ready? %>
+  <% elsif !@article.publication_ready? %>
     <div class="publication-requirement">
-      <strong>Direitos de imagem pendentes</strong>
-      <p>Preencha e confirme a origem, a licença e o autor da imagem antes de publicar.</p>
+      <strong>Matéria ainda não pronta</strong>
+      <p>Para fontes externas, confirme os direitos da imagem antes de publicar.</p>
     </div>
   <% else %>
-    <div class="publication-preview">
-      <%= image_tag @article.image_url, alt: "" %>
-      <div><span><%= @gastronomy_distribution&.category&.name || "Sem editoria" %></span><strong><%= @article.rewritten_title.presence || @article.title %></strong><small><%= @article.image_credit %></small></div>
+    <div class="publication-preview <%= "without-image" if @article.image_url.blank? %>">
+      <%= image_tag @article.image_url, alt: "" if @article.image_url.present? %>
+      <div><span><%= @gastronomy_distribution&.category&.name || "Sem editoria" %></span><strong><%= @article.rewritten_title.presence || @article.title %></strong><small><%= @article.image_url.present? ? @article.image_credit : "Publicação sem imagem" %></small></div>
     </div>
 
     <%= form_with url: publish_to_gastronomy_article_path(@article), method: :patch, scope: :publication, class: "gastronomy-publish-form" do |form| %>
