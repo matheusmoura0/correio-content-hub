@@ -18,3 +18,8 @@ Category.find_or_create_by!(site: site, slug: "economia") do |category|
 end
 
 puts "Usuário local: #{admin_email}"
+
+
+# Mantém o catálogo oficial de RSS e os monitoramentos por editoria
+# sincronizados em todos os ambientes. O serviço é idempotente.
+Correio::SyncRssCatalog.call
