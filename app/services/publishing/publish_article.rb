@@ -22,7 +22,6 @@ module Publishing
         if @slot_key
           @site.site_articles.where(status: "published", slot_key: @slot_key)
             .where.not(article_id: @article.id)
-            .where.not(assignment_mode: "manual")
             .update_all(slot_key: nil, placement: "latest", position: 0, updated_at: Time.current)
           distribution.assign_attributes(
             slot_key: @slot_key,
