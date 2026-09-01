@@ -10,7 +10,7 @@
         <td data-label="Nome"><%= site.name %></td>
         <td data-label="Domínio"><%= site.domain %></td>
         <td data-label="Situação"><%= site.active? ? "Ativo" : "Inativo" %></td>
-        <td data-label="Ações"><%= link_to "Editar", edit_site_path(site) %></td>
+        <td data-label="Ações"><div class="actions"><%= link_to "Gerenciar conteúdo", publication_path(site.publication_key), class: "button" %><%= link_to "Editar", edit_site_path(site), class: "button secondary" %></div></td>
       </tr>
     <% end %>
   </tbody>
