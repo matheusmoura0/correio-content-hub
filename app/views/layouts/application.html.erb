@@ -411,7 +411,7 @@
         <%= link_to "Painel", root_path, class: nav_link_class(root_path) %>
         <%= link_to "Monitoramento", topics_path, class: nav_link_class(topics_path) %>
         <%= link_to "Acervo", articles_path, class: nav_link_class(articles_path) %>
-        <% Site.where(active: true).order(:name).each do |site| %>
+        <% navigation_sites.each do |site| %>
           <%= link_to site.name, publication_path(site.publication_key), class: "nav-link #{'active' if params[:publication_key] == site.publication_key}" %>
         <% end %>
         <% if current_user.admin? %>
