@@ -39,7 +39,7 @@ class SiteArticle < ApplicationRecord
   validates :status, inclusion: { in: STATUSES }
   validates :placement, inclusion: { in: PLACEMENTS }
   validates :assignment_mode, inclusion: { in: ASSIGNMENT_MODES }
-  validates :slot_key, inclusion: { in: SLOT_KEYS }, allow_blank: true
+  validates :slot_key, inclusion: { in: ->(_) { Publishing::SiteProfile.all_slot_keys } }, allow_blank: true
   validates :display_title, length: { maximum: 180 }, allow_blank: true
   validates :image_focus_x, :image_focus_y, inclusion: { in: 0..100 }
   validates :image_zoom, numericality: { greater_than_or_equal_to: 1, less_than_or_equal_to: 2 }
@@ -58,15 +58,16 @@ class SiteArticle < ApplicationRecord
 
   def self.claim_automatic_slot!(distribution)
     site = distribution.site
-    occupied = site.site_articles.where(status: "published", slot_key: AUTOMATIC_SLOT_ORDER)
+    order = Publishing::SiteProfile.for(site).automatic_order
+    occupied = site.site_articles.where(status: "published", slot_key: order)
       .where.not(id: distribution.id).pluck(:slot_key)
-    slot = (AUTOMATIC_SLOT_ORDER - occupied).first
+    slot = (order - occupied).first
 
     unless slot
       replaceable = site.site_articles.where(
         status: "published",
         assignment_mode: "automatic",
-        slot_key: AUTOMATIC_SLOT_ORDER
+        slot_key: order
       ).where.not(id: distribution.id).order(:published_at, :updated_at).first
       slot = replaceable&.slot_key
       replaceable&.update!(slot_key: nil, placement: "latest", position: 0)
@@ -75,10 +76,10 @@ class SiteArticle < ApplicationRecord
     distribution.slot_key = slot
     distribution.assignment_mode = "automatic"
     distribution.placement = placement_for(slot)
-    distribution.position = slot ? AUTOMATIC_SLOT_ORDER.index(slot).to_i + 1 : 0
+    distribution.position = slot ? order.index(slot).to_i + 1 : 0
   end
 
   def slot_label
-    SLOT_LABELS[slot_key] || "Sem posição fixa"
+    Publishing::SiteProfile.label_for(site, slot_key) || SLOT_LABELS[slot_key] || "Sem posição fixa"
   end
 end
