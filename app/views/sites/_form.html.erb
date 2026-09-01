@@ -1,9 +1,19 @@
 <%= form_with model: site do |form| %>
   <% site.errors.full_messages.each do |message| %><p class="alert"><%= message %></p><% end %>
-  <%= form.label :name, "Nome" %>
-  <%= form.text_field :name, required: true %>
+  <div class="grid">
+    <div><%= form.label :name, "Nome" %><%= form.text_field :name, required: true %></div>
+    <div><%= form.label :publication_key, "Identificador da publicação" %><%= form.text_field :publication_key, required: true, placeholder: "cinemagazine" %></div>
+  </div>
   <%= form.label :domain, "Domínio" %>
   <%= form.text_field :domain, required: true, placeholder: "exemplo.com.br" %>
+  <div class="grid">
+    <div><%= form.label :site_type, "Tipo de produto" %><%= form.select :site_type, Site::SITE_TYPES.map { |value, label| [label, value] } %></div>
+    <div><%= form.label :content_mode, "Origem do conteúdo" %><%= form.select :content_mode, Site::CONTENT_MODES.map { |value, label| [label, value] } %></div>
+    <div><%= form.label :layout_profile, "Perfil visual" %><%= form.select :layout_profile, Site::LAYOUT_PROFILES.map { |value, label| [label, value] } %></div>
+    <div><%= form.label :external_provider, "Provedor externo" %><%= form.select :external_provider, [["Nenhum", ""]] + Site::EXTERNAL_PROVIDERS.map { |value, label| [label, value] } %></div>
+  </div>
+  <%= form.label :allowed_origins, "Origens autorizadas (uma por linha)" %>
+  <%= form.text_area :allowed_origins, rows: 4, placeholder: "https://cinemagazine.com.br\nhttps://preview.vercel.app" %>
   <label><%= form.check_box :active %> Ativo</label><br><br>
   <%= form.submit %>
 <% end %>
