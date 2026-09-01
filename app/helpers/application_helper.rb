@@ -18,4 +18,11 @@ module ApplicationHelper
   def nav_link_class(path)
     current_page?(path) ? "nav-link active" : "nav-link"
   end
+
+  def navigation_sites
+    Site.where(active: true).where.not(publication_key: [nil, ""]).order(:name)
+  rescue StandardError => error
+    Rails.logger.error("Navigation sites unavailable: #{error.class}: #{error.message}")
+    []
+  end
 end
