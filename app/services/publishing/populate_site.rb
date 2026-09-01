@@ -18,7 +18,7 @@ module Publishing
       published = 0
       skipped = 0
 
-      candidates.find_each do |article|
+      candidates.limit(profile.automatic_order.length * 4).each do |article|
         break if published >= profile.automatic_order.length
         if !article.publication_ready? || article.site_articles.exists?(site: @site, status: "published")
           skipped += 1
