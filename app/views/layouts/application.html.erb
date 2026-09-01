@@ -252,6 +252,92 @@
       .activity-avatar { display:flex; align-items:center; justify-content:center; width:42px; height:42px; border-radius:50%; background:var(--cm-red); color:#fff; font:700 18px Georgia,serif; }
       .activity-item p { margin:2px 0; }
       @keyframes spin { to { transform:rotate(360deg); } }
+
+      .publication-command-bar { margin-bottom:22px; padding:18px 20px; background:#171717; color:#fff; border-left:6px solid var(--cm-red); }
+      .populate-form { display:grid; grid-template-columns:1fr 1fr auto; gap:14px; align-items:end; }
+      .populate-form label { color:#ddd; }
+      .populate-form select { margin:5px 0 0; }
+      .populate-form input[type=submit] { min-height:44px; }
+      .publication-console-grid { display:grid; grid-template-columns:minmax(0,1fr) 330px; gap:22px; align-items:start; margin-bottom:28px; }
+      .site-mock-panel,.manual-placement-panel { min-width:0; background:#fff; box-shadow:0 4px 18px rgba(20,20,20,.06); }
+      .site-mock-panel { padding:18px; }
+      .manual-placement-panel { position:sticky; top:18px; padding:22px; border-top:5px solid var(--cm-red); }
+      .mock-toolbar { display:flex; justify-content:space-between; align-items:center; gap:16px; margin-bottom:14px; color:var(--muted); font-size:12px; }
+      .mock-toolbar > div { display:flex; align-items:center; gap:8px; color:var(--ink); }
+      .site-layout-mock { overflow:hidden; border:1px solid #d7d7d2; }
+      .visual-slot,.cinema-ticker button,.journal-front-mock aside button { width:100%; min-width:0; margin:0; border:0; border-radius:0; text-align:left; overflow:hidden; }
+      .visual-slot.selected,.cinema-ticker button.selected,.journal-front-mock aside button.selected { outline:4px solid #ed3656; outline-offset:-4px; }
+      .visual-slot small,.visual-slot strong,.visual-slot em { display:block; }
+      .visual-slot em { margin-top:8px; font-size:10px; font-style:normal; opacity:.75; }
+      .cinemagazine-mock { background:#0c0c10; color:#fff; }
+      .cinemagazine-mock > header { padding:17px 20px; border-bottom:1px solid #303038; }
+      .cinemagazine-mock > header b { font-size:24px; font-style:italic; letter-spacing:-.07em; }
+      .cinemagazine-mock > header b span { color:#d6ff34; }
+      .cinemagazine-mock > header nav { float:right; padding-top:8px; color:#aaa; font-size:8px; word-spacing:7px; }
+      .cinema-lead { min-height:270px; padding:28px; background:linear-gradient(110deg,rgba(0,0,0,.88),rgba(0,0,0,.18)),linear-gradient(145deg,#8b3158,#142b45); color:#fff; }
+      .cinema-lead small { color:#d6ff34; letter-spacing:.12em; }
+      .cinema-lead strong { max-width:70%; margin-top:7px; font:800 32px/1 Arial,sans-serif; }
+      .cinema-ticker { display:grid; grid-template-columns:auto repeat(3,1fr); border-block:1px solid #303038; }
+      .cinema-ticker b { padding:10px 13px; background:#d6ff34; color:#111; font-size:9px; }
+      .cinema-ticker button { padding:10px 12px; background:#15151b; color:#eee; border-left:1px solid #303038; font-size:9px; }
+      .external-catalog-preview { padding:18px; background:#111117; }
+      .external-catalog-preview > span { float:right; color:#d6ff34; font-size:9px; }
+      .external-catalog-preview > b { font-size:13px; }
+      .external-catalog-preview > div { display:grid; grid-template-columns:repeat(5,1fr); gap:8px; margin:10px 0 6px; }
+      .external-catalog-preview i { aspect-ratio:2/3; background:linear-gradient(145deg,#48485b,#1f1f29); }
+      .external-catalog-preview small { color:#777; }
+      .cinema-news-mock { padding:18px; }
+      .cinema-news-mock h3 { color:#d6ff34; font:800 13px Arial,sans-serif; }
+      .cinema-news-mock > div { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; }
+      .cinema-news-mock .visual-slot { min-height:150px; padding:0 12px 12px; background:#1a1a21; color:#fff; }
+      .cinema-news-mock .visual-slot i { display:block; height:82px; margin:0 -12px 10px; background:linear-gradient(145deg,#78405b,#293044); }
+      .cinema-news-mock .visual-slot small { color:#d6ff34; font-size:8px; }
+      .cinema-news-mock .visual-slot strong { margin-top:4px; font-size:11px; }
+      .cinema-journal-mock { padding:20px; background:#f5f0e7; color:#211e1a; font-family:Georgia,serif; }
+      .cinema-journal-mock > header { padding-bottom:15px; border-bottom:4px double #241f1b; text-align:center; }
+      .cinema-journal-mock > header small,.cinema-journal-mock > header b { display:block; }
+      .cinema-journal-mock > header small { letter-spacing:.35em; }
+      .cinema-journal-mock > header b { font-size:37px; line-height:1; }
+      .cinema-journal-mock > header nav { margin-top:12px; font:8px Arial,sans-serif; word-spacing:10px; }
+      .journal-front-mock { display:grid; grid-template-columns:1.5fr 1fr .75fr; gap:12px; padding:18px 0; border-bottom:1px solid #aaa294; }
+      .journal-front-mock .visual-slot { padding:12px; background:#e6dfd3; color:#211e1a; }
+      .journal-lead { min-height:265px; background:linear-gradient(0deg,rgba(20,16,12,.84),rgba(20,16,12,.05)),#817467 !important; color:#fff !important; }
+      .journal-lead strong { margin-top:auto; font-size:25px; }
+      .journal-secondary { display:grid; gap:10px; }
+      .journal-secondary .visual-slot { min-height:127px; }
+      .journal-secondary i,.journal-section-mock i { display:block; height:55px; margin:-12px -12px 9px; background:#aa9d8c; }
+      .journal-front-mock aside { border-left:1px solid #aaa294; padding-left:10px; }
+      .journal-front-mock aside b { font-size:11px; }
+      .journal-front-mock aside button { padding:10px 0; background:transparent; color:#312d27; border-top:1px solid #c9c1b4; font:10px/1.25 Georgia,serif; }
+      .journal-section-mock { padding-top:16px; }
+      .journal-section-mock h3 { padding-bottom:6px; border-bottom:2px solid #241f1b; font-size:14px; }
+      .journal-section-mock > div { display:grid; grid-template-columns:repeat(4,1fr); gap:9px; }
+      .journal-section-mock .visual-slot { min-height:115px; padding:12px; background:#ebe4d9; color:#211e1a; font:10px/1.2 Georgia,serif; }
+      .chosen-slot { margin:12px 0 18px; padding:14px; background:#f0eee9; border-left:4px solid #aaa; }
+      .chosen-slot small,.chosen-slot strong { display:block; }
+      .chosen-slot small { color:var(--muted); font-size:9px; letter-spacing:.12em; }
+      .slot-legend { display:flex; flex-wrap:wrap; gap:10px; margin-top:20px; color:var(--muted); font-size:10px; }
+      .slot-legend span { display:flex; align-items:center; gap:5px; }
+      .slot-legend i { width:9px; height:9px; border-radius:50%; background:#ccc; }
+      .slot-legend i.manual { background:var(--cm-red); }
+      .slot-legend i.automatic { background:#2c6f9e; }
+      .bulk-publication-panel { border-top:5px solid var(--cm-red); }
+      .bulk-options { display:grid; grid-template-columns:auto minmax(150px,.7fr) minmax(220px,1.2fr) minmax(180px,.8fr) auto; gap:10px; align-items:center; margin-bottom:14px; }
+      .bulk-options label,.bulk-options input,.bulk-options select { margin:0; }
+      .bulk-options input[type=checkbox] { width:auto; }
+      .publication-article-list { border:1px solid var(--line); }
+      .publication-article-list article { display:grid; grid-template-columns:35px 35px 1fr auto; gap:8px; align-items:center; padding:13px; border-bottom:1px solid var(--line); }
+      .publication-article-list article:last-child { border-bottom:0; }
+      .publication-article-list label,.publication-article-list input { width:auto; margin:0; }
+      .publication-article-list strong,.publication-article-list small { display:block; }
+      .publication-article-list small { margin-top:3px; color:var(--muted); }
+
+      @media (max-width:980px) {
+        .publication-console-grid { grid-template-columns:1fr; }
+        .manual-placement-panel { position:static; }
+        .bulk-options { grid-template-columns:1fr 1fr; }
+        .bulk-options input[type=submit] { width:100%; }
+      }
       @media (max-width:760px) {
         .header-inner { width:min(100% - 24px,1240px); }
         .masthead .header-inner { min-height:74px; }
@@ -286,6 +372,15 @@
         .result-row { align-items:flex-start; }
         .loading-indicator { left:14px; right:14px; bottom:14px; max-width:none; }
         .dashboard-columns { grid-template-columns:1fr; gap:30px; }
+        .populate-form,.bulk-options { grid-template-columns:1fr; }
+        .populate-form input[type=submit] { width:100%; }
+        .cinemagazine-mock > header nav { float:none; display:block; margin-top:8px; }
+        .cinema-news-mock > div { grid-template-columns:1fr 1fr; }
+        .journal-front-mock { grid-template-columns:1fr; }
+        .journal-front-mock aside { border-left:0; border-top:1px solid #aaa294; padding:10px 0 0; }
+        .journal-section-mock > div { grid-template-columns:1fr 1fr; }
+        .publication-article-list article { grid-template-columns:28px 28px 1fr; }
+        .publication-article-list article > .badge { grid-column:3; justify-self:start; }
         .distribution-fields { grid-template-columns:1fr; margin-left:0; }
         .publication-state { margin-left:0; }\n        .image-rights-grid { grid-template-columns:1fr; }\n        .image-rights-grid .wide { grid-column:auto; }\n        .licensed-image-preview { grid-template-columns:90px 1fr; }\n        .licensed-image-preview img { width:90px; height:75px; }\n        .gastronomy-publish-form { grid-template-columns:1fr; }
         .editor-workspace { grid-template-columns:1fr; }
@@ -316,7 +411,9 @@
         <%= link_to "Painel", root_path, class: nav_link_class(root_path) %>
         <%= link_to "Monitoramento", topics_path, class: nav_link_class(topics_path) %>
         <%= link_to "Acervo", articles_path, class: nav_link_class(articles_path) %>
-        <%= link_to "Revista de Gastronomia", articles_path(site_domain: "revistadegastronomia.com.br"), class: "nav-link #{'active' if params[:site_domain] == 'revistadegastronomia.com.br'}" %>
+        <% Site.where(active: true).order(:name).each do |site| %>
+          <%= link_to site.name, publication_path(site.publication_key), class: "nav-link #{'active' if params[:publication_key] == site.publication_key}" %>
+        <% end %>
         <% if current_user.admin? %>
           <%= link_to "Canais RSS", feeds_path, class: nav_link_class(feeds_path) %>
           <%= link_to "Sites", sites_path, class: nav_link_class(sites_path) %>
