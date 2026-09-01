@@ -9,7 +9,7 @@ class SitesController < ApplicationController
   def show; end
 
   def new
-    @site = Site.new
+    @site = Site.new(site_type: "editorial", content_mode: "hub", layout_profile: "standard", active: true)
   end
 
   def edit; end
@@ -43,6 +43,9 @@ class SitesController < ApplicationController
   end
 
   def site_params
-    params.require(:site).permit(:name, :domain, :active)
+    params.require(:site).permit(
+      :name, :domain, :publication_key, :site_type, :content_mode,
+      :external_provider, :layout_profile, :allowed_origins, :active
+    )
   end
 end
