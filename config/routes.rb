@@ -29,6 +29,9 @@ Rails.application.routes.draw do
       get "sites/by-domain/articles", to: "articles#index"
       get "sites/:site_id/articles", to: "articles#index"
       get "articles/:id", to: "articles#show"
+      get "cinema/home", to: "cinema#home"
+      get "cinema/movies/:id", to: "cinema#movie"
+      get "cinema/tv/:id", to: "cinema#tv"
     end
   end
 end
