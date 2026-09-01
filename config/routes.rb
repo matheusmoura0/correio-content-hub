@@ -7,6 +7,10 @@ Rails.application.routes.draw do
 
   resources :sites, except: :show
   resources :categories, except: :show
+  get "publicacoes/:publication_key", to: "publications#show", as: :publication
+  post "publicacoes/:publication_key/popular", to: "publications#populate", as: :populate_publication
+  post "publicacoes/:publication_key/posicionar", to: "publications#assign", as: :assign_publication
+  post "publicacoes/:publication_key/lote", to: "publications#bulk", as: :bulk_publication
   post "feeds/sincronizar-correio", to: "correio_rss_catalog#create", as: :sync_correio_rss_catalog
   resources :feeds, except: :show do
     post :import, on: :member, action: :import_feed
