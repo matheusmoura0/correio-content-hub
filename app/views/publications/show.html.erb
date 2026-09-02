@@ -3,14 +3,26 @@
   <div class="actions"><%= link_to "Abrir site ↗", "https://#{@site.domain}", target: "_blank", rel: "noopener", class: "button secondary" %><%= link_to "Configurar site", edit_site_path(@site), class: "button secondary" if current_user.admin? %></div>
 </div>
 
-<section class="publication-command-bar">
+<nav class="publication-workflow" aria-label="Etapas de publicação">
+  <button type="button" class="workflow-tab active" data-publication-tab="manual" aria-selected="true"><span>1</span><strong>Montar página</strong><small>Escolha matéria e posição</small></button>
+  <button type="button" class="workflow-tab" data-publication-tab="automatic" aria-selected="false"><span>2</span><strong>Preencher automaticamente</strong><small>Distribua o acervo nos espaços</small></button>
+  <button type="button" class="workflow-tab" data-publication-tab="bulk" aria-selected="false"><span>3</span><strong>Operações em lote</strong><small>Reescreva, publique ou retire</small></button>
+</nav>
+
+<section class="publication-mode-panel" data-publication-panel="automatic" hidden>
+  <div class="mode-introduction"><div><p class="eyebrow">Preenchimento assistido</p><h2>Popular espaços livres</h2><p class="muted">Escolha uma origem e uma editoria. O Hub preserva as posições já preenchidas manualmente.</p></div><span class="mode-icon" aria-hidden="true">↗</span></div>
+  <div class="publication-command-bar">
   <%= form_with url: populate_publication_path(@site.publication_key), method: :post, class: "populate-form", data: { turbo_confirm: "Preencher automaticamente todos os espaços livres deste site?" } do |form| %>
     <div><%= form.label :topic_id, "Usar matérias da pesquisa" %><%= form.select :topic_id, [["Todas as matérias coletadas", ""]] + @topics.map { |topic| [topic.name, topic.id] } %></div>
     <div><%= form.label :category_id, "Editoria padrão" %><%= form.select :category_id, [["Definir depois", ""]] + @site.categories.order(:name).map { |category| [category.name, category.id] } %></div>
     <%= form.submit "Popular site automaticamente", class: "accent", data: { loading_label: "Distribuindo matérias…" } %>
   <% end %>
+  </div>
+  <div class="workflow-note"><strong>Como funciona</strong><p>O sistema seleciona matérias disponíveis, respeita os slots ocupados e distribui o restante conforme o perfil editorial deste site.</p></div>
 </section>
 
+<section class="publication-mode-panel active" data-publication-panel="manual">
+<div class="mode-introduction"><div><p class="eyebrow">Editor visual</p><h2>Monte a página em dois passos</h2><p class="muted">Selecione uma matéria no painel lateral e depois clique no espaço desejado no mock.</p></div><span class="mode-status">Seleção manual</span></div>
 <div class="publication-console-grid">
   <section class="site-mock-panel">
     <div class="mock-toolbar"><div><span class="presence-dot online"></span><strong>Prévia estrutural</strong></div><small>Clique em um espaço para selecioná-lo.</small></div>
@@ -43,18 +55,29 @@
   </section>
 
   <aside class="manual-placement-panel">
-    <p class="eyebrow">Posicionamento manual</p><h2>Enviar para o espaço</h2>
+    <p class="eyebrow">Passo 1</p><h2>Escolha a matéria</h2>
     <%= form_with url: assign_publication_path(@site.publication_key), method: :post, id: "assign-form" do |form| %>
       <%= form.hidden_field :slot_key, id: "selected-publication-slot" %>
-      <div class="chosen-slot"><small>ESPAÇO ESCOLHIDO</small><strong id="chosen-slot-label">Clique em um espaço do mock</strong></div>
+      <div class="manual-article-picker">
+        <% @articles.each do |article| %>
+          <label class="manual-article-option">
+            <%= radio_button_tag :article_id, article.id, false, class: "manual-article-radio" %>
+            <span><strong><%= article.rewritten_title.presence || article.title %></strong><small><%= article.feed.name %></small></span>
+          </label>
+        <% end %>
+      </div>
+      <div class="placement-step"><p class="eyebrow">Passo 2</p><div class="chosen-slot"><small>ESPAÇO ESCOLHIDO</small><strong id="chosen-slot-label">Clique em um espaço do mock</strong></div></div>
       <%= form.label :category_id, "Editoria" %><%= form.select :category_id, [["Sem editoria", ""]] + @site.categories.order(:name).map { |category| [category.name, category.id] } %>
       <%= form.submit "Posicionar matéria selecionada", class: "accent", disabled: true, id: "assign-submit" %>
     <% end %>
     <div class="slot-legend"><span><i class="manual"></i> Manual</span><span><i class="automatic"></i> Automático</span><span><i></i> Livre</span></div>
   </aside>
 </div>
+</section>
 
-<section class="card bulk-publication-panel">
+<section class="publication-mode-panel" data-publication-panel="bulk" hidden>
+<div class="mode-introduction"><div><p class="eyebrow">Gestão do acervo</p><h2>Operações em lote</h2><p class="muted">Selecione as matérias primeiro; depois escolha uma única ação para aplicar ao grupo.</p></div><span class="mode-status"><%= @articles.size %> matérias</span></div>
+<div class="card bulk-publication-panel">
   <div class="page-heading compact"><div><p class="eyebrow">Acervo disponível</p><h2>Reescrever e publicar em lote</h2></div><span class="badge"><%= @articles.size %> mais recentes</span></div>
   <%= form_with url: bulk_publication_path(@site.publication_key), method: :post, id: "bulk-publication-form" do |form| %>
     <div class="bulk-options">
@@ -69,17 +92,28 @@
         <% distribution = article.site_articles.find { |item| item.site_id == @site.id } %>
         <article>
           <label class="bulk-check"><%= check_box_tag "article_ids[]", article.id, false, class: "bulk-publication-check" %></label>
-          <label class="manual-radio"><%= radio_button_tag :article_id, article.id, false, form: "assign-form", class: "manual-article-radio" %></label>
           <div><strong><%= article.rewritten_title.presence || article.title %></strong><small><%= article.feed.name %> · <%= article.publication_ready? ? "Pronta para publicar" : "Revisão de imagem necessária" %></small></div>
           <span class="badge <%= "status-published" if distribution&.status == "published" %>"><%= distribution&.status == "published" ? distribution.slot_label : article_status_label(article.status) %></span>
         </article>
       <% end %>
     </div>
   <% end %>
+</div>
 </section>
 
 <script>
 (() => {
+  const tabs = [...document.querySelectorAll("[data-publication-tab]")];
+  const panels = [...document.querySelectorAll("[data-publication-panel]")];
+  const activateMode = name => {
+    tabs.forEach(tab => { const active = tab.dataset.publicationTab === name; tab.classList.toggle("active", active); tab.setAttribute("aria-selected", String(active)); });
+    panels.forEach(panel => { const active = panel.dataset.publicationPanel === name; panel.classList.toggle("active", active); panel.hidden = !active; });
+    history.replaceState(null, "", `#${name}`);
+  };
+  tabs.forEach(tab => tab.addEventListener("click", () => activateMode(tab.dataset.publicationTab)));
+  const requestedMode = location.hash.slice(1);
+  if (tabs.some(tab => tab.dataset.publicationTab === requestedMode)) activateMode(requestedMode);
+
   const labels = <%= raw(@profile.groups.values.flatten(1).to_h { |label, key| [key, label] }.to_json) %>;
   const slotInput = document.getElementById("selected-publication-slot");
   const slotLabel = document.getElementById("chosen-slot-label");
