@@ -20,7 +20,7 @@ module ApplicationHelper
   end
 
   def navigation_sites
-    Site.where(active: true).where.not(publication_key: [nil, ""]).order(:name)
+    @navigation_sites ||= Site.where(active: true).where.not(publication_key: [nil, ""]).order(:name).load.to_a
   rescue StandardError => error
     Rails.logger.error("Navigation sites unavailable: #{error.class}: #{error.message}")
     []
