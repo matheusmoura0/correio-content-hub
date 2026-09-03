@@ -22,7 +22,7 @@ end
 cinema_sites = [
   {
     name: "CINEMAGAZINE",
-    domain: "cinemagazine.com.br",
+    domain: "revistacinemagazine.com.br",
     publication_key: "cinemagazine",
     site_type: "hybrid",
     content_mode: "hybrid",
