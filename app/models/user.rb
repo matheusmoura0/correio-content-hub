@@ -11,7 +11,9 @@ class User < ApplicationRecord
   validate :beta_user_limit, on: :create
 
   def admin?
-    role == "admin"
+    return self[:role] == "admin" if has_attribute?(:role)
+
+    email.to_s.casecmp?(ENV["ADMIN_EMAIL"].to_s)
   end
 
   def online?
