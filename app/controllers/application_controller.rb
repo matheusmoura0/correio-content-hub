@@ -34,6 +34,8 @@ class ApplicationController < ActionController::Base
     return if current_user.last_seen_at.present? && current_user.last_seen_at > 1.minute.ago
 
     current_user.update_column(:last_seen_at, Time.current)
+  rescue StandardError => error
+    Rails.logger.error("Presence tracking unavailable: #{error.class}: #{error.message}")
   end
 
   def record_activity
