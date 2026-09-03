@@ -445,7 +445,7 @@
           <span class="brand-mark">CM</span>
           <span><span class="brand-name">Correio da Manhã</span><span class="brand-product">Rede de Conteúdo</span></span>
         <% end %>
-        <% if user_signed_in? %><div class="session"><span class="presence"><span class="presence-dot online"></span><%= current_user.name.presence || current_user.email %></span><%= button_to "Sair", destroy_user_session_path, method: :delete, class: "logout" %></div><% end %>
+        <% if user_signed_in? %><div class="session"><span class="presence"><span class="presence-dot online"></span><%= user_display_name(current_user) %></span><%= button_to "Sair", destroy_user_session_path, method: :delete, class: "logout" %></div><% end %>
       </div></div>
       <% if user_signed_in? %><nav class="main-nav"><div class="header-inner">
         <%= link_to "Painel", root_path, class: nav_link_class(root_path) %>
