@@ -6,15 +6,9 @@ class DashboardController < ApplicationController
     @pending_count = safely(0, "pending_count") { Article.where(status: "imported").count }
     @published_count = safely(0, "published_count") { SiteArticle.where(status: "published").count }
     @topics_count = safely(0, "topics_count") { Topic.where(active: true).count }
-    @recent_articles = safely(Article.none, "recent_articles") {
-      Article.includes(:feed).order(created_at: :desc).limit(10)
-    }
-    @online_users = safely(User.none, "online_users") {
-      User.where("last_seen_at >= ?", 5.minutes.ago).order(:name, :email)
-    }
-    @recent_activities = safely(ActivityLog.none, "recent_activities") {
-      ActivityLog.includes(:user).recent.limit(8)
-    }
+    @recent_articles = safely([], "recent_articles") { Article.includes(:feed).order(created_at: :desc).limit(10).load.to_a }
+    @online_users = safely([], "online_users") { User.where("last_seen_at >= ?", 5.minutes.ago).order(:name, :email).load.to_a }
+    @recent_activities = safely([], "recent_activities") { ActivityLog.includes(:user).recent.limit(8).load.to_a }
   end
 
   private
@@ -22,9 +16,7 @@ class DashboardController < ApplicationController
   def safely(fallback, section)
     yield
   rescue StandardError => error
-    Rails.logger.error(
-      "Dashboard section #{section} unavailable: #{error.class}: #{error.message}"
-    )
+    Rails.logger.error("Dashboard section #{section} unavailable: #{error.class}: #{error.message}")
     fallback
   end
 end
