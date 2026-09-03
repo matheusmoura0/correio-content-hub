@@ -3,7 +3,11 @@ class FeedsController < ApplicationController
   before_action :set_feed, only: %i[show edit update destroy import_feed]
 
   def index
-    @feeds = Feed.includes(:site, :category).order(:name)
+    @feeds = Feed.includes(:site, :category, :articles).order(:name).load.to_a
+  rescue StandardError => error
+    Rails.logger.error("Feeds index unavailable: #{error.class}: #{error.message}")
+    @feeds = []
+    flash.now[:alert] = "Os canais RSS estão temporariamente indisponíveis. Verifique as migrações do banco."
   end
 
   def show; end
