@@ -19,6 +19,13 @@ module ApplicationHelper
     current_page?(path) ? "nav-link active" : "nav-link"
   end
 
+  def user_display_name(user)
+    return "Usuário" unless user
+
+    name = user[:name] if user.has_attribute?(:name)
+    name.presence || user.email.presence || "Usuário"
+  end
+
   def navigation_sites
     @navigation_sites ||= Site.where(active: true).where.not(publication_key: [nil, ""]).order(:name).load.to_a
   rescue StandardError => error
