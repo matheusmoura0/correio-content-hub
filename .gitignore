@@ -13,3 +13,4 @@
 /config/credentials/*.key
 /vendor/bundle
 .DS_Store
+.env.production
