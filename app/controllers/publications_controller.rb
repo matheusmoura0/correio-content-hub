@@ -13,7 +13,7 @@ class PublicationsController < ApplicationController
     category = @site.categories.find_by(id: params[:category_id].presence)
     result = Publishing::PopulateSite.call(site: @site, scope:, category:)
     redirect_to publication_path(@site.publication_key),
-      notice: "Site populado: #{result.published} matéria(s) publicada(s); #{result.skipped} ignorada(s)."
+      notice: "Site populado: #{result.published} de #{result.capacity} posição(ões) automática(s) preenchida(s); #{result.eligible} matéria(s) elegível(is); #{result.skipped} ignorada(s)."
   end
 
   def assign
