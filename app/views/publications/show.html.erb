@@ -18,7 +18,7 @@
     <%= form.submit "Popular site automaticamente", class: "accent", data: { loading_label: "Distribuindo matérias…" } %>
   <% end %>
   </div>
-  <div class="workflow-note"><strong>Como funciona</strong><p>O sistema seleciona matérias disponíveis, respeita os slots ocupados e distribui o restante conforme o perfil editorial deste site.</p></div>
+  <div class="workflow-note"><strong>Como funciona</strong><p><% if @site.layout_profile == "cinemagazine" %>O sistema usa as matérias com imagem da editoria Cinema do Correio, reposiciona as que ficaram fora do layout e preserva os espaços montados manualmente.<% else %>O sistema seleciona matérias disponíveis, respeita os slots ocupados e distribui o restante conforme o perfil editorial deste site.<% end %></p></div>
 </section>
 
 <section class="publication-mode-panel active" data-publication-panel="manual">
