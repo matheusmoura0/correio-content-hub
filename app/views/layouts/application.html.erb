@@ -11,23 +11,37 @@
       body { margin:0; background:var(--paper); color:var(--ink); font-family:Arial, Helvetica, sans-serif; line-height:1.5; }
       a { color:var(--cm-red); text-decoration:none; }
       a:hover { text-decoration:underline; }
-      .site-header { background:var(--white); border-top:6px solid var(--cm-red); box-shadow:0 1px 0 rgba(0,0,0,.08); }
+      .site-header { position:sticky; top:0; z-index:50; background:var(--white); border-top:4px solid var(--cm-red); box-shadow:0 6px 22px rgba(20,20,20,.07); }
       .masthead { border-bottom:1px solid var(--line); }
       .header-inner { width:min(1240px, calc(100% - 40px)); margin:0 auto; display:flex; align-items:center; justify-content:space-between; gap:24px; }
-      .masthead .header-inner { min-height:86px; }
+      .masthead .header-inner { min-height:62px; }
       .brand { display:flex; align-items:center; color:var(--ink); text-decoration:none; }
       .brand:hover { text-decoration:none; }
-      .brand-mark { display:inline-flex; align-items:center; justify-content:center; width:66px; height:54px; margin-right:14px; background:var(--cm-red); color:#fff; font:800 30px Georgia, serif; letter-spacing:-2px; }
-      .brand-name { display:block; font:700 26px/1 Georgia, "Times New Roman", serif; }
-      .brand-product { display:block; margin-top:5px; color:var(--cm-red); font-size:11px; font-weight:800; letter-spacing:.16em; text-transform:uppercase; }
-      .session { display:flex; align-items:center; gap:14px; color:var(--muted); font-size:13px; }
+      .brand-mark { display:inline-flex; align-items:center; justify-content:center; width:46px; height:38px; margin-right:11px; background:var(--cm-red); color:#fff; font:800 22px Georgia, serif; letter-spacing:-1.5px; }
+      .brand-name { display:block; font:700 20px/1 Georgia, "Times New Roman", serif; }
+      .brand-product { display:block; margin-top:4px; color:var(--cm-red); font-size:9px; font-weight:800; letter-spacing:.14em; text-transform:uppercase; }
+      .session { display:flex; align-items:center; gap:12px; color:var(--muted); font-size:12px; }
       .session form { margin:0; }
-      .logout { padding:8px 12px !important; border:1px solid #bbb !important; background:#fff !important; color:#222 !important; }
+      .presence { display:flex; align-items:center; gap:7px; max-width:220px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+      .logout { padding:7px 11px !important; border:1px solid #d2d2ce !important; border-radius:999px !important; background:#fff !important; color:#333 !important; font-size:12px !important; }
       .main-nav { background:#fff; border-bottom:1px solid var(--line); }
-      .main-nav .header-inner { min-height:46px; justify-content:flex-start; overflow-x:auto; }
-      .nav-link { display:flex; align-items:center; min-height:48px; padding:0 15px; color:#292929; font-size:14px; font-weight:700; white-space:nowrap; border-bottom:3px solid transparent; }
+      .main-nav .header-inner { min-height:42px; justify-content:flex-start; gap:4px; overflow:visible; }
+      .nav-primary { display:flex; align-items:center; gap:2px; min-width:0; }
+      .nav-link { display:flex; align-items:center; min-height:42px; padding:0 13px; color:#292929; font-size:13px; font-weight:700; white-space:nowrap; border-bottom:3px solid transparent; }
       .nav-link:hover { color:var(--cm-red); background:#fafafa; text-decoration:none; }
       .nav-link.active { color:var(--cm-red); border-bottom-color:var(--cm-red); }
+      .nav-menu { position:relative; flex:none; height:42px; }
+      .nav-menu > summary { display:flex; align-items:center; gap:7px; min-height:42px; padding:0 13px; color:#292929; cursor:pointer; list-style:none; font-size:13px; font-weight:700; white-space:nowrap; border-bottom:3px solid transparent; }
+      .nav-menu > summary::-webkit-details-marker { display:none; }
+      .nav-menu > summary::after { content:"⌄"; color:#888; font-size:13px; transition:transform .15s ease; }
+      .nav-menu[open] > summary::after { transform:rotate(180deg); }
+      .nav-menu > summary:hover,.nav-menu[open] > summary,.nav-menu.active > summary { color:var(--cm-red); background:#fafafa; border-bottom-color:var(--cm-red); }
+      .nav-count { display:inline-grid; place-items:center; min-width:20px; height:20px; padding:0 6px; border-radius:999px; background:#f0e5e7; color:var(--cm-red); font-size:10px; }
+      .nav-dropdown { position:absolute; top:calc(100% + 7px); left:0; z-index:60; width:280px; padding:8px; border:1px solid var(--line); border-radius:7px; background:#fff; box-shadow:0 16px 40px rgba(20,20,20,.16); }
+      .admin-menu .nav-dropdown { width:230px; }
+      .nav-dropdown-label { display:block; padding:7px 10px 6px; color:#888; font-size:9px; font-weight:800; letter-spacing:.14em; text-transform:uppercase; }
+      .nav-dropdown .nav-link { min-height:39px; padding:0 10px; border:0; border-radius:4px; }
+      .nav-dropdown .nav-link.active { background:#f7ecee; color:var(--cm-red); }
       main { max-width:1240px; margin:44px auto 80px; padding:0 28px; }
       h1, h2, h3 { font-family:Georgia, "Times New Roman", serif; line-height:1.12; }
       h1 { margin:0 0 8px; font-size:clamp(32px,4vw,48px); letter-spacing:-.02em; }
@@ -379,15 +393,22 @@
         .mode-introduction { align-items:flex-start; padding:17px; }
         .mode-introduction h2 { font-size:23px; }
         .mode-status { display:none; }
-        .header-inner { width:min(100% - 24px,1240px); }
-        .masthead .header-inner { min-height:74px; }
-        .brand-mark { width:54px; height:46px; font-size:25px; }
-        .brand-name { font-size:21px; }
+        .header-inner { width:min(100% - 20px,1240px); }
+        .masthead .header-inner { min-height:56px; }
+        .brand-mark { width:40px; height:34px; margin-right:8px; font-size:19px; }
+        .brand-name { font-size:17px; }
+        .brand-product { margin-top:3px; font-size:8px; }
         .session span { display:none; }
-        .main-nav { overflow:hidden; }
-        .main-nav .header-inner { width:100%; padding:0 8px; overflow-x:auto; scrollbar-width:none; }
+        .main-nav { overflow:visible; }
+        .main-nav .header-inner { width:100%; min-height:44px; padding:0 6px; gap:0; overflow:visible; }
         .main-nav .header-inner::-webkit-scrollbar { display:none; }
-        .nav-link { padding:0 12px; }
+        .nav-primary { min-width:0; overflow-x:auto; scrollbar-width:none; }
+        .nav-primary::-webkit-scrollbar { display:none; }
+        .nav-link,.nav-menu > summary { min-height:44px; padding:0 10px; font-size:12px; }
+        .nav-menu { height:44px; }
+        .nav-menu > summary .nav-count { display:none; }
+        .nav-dropdown { position:fixed; top:104px; right:10px; left:10px; width:auto; max-height:calc(100vh - 120px); overflow:auto; }
+        .admin-menu .nav-dropdown { right:10px; left:auto; width:min(270px,calc(100vw - 20px)); }
         main { margin-top:24px; padding:0 14px; }
         h1 { font-size:34px; }
         .page-heading,.callout { flex-direction:column; }
@@ -435,10 +456,15 @@
         .activity-filter > div { flex-direction:column; }
         .activity-filter input { width:100%; }
       }
-      @media (max-width:420px) { .grid { grid-template-columns:1fr; } .brand-product { letter-spacing:.1em; } .session .logout { padding:7px 9px !important; } }
+      @media (max-width:420px) { .grid { grid-template-columns:1fr; } .brand-name { font-size:15px; } .brand-product { letter-spacing:.08em; } .session .logout { padding:6px 9px !important; } .nav-link,.nav-menu > summary { padding-inline:8px; } }
     </style>
   </head>
   <body>
+    <% if user_signed_in? %>
+      <% publication_sites = Site.where(active: true).where.not(publication_key: [nil, ""]).order(:name).load %>
+      <% publication_active = params[:publication_key].present? %>
+      <% admin_active = %w[feeds sites categories users activity_logs].include?(controller_name) %>
+    <% end %>
     <header class="site-header">
       <div class="masthead"><div class="header-inner">
         <%= link_to root_path, class: "brand" do %>
@@ -447,19 +473,33 @@
         <% end %>
         <% if user_signed_in? %><div class="session"><span class="presence"><span class="presence-dot online"></span><%= user_display_name(current_user) %></span><%= button_to "Sair", destroy_user_session_path, method: :delete, class: "logout" %></div><% end %>
       </div></div>
-      <% if user_signed_in? %><nav class="main-nav"><div class="header-inner">
-        <%= link_to "Painel", root_path, class: nav_link_class(root_path) %>
-        <%= link_to "Monitoramento", topics_path, class: nav_link_class(topics_path) %>
-        <%= link_to "Acervo", articles_path, class: nav_link_class(articles_path) %>
-        <% Site.where(active: true).order(:name).each do |site| %>
-          <%= link_to site.name, publication_path(site.publication_key), class: "nav-link #{'active' if params[:publication_key] == site.publication_key}" %>
-        <% end %>
+      <% if user_signed_in? %><nav class="main-nav" aria-label="Navegação principal"><div class="header-inner">
+        <div class="nav-primary">
+          <%= link_to "Painel", root_path, class: nav_link_class(root_path) %>
+          <%= link_to "Monitoramento", topics_path, class: nav_link_class(topics_path) %>
+          <%= link_to "Acervo", articles_path, class: nav_link_class(articles_path) %>
+        </div>
+        <details class="nav-menu <%= 'active' if publication_active %>">
+          <summary>Publicações <span class="nav-count"><%= publication_sites.size %></span></summary>
+          <div class="nav-dropdown">
+            <span class="nav-dropdown-label">Sites conectados</span>
+            <% publication_sites.each do |site| %>
+              <%= link_to site.name, publication_path(site.publication_key), class: "nav-link #{'active' if params[:publication_key] == site.publication_key}" %>
+            <% end %>
+          </div>
+        </details>
         <% if current_user.admin? %>
-          <%= link_to "Canais RSS", feeds_path, class: nav_link_class(feeds_path) %>
-          <%= link_to "Sites", sites_path, class: nav_link_class(sites_path) %>
-          <%= link_to "Categorias", categories_path, class: nav_link_class(categories_path) %>
-          <%= link_to "Usuários", users_path, class: nav_link_class(users_path) %>
-          <%= link_to "Atividades", activity_logs_path, class: nav_link_class(activity_logs_path) %>
+          <details class="nav-menu admin-menu <%= 'active' if admin_active %>">
+            <summary>Admin</summary>
+            <div class="nav-dropdown">
+              <span class="nav-dropdown-label">Configuração</span>
+              <%= link_to "Canais RSS", feeds_path, class: nav_link_class(feeds_path) %>
+              <%= link_to "Sites", sites_path, class: nav_link_class(sites_path) %>
+              <%= link_to "Categorias", categories_path, class: nav_link_class(categories_path) %>
+              <%= link_to "Usuários", users_path, class: nav_link_class(users_path) %>
+              <%= link_to "Atividades", activity_logs_path, class: nav_link_class(activity_logs_path) %>
+            </div>
+          </details>
         <% end %>
       </div></nav><% end %>
     </header>
@@ -525,7 +565,30 @@
           indicator().setAttribute("aria-hidden", "true");
         });
 
-        document.addEventListener("turbo:before-cache", () => indicator()?.classList.remove("visible"));
+        const navigationMenus = Array.from(document.querySelectorAll(".nav-menu"));
+        navigationMenus.forEach((menu) => {
+          menu.addEventListener("toggle", () => {
+            if (!menu.open) return;
+            navigationMenus.forEach((otherMenu) => {
+              if (otherMenu !== menu) otherMenu.removeAttribute("open");
+            });
+          });
+        });
+
+        document.addEventListener("click", (event) => {
+          if (event.target.closest(".nav-menu")) return;
+          navigationMenus.forEach((menu) => menu.removeAttribute("open"));
+        });
+
+        document.addEventListener("keydown", (event) => {
+          if (event.key !== "Escape") return;
+          navigationMenus.forEach((menu) => menu.removeAttribute("open"));
+        });
+
+        document.addEventListener("turbo:before-cache", () => {
+          indicator()?.classList.remove("visible");
+          navigationMenus.forEach((menu) => menu.removeAttribute("open"));
+        });
 
         const sendPresence = () => {
           if (document.visibilityState !== "visible") return;
