@@ -8,6 +8,7 @@ module Correio
       { name: "Economia", path: "economia" },
       { name: "Justiça", path: "economia/justica" },
       { name: "Cultura", path: "cultura" },
+      { name: "Cinema", path: "cultura/cinema" },
       { name: "Esportes", path: "esporte/esportes" },
       { name: "Mundo", path: "mundo" },
       { name: "Distrito Federal", path: "nacional/distrito-federal" },
