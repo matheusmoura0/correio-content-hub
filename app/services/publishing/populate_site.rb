@@ -20,6 +20,8 @@ module Publishing
       published = 0
       skipped = 0
 
+      reset_automatic_slots!(profile) if eligible.positive? && capacity.positive?
+
       candidates.limit([capacity * 4, 20].max).each do |article|
         break if published >= capacity
 
@@ -64,6 +66,19 @@ module Publishing
       ).distinct.count(:slot_key)
 
       profile.automatic_order.length - manual_slots
+    end
+
+    def reset_automatic_slots!(profile)
+      @site.site_articles.where(
+        status: "published",
+        assignment_mode: "automatic",
+        slot_key: profile.automatic_order
+      ).update_all(
+        slot_key: nil,
+        placement: "latest",
+        position: 0,
+        updated_at: Time.current
+      )
     end
 
     def positioned?(distribution)
