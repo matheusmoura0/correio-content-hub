@@ -1,0 +1,84 @@
+<% summary = @report.summary %>
+<% daily = @report.daily_views %>
+<% daily_max = [daily.map { |row| row[:views] }.max.to_i, 1].max %>
+
+<div class="page-heading analytics-heading">
+  <div>
+    <p class="eyebrow">Inteligência de audiência</p>
+    <h1>Métricas</h1>
+    <p class="muted">Acompanhe alcance, leitura e navegação dos sites conectados ao Hub.</p>
+  </div>
+  <div class="export-actions actions">
+    <%= link_to "CSV", export_analytics_path(format: :csv, site_id: @site.id, days: @days), class: "button secondary" %>
+    <%= link_to "JSON", export_analytics_path(format: :json, site_id: @site.id, days: @days), class: "button secondary" %>
+    <%= link_to "Exportar PDF", export_analytics_path(format: :pdf, site_id: @site.id, days: @days), class: "button" %>
+  </div>
+</div>
+
+<%= form_with url: analytics_path, method: :get, class: "analytics-filters", data: { turbo_frame: "_top" } do |form| %>
+  <div><%= form.label :site_id, "Publicação" %><%= form.select :site_id, @sites.map { |site| [site.name, site.id] }, selected: @site.id %></div>
+  <div><%= form.label :days, "Período" %><%= form.select :days, [["Últimos 7 dias", 7], ["Últimos 30 dias", 30], ["Últimos 90 dias", 90]], selected: @days %></div>
+  <%= form.submit "Atualizar painel" %>
+<% end %>
+
+<div class="analytics-summary">
+  <article><span>Visualizações</span><strong><%= number_with_delimiter(summary[:views]) %></strong><small>Páginas abertas</small></article>
+  <article><span>Visitantes</span><strong><%= number_with_delimiter(summary[:visitors]) %></strong><small>Únicos no período</small></article>
+  <article><span>Cliques</span><strong><%= number_with_delimiter(summary[:clicks]) %></strong><small>Links e botões</small></article>
+  <article><span>CTR</span><strong><%= summary[:ctr] %>%</strong><small>Cliques por visualização</small></article>
+  <article><span>Tempo de leitura</span><strong><%= summary[:average_engagement] %>s</strong><small>Média por sessão</small></article>
+</div>
+
+<section class="analytics-grid">
+  <article class="card analytics-trend">
+    <div class="section-title"><div><p class="eyebrow">Audiência</p><h2>Visualizações por dia</h2></div><span class="badge"><%= @days %> dias</span></div>
+    <% if summary[:views].positive? %>
+      <div class="bar-chart" aria-label="Gráfico de visualizações por dia">
+        <% daily.each do |row| %>
+          <div class="bar-column" title="<%= l(row[:date], format: :short) %>: <%= row[:views] %>">
+            <span><%= row[:views] if row[:views].positive? %></span>
+            <i style="height:<%= [(row[:views].to_f / daily_max * 100).round, 2].max %>%"></i>
+            <small><%= row[:date].strftime("%d/%m") %></small>
+          </div>
+        <% end %>
+      </div>
+    <% else %>
+      <div class="analytics-empty"><strong>Aguardando os primeiros acessos</strong><span>Instale o código de medição abaixo no site para começar.</span></div>
+    <% end %>
+  </article>
+
+  <article class="card analytics-devices">
+    <p class="eyebrow">Tecnologia</p><h2>Dispositivos</h2>
+    <% @report.devices.each do |row| %>
+      <div class="device-row"><span><%= { "desktop" => "Desktop", "mobile" => "Celular", "tablet" => "Tablet" }.fetch(row[:device], "Outro") %></span><b><%= row[:share] %>%</b><i><em style="width:<%= row[:share] %>%"></em></i></div>
+    <% end %>
+    <% if @report.devices.empty? %><p class="muted">Nenhum dispositivo registrado.</p><% end %>
+  </article>
+</section>
+
+<section class="analytics-tables">
+  <article>
+    <div class="section-title"><div><p class="eyebrow">Conteúdo</p><h2>Páginas mais vistas</h2></div></div>
+    <div class="table-scroll"><table><thead><tr><th>Página</th><th>Views</th><th>Visitantes</th></tr></thead><tbody>
+      <% @report.top_pages.each do |page| %><tr><td data-label="Página"><strong><%= page[:title] %></strong><small><%= page[:path] %></small></td><td data-label="Views"><%= number_with_delimiter(page[:views]) %></td><td data-label="Visitantes"><%= number_with_delimiter(page[:visitors]) %></td></tr><% end %>
+      <% if @report.top_pages.empty? %><tr><td colspan="3">Ainda não há visualizações.</td></tr><% end %>
+    </tbody></table></div>
+  </article>
+  <article>
+    <div class="section-title"><div><p class="eyebrow">Interação</p><h2>Links mais clicados</h2></div></div>
+    <div class="table-scroll"><table><thead><tr><th>Destino</th><th>Cliques</th></tr></thead><tbody>
+      <% @report.top_clicks.each do |click| %><tr><td data-label="Destino"><strong><%= click[:text] %></strong><small><%= click[:url] %></small></td><td data-label="Cliques"><%= number_with_delimiter(click[:clicks]) %></td></tr><% end %>
+      <% if @report.top_clicks.empty? %><tr><td colspan="2">Ainda não há cliques registrados.</td></tr><% end %>
+    </tbody></table></div>
+  </article>
+</section>
+
+<section class="card tracker-installation">
+  <div><p class="eyebrow">Instalação</p><h2>Código de medição</h2><p class="muted">Adicione antes de <code>&lt;/body&gt;</code>. O script não armazena IP e respeita a origem configurada em Sites.</p></div>
+  <code>&lt;script defer src="https://hub.cm.com.br/cm-analytics.js" data-site="<%= @site.publication_key %>"&gt;&lt;/script&gt;</code>
+  <div class="tracker-article-tag">
+    <strong>Em páginas de matéria</strong>
+    <p class="muted">Informe o identificador editorial para consolidar a audiência mesmo que a URL seja alterada.</p>
+    <code>&lt;script defer src="https://hub.cm.com.br/cm-analytics.js" data-site="<%= @site.publication_key %>" data-article-id="ID_DA_MATERIA" data-category="EDITORIA" data-author="AUTOR"&gt;&lt;/script&gt;</code>
+  </div>
+</section>

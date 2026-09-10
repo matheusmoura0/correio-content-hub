@@ -25,6 +25,9 @@ Rails.application.routes.draw do
   end
   resources :users, except: :show
   resources :activity_logs, only: :index, path: "atividades"
+  get "metricas", to: "analytics#index", as: :analytics
+  get "metricas/exportar.:format", to: "analytics#export", as: :export_analytics,
+    constraints: { format: /csv|json|pdf/ }
   post "presenca", to: "presence#update", as: :presence
   post "articles/:id/rewrite", to: "article_rewrites#create", as: :rewrite_article
 
@@ -36,6 +39,7 @@ Rails.application.routes.draw do
       get "cinema/home", to: "cinema#home"
       get "cinema/movies/:id", to: "cinema#movie"
       get "cinema/tv/:id", to: "cinema#tv"
+      post "analytics/events", to: "analytics_events#create"
     end
   end
 end
