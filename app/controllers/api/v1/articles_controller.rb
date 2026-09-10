@@ -9,7 +9,7 @@ module Api
         articles = site.site_articles.joins(:article).includes(:category, article: :feed)
           .where(status: "published")
           .order(Arel.sql("CASE placement WHEN 'hero' THEN 0 WHEN 'editor_pick' THEN 1 ELSE 2 END"), :position, published_at: :desc)
-        render json: articles.map { |item| serialize(item.article, item) }
+        render json: deduplicate_slots(articles.to_a).map { |item| serialize(item.article, item) }
       end
 
       def show
@@ -22,6 +22,17 @@ module Api
       end
 
       private
+
+      def deduplicate_slots(distributions)
+        seen_slots = {}
+
+        distributions.select do |distribution|
+          next true if distribution.slot_key.blank?
+          next false if seen_slots.key?(distribution.slot_key)
+
+          seen_slots[distribution.slot_key] = true
+        end
+      end
 
       def serialize(article, distribution)
         publisher = article.feed.publisher_name
