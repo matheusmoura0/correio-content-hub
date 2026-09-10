@@ -44,6 +44,9 @@ class SiteArticle < ApplicationRecord
   validates :image_focus_x, :image_focus_y, inclusion: { in: 0..100 }
   validates :image_zoom, numericality: { greater_than_or_equal_to: 1, less_than_or_equal_to: 2 }
   validates :article_id, uniqueness: { scope: :site_id }
+  validates :slot_key,
+    uniqueness: { scope: :site_id, conditions: -> { where(status: "published") } },
+    if: -> { status == "published" && slot_key.present? }
 
   def self.category_slot?(slot_key)
     CATEGORY_SLOT_KEYS.include?(slot_key)
