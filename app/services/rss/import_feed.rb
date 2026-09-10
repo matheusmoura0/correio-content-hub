@@ -1,7 +1,18 @@
 require "open-uri"
+require "nokogiri"
+require "set"
 
 module Rss
   class ImportFeed
+    CINEMA_FEED_URL = "https://www.correiodamanha.com.br/cultura/cinema/sitemap-rss.xml".freeze
+    CINEMA_SECTION_URL = "https://www.correiodamanha.com.br/cultura/cinema".freeze
+    CINEMA_ARTICLE_PATH = %r{\A/cultura/cinema/\d{4}/\d{2}/\d+-[^/?#]+\.html\z}.freeze
+    MAX_SECTION_BYTES = 2_000_000
+    DiscoveredEntry = Struct.new(
+      :url, :entry_id, :title, :summary, :content, :author,
+      :published, :last_modified, :enclosure, :image,
+      keyword_init: true
+    )
     Result = Data.define(:imported, :skipped)
 
     def self.call(feed)
@@ -17,7 +28,7 @@ module Rss
       imported = 0
       skipped = 0
 
-      parsed.entries.each do |entry|
+      entries_for(parsed).each do |entry|
         source_url = entry.url.presence || entry.entry_id.presence
         next if source_url.blank?
 
@@ -59,6 +70,59 @@ module Rss
     end
 
     private
+
+    def entries_for(parsed)
+      rss_entries = parsed.entries.to_a
+      return rss_entries unless cinema_feed?
+
+      known_urls = rss_entries.filter_map { |entry| canonical_url(entry.url.presence || entry.entry_id.presence) }.to_set
+      rss_entries + cinema_section_urls.filter_map do |url|
+        next if known_urls.include?(url)
+
+        DiscoveredEntry.new(url:, entry_id: url)
+      end
+    rescue StandardError => error
+      Rails.logger.warn("Página de Cinema não pôde complementar o RSS: #{error.class}: #{error.message}")
+      rss_entries
+    end
+
+    def cinema_feed?
+      canonical_url(@feed.url) == CINEMA_FEED_URL
+    end
+
+    def cinema_section_urls
+      html = URI.open(
+        CINEMA_SECTION_URL,
+        "User-Agent" => "CorreioContentHub/1.0 (+editorial import)",
+        "Accept" => "text/html,application/xhtml+xml",
+        open_timeout: 10,
+        read_timeout: 20
+      ).read(MAX_SECTION_BYTES + 1)
+      raise "Página da editoria excedeu o tamanho permitido" if html.bytesize > MAX_SECTION_BYTES
+
+      document = Nokogiri::HTML(html)
+      document.css("a[href]").filter_map do |link|
+        url = canonical_url(URI.join(CINEMA_SECTION_URL, link["href"]).to_s)
+        uri = URI.parse(url) if url.present?
+        url if uri&.path&.match?(CINEMA_ARTICLE_PATH)
+      rescue URI::InvalidURIError
+        nil
+      end.uniq
+    end
+
+    def canonical_url(value)
+      uri = URI.parse(value.to_s)
+      return unless uri.is_a?(URI::HTTP)
+      return unless uri.host.to_s.downcase.sub(/\Awww\./, "") == "correiodamanha.com.br"
+
+      uri.scheme = "https"
+      uri.host = "www.correiodamanha.com.br"
+      uri.query = nil
+      uri.fragment = nil
+      uri.to_s.sub(%r{/\z}, "")
+    rescue URI::InvalidURIError
+      nil
+    end
 
     def complete_entry(entry, source_url)
       data = {
