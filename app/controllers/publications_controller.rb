@@ -1,5 +1,6 @@
 class PublicationsController < ApplicationController
   before_action :set_site
+  before_action :require_admin!, only: :clear
 
   def show
     @profile = Publishing::SiteProfile.for(@site)
@@ -49,6 +50,19 @@ class PublicationsController < ApplicationController
 
     label = { "publish" => "publicação", "rewrite_publish" => "reescrita e publicação", "unpublish" => "despublicação" }.fetch(action)
     redirect_to publication_path(@site.publication_key), notice: "#{ids.length} matéria(s) enviadas para #{label} em lote."
+  end
+
+  def clear
+    removed = @site.site_articles.where(status: "published").update_all(
+      status: "draft",
+      published_at: nil,
+      slot_key: nil,
+      placement: "latest",
+      position: 0,
+      assignment_mode: "automatic",
+      updated_at: Time.current
+    )
+    redirect_to publication_path(@site.publication_key), notice: "Site limpo: #{removed} matéria(s) retirada(s) da publicação. O acervo foi preservado."
   end
 
   private
