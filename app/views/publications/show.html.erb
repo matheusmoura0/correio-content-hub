@@ -1,6 +1,6 @@
 <div class="page-heading publication-console-heading">
   <div><p class="eyebrow">Central de publicação</p><h1><%= @site.name %></h1><p class="muted">Posicione matérias manualmente ou preencha o site a partir de uma pesquisa.</p></div>
-  <div class="actions"><%= link_to "Abrir site ↗", "https://#{@site.domain}", target: "_blank", rel: "noopener", class: "button secondary" %><%= link_to "Configurar site", edit_site_path(@site), class: "button secondary" if current_user.admin? %></div>
+  <div class="actions"><%= link_to "Abrir site ↗", "https://#{@site.domain}", target: "_blank", rel: "noopener", class: "button secondary" %><%= link_to "Configurar site", edit_site_path(@site), class: "button secondary" if current_user.admin? %><%= form_with url: clear_publication_path(@site.publication_key), method: :post, class: "inline-form", data: { turbo_confirm: "Retirar todas as matérias publicadas de #{@site.name}? O acervo será preservado." } do |form| %><%= form.submit "Limpar site", class: "button danger" %><% end if current_user.admin? %></div>
 </div>
 
 <nav class="publication-workflow" aria-label="Etapas de publicação">
