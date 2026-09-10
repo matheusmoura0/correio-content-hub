@@ -1,6 +1,6 @@
 module Publishing
   class PopulateSite
-    Result = Data.define(:published, :skipped)
+    Result = Data.define(:published, :skipped, :eligible, :capacity)
 
     def self.call(site:, scope:, category: nil)
       new(site:, scope:, category:).call
@@ -16,6 +16,7 @@ module Publishing
       profile = SiteProfile.for(@site)
       candidates = eligible_candidates.order(published_at: :desc, created_at: :desc).distinct
       capacity = automatic_capacity(profile)
+      eligible = candidates.count
       published = 0
       skipped = 0
 
@@ -39,7 +40,7 @@ module Publishing
         skipped += 1
       end
 
-      Result.new(published:, skipped:)
+      Result.new(published:, skipped:, eligible:, capacity:)
     end
 
     private
@@ -48,7 +49,7 @@ module Publishing
       relation = @scope.includes(:feed, :site_articles)
       return relation unless @site.layout_profile == "cinemagazine"
 
-      relation.where.not(image_url: [nil, ""]).where(
+      relation.where.not(image_url: nil).where.not(image_url: "").where(
         "articles.source_url LIKE :www_path OR articles.source_url LIKE :root_path",
         www_path: "https://www.correiodamanha.com.br/cultura/cinema/%",
         root_path: "https://correiodamanha.com.br/cultura/cinema/%"
