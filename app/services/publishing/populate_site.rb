@@ -14,25 +14,61 @@ module Publishing
 
     def call
       profile = SiteProfile.for(@site)
-      candidates = @scope.includes(:feed).order(published_at: :desc, created_at: :desc).distinct
+      candidates = eligible_candidates.order(published_at: :desc, created_at: :desc).distinct
+      capacity = automatic_capacity(profile)
       published = 0
       skipped = 0
 
-      candidates.limit(profile.automatic_order.length * 4).each do |article|
-        break if published >= profile.automatic_order.length
-        if !article.publication_ready? || article.site_articles.exists?(site: @site, status: "published")
+      candidates.limit([capacity * 4, 20].max).each do |article|
+        break if published >= capacity
+
+        distribution = article.site_articles.find { |item| item.site_id == @site.id }
+        if !article.publication_ready? || positioned?(distribution)
           skipped += 1
           next
         end
 
-        PublishArticle.call(article:, site: @site, category: @category, assignment_mode: "automatic")
-        published += 1
+        published += 1 if PublishArticle.call(
+          article:,
+          site: @site,
+          category: @category,
+          assignment_mode: "automatic"
+        ).slot_key.present?
       rescue ActiveRecord::RecordInvalid => error
         Rails.logger.warn("Matéria #{article.id} ignorada ao popular #{@site.name}: #{error.message}")
         skipped += 1
       end
 
       Result.new(published:, skipped:)
+    end
+
+    private
+
+    def eligible_candidates
+      relation = @scope.includes(:feed, :site_articles)
+      return relation unless @site.layout_profile == "cinemagazine"
+
+      relation.where.not(image_url: [nil, ""]).where(
+        "articles.source_url LIKE :www_path OR articles.source_url LIKE :root_path",
+        www_path: "https://www.correiodamanha.com.br/cultura/cinema/%",
+        root_path: "https://correiodamanha.com.br/cultura/cinema/%"
+      )
+    end
+
+    def automatic_capacity(profile)
+      manual_slots = @site.site_articles.where(
+        status: "published",
+        assignment_mode: "manual",
+        slot_key: profile.automatic_order
+      ).distinct.count(:slot_key)
+
+      profile.automatic_order.length - manual_slots
+    end
+
+    def positioned?(distribution)
+      distribution&.status == "published" && (
+        distribution.slot_key.present? || distribution.assignment_mode == "manual"
+      )
     end
   end
 end
