@@ -1,84 +1,95 @@
 <% summary = @report.summary %>
+<% previous = @report.summary(previous: true) %>
 <% daily = @report.daily_views %>
-<% daily_max = [daily.map { |row| row[:views] }.max.to_i, 1].max %>
-
-<div class="page-heading analytics-heading">
-  <div>
-    <p class="eyebrow">Inteligência de audiência</p>
-    <h1>Métricas</h1>
-    <p class="muted">Acompanhe alcance, leitura e navegação dos sites conectados ao Hub.</p>
-  </div>
-  <div class="export-actions actions">
-    <%= link_to "CSV", export_analytics_path(format: :csv, site_id: @site.id, days: @days), class: "button secondary" %>
-    <%= link_to "JSON", export_analytics_path(format: :json, site_id: @site.id, days: @days), class: "button secondary" %>
-    <%= link_to "Exportar PDF", export_analytics_path(format: :pdf, site_id: @site.id, days: @days), class: "button" %>
-  </div>
-</div>
-
-<%= form_with url: analytics_path, method: :get, class: "analytics-filters", data: { turbo_frame: "_top" } do |form| %>
-  <div><%= form.label :site_id, "Publicação" %><%= form.select :site_id, @sites.map { |site| [site.name, site.id] }, selected: @site.id %></div>
-  <div><%= form.label :days, "Período" %><%= form.select :days, [["Últimos 7 dias", 7], ["Últimos 30 dias", 30], ["Últimos 90 dias", 90]], selected: @days %></div>
-  <%= form.submit "Atualizar painel" %>
-<% end %>
-
-<div class="analytics-summary">
-  <article><span>Visualizações</span><strong><%= number_with_delimiter(summary[:views]) %></strong><small>Páginas abertas</small></article>
-  <article><span>Visitantes</span><strong><%= number_with_delimiter(summary[:visitors]) %></strong><small>Únicos no período</small></article>
-  <article><span>Cliques</span><strong><%= number_with_delimiter(summary[:clicks]) %></strong><small>Links e botões</small></article>
-  <article><span>CTR</span><strong><%= summary[:ctr] %>%</strong><small>Cliques por visualização</small></article>
-  <article><span>Tempo de leitura</span><strong><%= summary[:average_engagement] %>s</strong><small>Média por sessão</small></article>
-</div>
-
-<section class="analytics-grid">
-  <article class="card analytics-trend">
-    <div class="section-title"><div><p class="eyebrow">Audiência</p><h2>Visualizações por dia</h2></div><span class="badge"><%= @days %> dias</span></div>
+<% peak = [daily.map { |day| day[:views] }.max.to_i, 1].max %>
+<style>
+.cm-audience{--accent:#b90020;--line:#e4e7eb;color:#20242c}.cm-audience h1{font-size:clamp(1.8rem,3vw,2.7rem);margin:0}.cm-audience h2{font-size:1.25rem;margin:0}.cm-audience p{line-height:1.5}.cm-audience .aud-head{display:flex;justify-content:space-between;gap:20px;align-items:center;margin-bottom:24px}.cm-audience .aud-actions{display:flex;gap:8px;flex-wrap:wrap}.cm-audience .aud-tabs{display:flex;gap:8px;overflow-x:auto;border-bottom:1px solid var(--line);margin-bottom:20px}.cm-audience .aud-tabs a{padding:12px 18px;color:#535963;white-space:nowrap;text-decoration:none;border-bottom:3px solid transparent}.cm-audience .aud-tabs a[aria-current="page"]{border-color:var(--accent);color:var(--accent);font-weight:700}.cm-audience .aud-filters{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;padding:20px;background:white;border:1px solid var(--line);border-radius:12px}.cm-audience label{display:block;font-size:.85rem;font-weight:600;margin-bottom:5px}.cm-audience input,.cm-audience select{width:100%;min-width:0;box-sizing:border-box}.cm-audience .aud-cards{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px;margin:22px 0}.cm-audience .aud-card{min-width:0;background:white;border:1px solid var(--line);border-radius:12px;padding:20px}.cm-audience .aud-card span,.cm-audience .aud-card small{display:block;color:#626872}.cm-audience .aud-card strong{display:block;font-size:2rem;margin:10px 0}.cm-audience .aud-chart{display:flex;align-items:flex-end;gap:4px;height:140px;overflow-x:auto;margin-top:20px}.cm-audience .aud-bar{flex:1;min-width:8px;height:100%;display:flex;align-items:flex-end}.cm-audience .aud-bar i{display:block;background:var(--accent);width:100%;border-radius:3px 3px 0 0}.cm-audience .aud-chart-labels{display:flex;justify-content:space-between;color:#626872;font-size:.8rem;margin-top:8px}.cm-audience .aud-table-wrap{overflow-x:auto;margin-top:16px}.cm-audience table{min-width:800px;width:100%;border-collapse:collapse}.cm-audience th,.cm-audience td{text-align:left;padding:14px 12px;border-bottom:1px solid var(--line);font-size:.9rem}.cm-audience th{background:#f7f8fa;white-space:nowrap}.cm-audience td:first-child{min-width:250px;max-width:420px}.cm-audience td small{display:block;color:#626872;margin-top:5px;overflow-wrap:anywhere}.cm-audience td a{color:#20242c;font-weight:650}.cm-audience .aud-section{margin-top:22px}.cm-audience .aud-pager{display:flex;justify-content:space-between;align-items:center;margin-top:18px;gap:12px}.cm-audience .aud-note{font-size:.85rem;color:#626872}.cm-audience .aud-empty{padding:32px;text-align:center}.cm-audience details{margin-top:20px}.cm-audience summary{cursor:pointer;font-weight:600}.cm-audience code{white-space:pre-wrap;overflow-wrap:anywhere}.cm-audience :focus-visible{outline:3px solid #2563eb;outline-offset:3px}
+@media(max-width:900px){.cm-audience .aud-filters,.cm-audience .aud-cards{grid-template-columns:repeat(2,minmax(0,1fr))}.cm-audience .aud-head{align-items:flex-start;flex-direction:column}}
+@media(max-width:520px){.cm-audience .aud-filters{grid-template-columns:1fr}.cm-audience .aud-card{padding:14px}.cm-audience .aud-card strong{font-size:1.5rem}}
+.cm-audience table{display:table}.cm-audience thead{display:table-header-group}.cm-audience tbody{display:table-row-group}.cm-audience tr{display:table-row;box-shadow:none;border-top:0}.cm-audience th,.cm-audience td{display:table-cell}.cm-audience td::before{content:none}
+</style>
+<div class="cm-audience">
+  <header class="aud-head">
+    <div><p class="eyebrow">Inteligência editorial</p><h1>Audiência do conteúdo</h1><p class="muted">Entenda quais matérias, assinaturas e editorias aproximam os leitores.</p></div>
+    <div class="aud-actions" aria-label="Exportar análise filtrada">
+      <% %w[csv json pdf].each do |format| %>
+        <%= link_to format.upcase, export_analytics_path(@filter_params.merge(format: format)), class: "button secondary", data: { turbo: false } %>
+      <% end %>
+    </div>
+  </header>
+  <nav class="aud-tabs" aria-label="Análises editoriais">
+    <% Analytics::EditorialReport::LABELS.each do |key, label| %>
+      <%= link_to label, analytics_path(@filter_params.merge(dimension: key, article: nil)), aria: { current: (@report.dimension == key ? "page" : nil) } %>
+    <% end %>
+  </nav>
+  <%= form_with url: analytics_path, method: :get, class: "aud-filters", data: { turbo: false } do |form| %>
+    <%= form.hidden_field :dimension, value: @report.dimension %>
+    <% if @report.filters[:article] %><%= form.hidden_field :article, value: @report.filters[:article] %><% end %>
+    <div><%= form.label :site_id, "Publicação" %><%= form.select :site_id, @sites.map { |site| [site.name, site.id] }, selected: @site.id %></div>
+    <div><%= form.label :from, "De (UTC)" %><%= form.date_field :from, value: @filter_params[:from], required: true, max: (Time.now.utc.to_date - 1).iso8601 %></div>
+    <div><%= form.label :to, "Até (UTC)" %><%= form.date_field :to, value: @filter_params[:to], required: true, max: (Time.now.utc.to_date - 1).iso8601 %></div>
+    <div><%= form.label :sort, "Ordenar por" %><%= form.select :sort, [["Visualizações", "views"], ["Matérias com acessos", "articles"], ["Cliques", "clicks"], ["Tempo registrado", "engagement_seconds"]], selected: @report.sort %></div>
+    <div><%= form.label :q, "Buscar matéria ou assinatura" %><%= form.search_field :q, value: @report.filters[:q], placeholder: "Título, ID, jornalista ou editoria" %></div>
+    <div><%= form.label :author, "Assinatura exata" %><%= form.text_field :author, value: @report.filters[:author], placeholder: "Todas as assinaturas" %></div>
+    <div><%= form.label :category, "Editoria exata" %><%= form.text_field :category, value: @report.filters[:category], placeholder: "Todas as editorias" %></div>
+    <div class="aud-actions"><%= form.submit "Aplicar filtros" %><%= link_to "Limpar", analytics_path(site_id: @site.id, dimension: @report.dimension), class: "button secondary" %></div>
+  <% end %>
+  <p class="aud-note">Dias completos em UTC · Comparação: <%= @report.previous_from.strftime("%d/%m/%Y") %> a <%= (@from - 1.second).strftime("%d/%m/%Y") %>. Os totais consideram somente matérias identificadas pela tag.</p>
+  <% if @report.filters[:article] %>
+    <p><strong>Detalhe da matéria <%= @report.filters[:article] %></strong> · <%= link_to "Voltar à lista", analytics_path(@filter_params.except(:article)) %></p>
+  <% end %>
+  <section class="aud-cards" aria-label="Resumo do período">
+    <% { views: "Visualizações", articles: "Matérias com acessos", clicks: "Cliques em links e botões", visitors: "Identificadores de visitantes/dia" }.each do |key, label| %>
+      <article class="aud-card"><span><%= label %></span><strong><%= number_with_delimiter(summary[key]) %></strong>
+        <% delta = @report.comparison[key] %>
+        <small><%= delta.nil? ? "Sem base anterior" : "#{delta.positive? ? '+' : ''}#{delta}% vs. período anterior" %></small>
+        <small>Anterior: <%= number_with_delimiter(previous[key]) %></small>
+      </article>
+    <% end %>
+  </section>
+  <section class="aud-card">
+    <h2>Visualizações por dia</h2>
     <% if summary[:views].positive? %>
-      <div class="bar-chart" aria-label="Gráfico de visualizações por dia">
-        <% daily.each do |row| %>
-          <div class="bar-column" title="<%= l(row[:date], format: :short) %>: <%= row[:views] %>">
-            <span><%= row[:views] if row[:views].positive? %></span>
-            <i style="height:<%= [(row[:views].to_f / daily_max * 100).round, 2].max %>%"></i>
-            <small><%= row[:date].strftime("%d/%m") %></small>
-          </div>
-        <% end %>
+      <div class="aud-chart" role="img" aria-label="Visualizações diárias. Valores disponíveis na tabela abaixo.">
+        <% daily.each do |day| %><div class="aud-bar" title="<%= day[:date] %>: <%= day[:views] %>"><i style="height:<%= day[:views] * 100.0 / peak %>%"></i></div><% end %>
       </div>
-    <% else %>
-      <div class="analytics-empty"><strong>Aguardando os primeiros acessos</strong><span>Instale o código de medição abaixo no site para começar.</span></div>
-    <% end %>
-  </article>
-
-  <article class="card analytics-devices">
-    <p class="eyebrow">Tecnologia</p><h2>Dispositivos</h2>
-    <% @report.devices.each do |row| %>
-      <div class="device-row"><span><%= { "desktop" => "Desktop", "mobile" => "Celular", "tablet" => "Tablet" }.fetch(row[:device], "Outro") %></span><b><%= row[:share] %>%</b><i><em style="width:<%= row[:share] %>%"></em></i></div>
-    <% end %>
-    <% if @report.devices.empty? %><p class="muted">Nenhum dispositivo registrado.</p><% end %>
-  </article>
-</section>
-
-<section class="analytics-tables">
-  <article>
-    <div class="section-title"><div><p class="eyebrow">Conteúdo</p><h2>Páginas mais vistas</h2></div></div>
-    <div class="table-scroll"><table><thead><tr><th>Página</th><th>Views</th><th>Visitantes</th></tr></thead><tbody>
-      <% @report.top_pages.each do |page| %><tr><td data-label="Página"><strong><%= page[:title] %></strong><small><%= page[:path] %></small></td><td data-label="Views"><%= number_with_delimiter(page[:views]) %></td><td data-label="Visitantes"><%= number_with_delimiter(page[:visitors]) %></td></tr><% end %>
-      <% if @report.top_pages.empty? %><tr><td colspan="3">Ainda não há visualizações.</td></tr><% end %>
+      <div class="aud-chart-labels"><span><%= @filter_params[:from] %></span><span><%= @filter_params[:to] %></span></div>
+      <details><summary>Ver dados do gráfico</summary><div class="aud-table-wrap"><table><thead><tr><th>Data UTC</th><th>Visualizações</th></tr></thead><tbody><% daily.each do |day| %><tr><td><%= day[:date] %></td><td><%= day[:views] %></td></tr><% end %></tbody></table></div></details>
+    <% else %><p class="aud-empty">Nenhum acesso encontrado para estes filtros. Confira o período e os metadados enviados pela tag.</p><% end %>
+  </section>
+  <section class="aud-card aud-section">
+    <h2><%= @report.label %> · <%= number_with_delimiter(@total) %> resultados</h2>
+    <p class="aud-note">Clique em uma linha para analisar seu conteúdo. As exportações incluem todas as linhas filtradas.</p>
+    <div class="aud-table-wrap"><table>
+      <thead><tr><th scope="col"><%= @report.dimension == "articles" ? "Matéria" : "Nome" %></th><th scope="col">Visualizações</th><th scope="col">Anterior</th><th scope="col">Variação</th><th scope="col">Matérias acessadas</th><th scope="col">Mediana por matéria</th><th scope="col">Cliques</th><th scope="col">Tempo registrado</th></tr></thead>
+      <tbody>
+        <% @rows.each do |row| %>
+          <% drill = { "articles" => :article, "authors" => :author, "categories" => :category }.fetch(@report.dimension) %>
+          <tr><td><%= link_to row[:name], analytics_path(@filter_params.merge(dimension: "articles", drill => row[:key])) %>
+            <% if @report.dimension == "articles" %><small><%= row[:author] %> · <%= row[:category] %> · ID <%= row[:key] %></small><% end %>
+          </td><td><%= number_with_delimiter(row[:views]) %></td><td><%= number_with_delimiter(row[:previous_views]) %></td><td><%= row[:views_change].nil? ? "Sem base" : "#{row[:views_change]}%" %></td><td><%= row[:articles] %></td><td><%= row[:median_views] %></td><td><%= row[:clicks] %></td><td><%= number_with_delimiter(row[:engagement_seconds]) %>s</td></tr>
+        <% end %>
+        <% if @rows.empty? %><tr><td colspan="8">Nenhum resultado. Matérias sem visitas ou sem ID não aparecem nesta análise.</td></tr><% end %>
+      </tbody>
+    </table></div>
+    <nav class="aud-pager" aria-label="Paginação">
+      <span>Página <%= @page %> de <%= [(@total / 50.0).ceil, 1].max %></span>
+      <div class="aud-actions">
+        <% if @page > 1 %><%= link_to "Anterior", analytics_path(@filter_params.merge(page: @page - 1)), class: "button secondary" %><% end %>
+        <% if @page * 50 < @total %><%= link_to "Próxima", analytics_path(@filter_params.merge(page: @page + 1)), class: "button secondary" %><% end %>
+      </div>
+    </nav>
+  </section>
+  <details class="aud-card"><summary>Dispositivos e links mais clicados</summary>
+    <p class="aud-note">Aplicam-se os mesmos filtros e período desta análise.</p>
+    <div class="aud-table-wrap"><table><thead><tr><th>Dispositivo</th><th>Visualizações</th></tr></thead><tbody>
+      <% @report.devices.each do |device, count| %><tr><td><%= { "mobile" => "Celular", "desktop" => "Desktop", "tablet" => "Tablet" }.fetch(device, "Outro") %></td><td><%= count %></td></tr><% end %>
     </tbody></table></div>
-  </article>
-  <article>
-    <div class="section-title"><div><p class="eyebrow">Interação</p><h2>Links mais clicados</h2></div></div>
-    <div class="table-scroll"><table><thead><tr><th>Destino</th><th>Cliques</th></tr></thead><tbody>
-      <% @report.top_clicks.each do |click| %><tr><td data-label="Destino"><strong><%= click[:text] %></strong><small><%= click[:url] %></small></td><td data-label="Cliques"><%= number_with_delimiter(click[:clicks]) %></td></tr><% end %>
-      <% if @report.top_clicks.empty? %><tr><td colspan="2">Ainda não há cliques registrados.</td></tr><% end %>
+    <div class="aud-table-wrap"><table><thead><tr><th>Destino</th><th>Cliques</th></tr></thead><tbody>
+      <% @report.top_clicks.each do |url, count| %><tr><td><%= url %></td><td><%= count %></td></tr><% end %>
+      <% if @report.top_clicks.empty? %><tr><td colspan="2">Sem cliques registrados.</td></tr><% end %>
     </tbody></table></div>
-  </article>
-</section>
-
-<section class="card tracker-installation">
-  <div><p class="eyebrow">Instalação</p><h2>Código de medição</h2><p class="muted">Adicione antes de <code>&lt;/body&gt;</code>. O script não armazena IP e respeita a origem configurada em Sites.</p></div>
-  <code>&lt;script defer src="https://hub.cm.com.br/cm-analytics.js" data-site="<%= @site.publication_key %>"&gt;&lt;/script&gt;</code>
-  <div class="tracker-article-tag">
-    <strong>Em páginas de matéria</strong>
-    <p class="muted">Informe o identificador editorial para consolidar a audiência mesmo que a URL seja alterada.</p>
-    <code>&lt;script defer src="https://hub.cm.com.br/cm-analytics.js" data-site="<%= @site.publication_key %>" data-article-id="ID_DA_MATERIA" data-category="EDITORIA" data-author="AUTOR"&gt;&lt;/script&gt;</code>
-  </div>
-</section>
+  </details>
+  <details class="aud-card"><summary>Como interpretar os números</summary><ul><% @report.notes.each do |note| %><li><%= note %></li><% end %></ul><p>CTR de chamadas e leitura ativa serão adicionados com a medição de impressões e atividade. Cliques gerais não são CTR.</p></details>
+  <details class="aud-card"><summary>Instalar a tag de medição</summary><p>Inclua uma única tag por página de matéria, substituindo os metadados pelos valores do CMS.</p><code>&lt;script defer src="https://hub.cm.com.br/cm-analytics.js" data-site="<%= @site.publication_key %>" data-article-id="ID_DA_MATERIA" data-category="EDITORIA" data-author="AUTOR"&gt;&lt;/script&gt;</code></details>
+</div>
