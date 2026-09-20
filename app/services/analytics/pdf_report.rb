@@ -8,7 +8,7 @@ module Analytics
 
     def call
       pages = lines.each_slice(PAGE_SIZE).to_a
-      objects = [nil, "<< /Type /Catalog /Pages 2 0 R >>", nil, "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>"]
+      objects = [nil, "<< /Type /Catalog /Pages 2 0 R >>", nil, "<< /Type /Font /Subtype /Type1 /BaseFont /Courier >>"]
       page_ids = []
 
       pages.each_with_index do |page_lines, index|
@@ -27,34 +27,35 @@ module Analytics
 
     def lines
       summary = @report.summary
-      result = [
-        "CM HUB - RELATORIO DE AUDIENCIA",
-        @report.site.name.to_s.upcase,
-        "Periodo: #{@report.from.to_date.strftime('%d/%m/%Y')} a #{@report.to.to_date.strftime('%d/%m/%Y')}", "",
-        "RESUMO",
-        "Visualizacoes: #{summary[:views]}",
-        "Visitantes unicos: #{summary[:visitors]}",
-        "Cliques: #{summary[:clicks]}",
-        "CTR: #{summary[:ctr]}%",
-        "Tempo medio de leitura: #{summary[:average_engagement]} segundos", "",
-        "PAGINAS MAIS VISTAS"
-      ]
-      @report.top_pages(limit: 20).each_with_index do |page, index|
-        result << "#{index + 1}. #{truncate(page[:title], 72)} - #{page[:views]} views"
+      previous = @report.summary(previous: true)
+      result = ["CM HUB - INTELIGENCIA EDITORIAL", @report.site.name.to_s,
+        "Analise: #{@report.label}",
+        "Periodo UTC: #{@report.from.to_date} a #{(@report.to - 1).to_date}",
+        "Anterior UTC: #{@report.previous_from.to_date} a #{(@report.from - 1).to_date}",
+        "Filtros: #{@report.filters.to_json}", "",
+        "Visualizacoes: #{summary[:views]} | Anterior: #{previous[:views]}",
+        "Materias com acessos: #{summary[:articles]} | Cliques: #{summary[:clicks]}",
+        "Identificadores de visitantes/dia: #{summary[:visitors]}",
+        "Tempo registrado: #{summary[:engagement_seconds]} segundos", ""]
+      @report.rows(limit: nil).each_with_index do |row, index|
+        result << "#{index + 1}. #{row[:name]}"
+        if @report.dimension == "articles"
+          result << "ID: #{row[:key]} | #{row[:author]} | #{row[:category]}"
+        end
+        result << "Views: #{row[:views]} | Anterior: #{row[:previous_views]} | Variacao: #{row[:views_change].nil? ? 'Sem base' : "#{row[:views_change]}%"}"
+        result << "Materias: #{row[:articles]} | Mediana: #{row[:median_views]} | Cliques: #{row[:clicks]}"
+        result << "Tempo registrado: #{row[:engagement_seconds]}s | Identificadores/dia: #{row[:visitors]}"
+        result << ""
       end
-      result << "" << "CLIQUES MAIS FREQUENTES"
-      @report.top_clicks(limit: 12).each_with_index do |click, index|
-        result << "#{index + 1}. #{truncate(click[:text], 68)} - #{click[:clicks]} cliques"
-      end
-      result << "" << "Gerado pelo Correio da Manha Content Hub em #{Time.current.strftime('%d/%m/%Y %H:%M')}"
-      result
+      result << "NOTAS DE MEDICAO"
+      result.concat(@report.notes)
+      # Fixed-width wrapping protects the printable area even for long titles/URLs.
+      result.flat_map { |line| I18n.transliterate(line.to_s).scan(/.{1,75}(?:\s+|\z)|.{1,75}/).map(&:strip).presence || [""] }
     end
 
     def content_stream(page_lines)
-      commands = ["BT", "/F1 11 Tf", "50 795 Td"]
+      commands = ["BT", "/F1 10 Tf", "50 795 Td"]
       page_lines.each_with_index do |line, index|
-        commands << "/F1 #{index < 2 ? 16 : 11} Tf" if index < 2
-        commands << "/F1 11 Tf" if index == 2
         commands << "(#{escape(line)}) Tj"
         commands << "0 -17 Td"
       end
@@ -78,7 +79,7 @@ module Analytics
 
     def escape(value)
       I18n.transliterate(value.to_s).encode("ASCII", invalid: :replace, undef: :replace, replace: "?")
-        .gsub("\\", "\\\\").gsub("(", "\\(").gsub(")", "\\)")
+        .gsub(/[\\()]/) { |character| "\\#{character}" }
     end
 
     def truncate(value, length)
