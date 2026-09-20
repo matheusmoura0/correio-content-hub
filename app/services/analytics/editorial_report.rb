@@ -42,7 +42,7 @@ module Analytics
 
     def rows(limit: 50, offset: 0)
       query = scope.group(Arel.sql(group_expression)).having("SUM(CASE WHEN event_type = 'page_view' THEN 1 ELSE 0 END) > 0")
-        .order(Arel.sql("#{sort} DESC, #{group_expression} ASC"))
+        .order(Arel.sql("#{sort_expression} DESC, #{group_expression} ASC"))
       query = query.limit(limit).offset(offset) if limit
       result = aggregate(query, grouped: true)
       return result if result.empty?
@@ -93,6 +93,15 @@ module Analytics
     end
 
     private
+
+    def sort_expression
+      {
+        "views" => "SUM(CASE WHEN event_type = 'page_view' THEN 1 ELSE 0 END)",
+        "articles" => "COUNT(DISTINCT CASE WHEN event_type = 'page_view' THEN content_key END)",
+        "clicks" => "SUM(CASE WHEN event_type = 'click' THEN 1 ELSE 0 END)",
+        "engagement_seconds" => "SUM(CASE WHEN event_type = 'engagement' THEN value ELSE 0 END)"
+      }.fetch(sort)
+    end
 
     def group_expression
       "COALESCE(NULLIF(#{DIMENSIONS.fetch(dimension)}, ''), '#{MISSING}')"
