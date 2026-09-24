@@ -3,6 +3,16 @@ module Publishing
     Profile = Data.define(:key, :label, :groups, :automatic_order)
 
     PROFILES = {
+      "icaro" => Profile.new(
+        key: "icaro", label: "Revista Ícaro",
+        groups: {
+          "Capa" => [["Manchete principal", "hero"]],
+          "Chamadas" => (1..3).map { |n| ["Chamada #{n}", "icaro_brief_#{n}"] },
+          "Inspiração para partir" => (1..6).map { |n| ["Matéria #{n}", "icaro_card_#{n}"] },
+          "Aviação" => (1..2).map { |n| ["Aviação #{n}", "icaro_aviation_#{n}"] }
+        },
+        automatic_order: %w[hero icaro_brief_1 icaro_brief_2 icaro_brief_3 icaro_card_1 icaro_card_2 icaro_card_3 icaro_card_4 icaro_card_5 icaro_card_6]
+      ),
       "gastronomy" => Profile.new(
         key: "gastronomy",
         label: "Revista de Gastronomia",
