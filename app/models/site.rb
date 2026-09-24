@@ -11,6 +11,7 @@ class Site < ApplicationRecord
   }.freeze
   LAYOUT_PROFILES = {
     "standard" => "Portal padrão",
+    "icaro" => "Revista Ícaro",
     "gastronomy" => "Revista de Gastronomia",
     "cinemagazine" => "CINEMAGAZINE",
     "cinema_journal" => "Jornal do Cinema"
