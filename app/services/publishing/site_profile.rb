@@ -2,6 +2,20 @@ module Publishing
   class SiteProfile
     Profile = Data.define(:key, :label, :groups, :automatic_order)
 
+    ICARO_SECTIONS = {
+      "destinos" => "Destinos", "roteiros" => "Roteiros", "hospedagem" => "Hospedagem",
+      "sabores" => "Sabores", "aviacao" => "Aviação", "guia-do-viajante" => "Guia do viajante"
+    }.freeze
+
+    def self.icaro_section_slots(slug)
+      return [] unless ICARO_SECTIONS.key?(slug)
+      (1..12).map { |n| "section_icaro_#{slug}_#{n}" }
+    end
+
+    def self.slot_keys(site)
+      self.for(site).groups.values.flatten(1).map(&:last)
+    end
+
     PROFILES = {
       "icaro" => Profile.new(
         key: "icaro", label: "Revista Ícaro",
@@ -9,8 +23,8 @@ module Publishing
           "Capa" => [["Manchete principal", "hero"]],
           "Chamadas" => (1..3).map { |n| ["Chamada #{n}", "icaro_brief_#{n}"] },
           "Inspiração para partir" => (1..6).map { |n| ["Matéria #{n}", "icaro_card_#{n}"] },
-          "Aviação" => (1..2).map { |n| ["Aviação #{n}", "icaro_aviation_#{n}"] }
-        },
+          "Aviação na capa" => (1..2).map { |n| ["Aviação #{n}", "icaro_aviation_#{n}"] }
+        }.merge(ICARO_SECTIONS.to_h { |slug, label| ["Página: #{label}", icaro_section_slots(slug).each_with_index.map { |key, i| ["#{label} #{i + 1}", key] }] }),
         automatic_order: %w[hero icaro_brief_1 icaro_brief_2 icaro_brief_3 icaro_card_1 icaro_card_2 icaro_card_3 icaro_card_4 icaro_card_5 icaro_card_6]
       ),
       "gastronomy" => Profile.new(

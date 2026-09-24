@@ -12,7 +12,11 @@ class PublicationsController < ApplicationController
   def populate
     scope = params[:topic_id].present? ? Topic.find(params[:topic_id]).articles : Article.all
     category = @site.categories.find_by(id: params[:category_id].presence)
-    result = Publishing::PopulateSite.call(site: @site, scope:, category:)
+    target = params[:target] == "section" ? "section" : "home"
+    if target == "section" && (@site.layout_profile != "icaro" || category.nil? || params[:topic_id].blank?)
+      return redirect_to publication_path(@site.publication_key), alert: "Para preencher uma editoria, escolha a página e uma pesquisa temática."
+    end
+    result = Publishing::PopulateSite.call(site: @site, scope:, category:, target:)
     redirect_to publication_path(@site.publication_key),
       notice: "Site populado: #{result.published} de #{result.capacity} posição(ões) automática(s) preenchida(s); #{result.eligible} matéria(s) elegível(is); #{result.skipped} ignorada(s)."
   end
@@ -21,8 +25,14 @@ class PublicationsController < ApplicationController
     article = Article.find(params[:article_id])
     category = @site.categories.find_by(id: params[:category_id].presence)
     slot_key = params[:slot_key].to_s
-    unless Publishing::SiteProfile.for(@site).automatic_order.include?(slot_key)
+    unless Publishing::SiteProfile.slot_keys(@site).include?(slot_key)
       return redirect_to publication_path(@site.publication_key), alert: "Escolha uma posição válida no mock."
+    end
+
+    if @site.layout_profile == "icaro"
+      slug = Publishing::SiteProfile::ICARO_SECTIONS.keys.find { |key| Publishing::SiteProfile.icaro_section_slots(key).include?(slot_key) }
+      slug ||= "aviacao" if slot_key.start_with?("icaro_aviation_")
+      category = @site.categories.find_by!(slug:) if slug
     end
 
     Publishing::PublishArticle.call(article:, site: @site, category:, slot_key:, assignment_mode: "manual")

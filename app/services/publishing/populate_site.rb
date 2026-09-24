@@ -2,18 +2,25 @@ module Publishing
   class PopulateSite
     Result = Data.define(:published, :skipped, :eligible, :capacity)
 
-    def self.call(site:, scope:, category: nil)
-      new(site:, scope:, category:).call
+    def self.call(site:, scope:, category: nil, target: "home")
+      new(site:, scope:, category:, target:).call
     end
 
-    def initialize(site:, scope:, category:)
+    def initialize(site:, scope:, category:, target:)
       @site = site
       @scope = scope
       @category = category
+      @target = target
     end
 
     def call
       profile = SiteProfile.for(@site)
+      if @target == "section"
+        raise ArgumentError, "Escolha uma editoria válida da Ícaro" unless @site.layout_profile == "icaro" && @category&.site_id == @site.id
+        slots = SiteProfile.icaro_section_slots(@category.slug)
+        raise ArgumentError, "Editoria sem página configurada" if slots.empty?
+        profile = SiteProfile::Profile.new(key: profile.key, label: profile.label, groups: profile.groups, automatic_order: slots)
+      end
       candidates = eligible_candidates.order(published_at: :desc, created_at: :desc).distinct
       capacity = automatic_capacity(profile)
       eligible = candidates.count
@@ -31,10 +38,18 @@ module Publishing
           next
         end
 
+        slot_key = nil
+        if @target == "section"
+          occupied = @site.site_articles.where(status: "published", slot_key: profile.automatic_order).pluck(:slot_key)
+          slot_key = (profile.automatic_order - occupied).first
+          break unless slot_key
+        end
+
         published += 1 if PublishArticle.call(
           article:,
           site: @site,
           category: @category,
+          slot_key:,
           assignment_mode: "automatic"
         ).slot_key.present?
       rescue ActiveRecord::RecordInvalid => error

@@ -15,7 +15,7 @@ module Publishing
     def call
       raise ActiveRecord::RecordInvalid, @article unless @article.publication_ready?
       profile = SiteProfile.for(@site)
-      @slot_key = nil unless profile.automatic_order.include?(@slot_key)
+      @slot_key = nil unless SiteProfile.slot_keys(@site).include?(@slot_key)
 
       Article.transaction do
         distribution = @article.site_articles.find_or_initialize_by(site: @site)
@@ -27,7 +27,7 @@ module Publishing
             slot_key: @slot_key,
             assignment_mode: @assignment_mode,
             placement: SiteArticle.placement_for(@slot_key),
-            position: profile.automatic_order.index(@slot_key).to_i + 1
+            position: SiteProfile.slot_keys(@site).index(@slot_key).to_i + 1
           )
         else
           SiteArticle.claim_automatic_slot!(distribution)

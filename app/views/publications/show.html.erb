@@ -12,13 +12,16 @@
 <section class="publication-mode-panel" data-publication-panel="automatic" hidden>
   <div class="mode-introduction"><div><p class="eyebrow">Preenchimento assistido</p><h2>Popular espaços livres</h2><p class="muted">Escolha uma origem e uma editoria. O Hub preserva as posições já preenchidas manualmente.</p></div><span class="mode-icon" aria-hidden="true">↗</span></div>
   <div class="publication-command-bar">
-  <%= form_with url: populate_publication_path(@site.publication_key), method: :post, class: "populate-form", data: { turbo_confirm: "Preencher automaticamente todos os espaços livres deste site?" } do |form| %>
+  <%= form_with url: populate_publication_path(@site.publication_key), method: :post, class: "populate-form", data: { turbo_confirm: "Atualizar as posições automáticas da página selecionada, preservando as posições manuais?" } do |form| %>
+    <% if @site.layout_profile == "icaro" %>
+      <div><%= form.label :target, "Página a preencher" %><%= form.select :target, [["Capa", "home"], ["Página da editoria selecionada", "section"]] %></div>
+    <% end %>
     <div><%= form.label :topic_id, "Usar matérias da pesquisa" %><%= form.select :topic_id, [["Todas as matérias coletadas", ""]] + @topics.map { |topic| [topic.name, topic.id] } %></div>
-    <div><%= form.label :category_id, "Editoria padrão" %><%= form.select :category_id, [["Definir depois", ""]] + @site.categories.order(:name).map { |category| [category.name, category.id] } %></div>
+    <div><%= form.label :category_id, (@site.layout_profile == "icaro" ? "Editoria da página / categoria na capa" : "Editoria padrão") %><%= form.select :category_id, [["Definir depois", ""]] + @site.categories.order(:name).map { |category| [category.name, category.id] } %></div>
     <%= form.submit "Popular site automaticamente", class: "accent", data: { loading_label: "Distribuindo matérias…" } %>
   <% end %>
   </div>
-  <div class="workflow-note"><strong>Como funciona</strong><p><% if @site.layout_profile == "cinemagazine" %>O sistema usa as matérias com imagem da editoria Cinema do Correio, reposiciona as que ficaram fora do layout e preserva os espaços montados manualmente.<% else %>O sistema seleciona matérias disponíveis, respeita os slots ocupados e distribui o restante conforme o perfil editorial deste site.<% end %></p></div>
+  <div class="workflow-note"><strong>Como funciona</strong><p><% if @site.layout_profile == "icaro" %>Para cada editoria, selecione “Página da editoria selecionada”, uma pesquisa com matérias desse tema e a editoria correspondente. Cada página tem 12 posições próprias. A atualização preserva a capa e as demais editorias; matérias já posicionadas em outra página não são movidas. Na capa, a editoria selecionada apenas classifica as matérias.<% elsif @site.layout_profile == "cinemagazine" %>O sistema usa as matérias com imagem da editoria Cinema do Correio, reposiciona as que ficaram fora do layout e preserva os espaços montados manualmente.<% else %>O sistema seleciona matérias disponíveis, respeita os slots ocupados e distribui o restante conforme o perfil editorial deste site.<% end %></p></div>
 </section>
 
 <section class="publication-mode-panel active" data-publication-panel="manual">
