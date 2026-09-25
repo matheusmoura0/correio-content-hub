@@ -11,6 +11,7 @@ class Site < ApplicationRecord
   }.freeze
   LAYOUT_PROFILES = {
     "standard" => "Portal padrão",
+    "barra" => "Jornal da Barra",
     "icaro" => "Revista Ícaro",
     "gastronomy" => "Revista de Gastronomia",
     "cinemagazine" => "CINEMAGAZINE",
@@ -24,6 +25,7 @@ class Site < ApplicationRecord
   has_many :feeds, dependent: :nullify
   has_many :site_articles, dependent: :destroy
   has_many :analytics_events, dependent: :destroy
+  has_many :sites, through: :site_articles
   has_many :articles, through: :site_articles
 
   validates :name, :domain, :publication_key, presence: true
