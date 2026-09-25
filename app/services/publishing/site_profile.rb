@@ -17,6 +17,17 @@ module Publishing
     end
 
     PROFILES = {
+      "barra" => Profile.new(
+        key: "barra",
+        label: "Jornal da Barra",
+        groups: {
+          "Capa" => [["Manchete principal", "hero"], ["Escolha do editor", "barra_editor_pick"]],
+          "Chamadas" => (1..3).map { |n| ["Chamada #{n}", "barra_brief_#{n}"] },
+          "Últimas notícias" => (1..6).map { |n| ["Notícia #{n}", "barra_news_#{n}"] },
+          "Editorias" => (1..5).map { |n| ["Destaque de editoria #{n}", "barra_section_#{n}"] }
+        },
+        automatic_order: %w[hero barra_editor_pick barra_brief_1 barra_brief_2 barra_brief_3 barra_news_1 barra_news_2 barra_news_3 barra_news_4 barra_news_5 barra_news_6 barra_section_1 barra_section_2 barra_section_3 barra_section_4 barra_section_5]
+      ),
       "icaro" => Profile.new(
         key: "icaro", label: "Revista Ícaro",
         groups: {
