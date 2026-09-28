@@ -12,6 +12,8 @@ class Site < ApplicationRecord
   LAYOUT_PROFILES = {
     "standard" => "Portal padrão",
     "barra" => "Jornal da Barra",
+    "tourism" => "Jornal de Turismo",
+    "theatre" => "Jornal de Teatro",
     "icaro" => "Revista Ícaro",
     "gastronomy" => "Revista de Gastronomia",
     "cinemagazine" => "CINEMAGAZINE",
