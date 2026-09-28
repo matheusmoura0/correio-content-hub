@@ -17,6 +17,28 @@ module Publishing
     end
 
     PROFILES = {
+      "tourism" => Profile.new(
+        key: "tourism",
+        label: "Jornal de Turismo",
+        groups: {
+          "Capa" => [["Manchete principal", "hero"], ["Escolha do editor", "tourism_editor_pick"]],
+          "Chamadas" => (1..3).map { |n| ["Chamada #{n}", "tourism_brief_#{n}"] },
+          "Destinos e roteiros" => (1..6).map { |n| ["Matéria #{n}", "tourism_card_#{n}"] },
+          "Aviação" => (1..2).map { |n| ["Aviação #{n}", "tourism_aviation_#{n}"] }
+        },
+        automatic_order: %w[hero tourism_editor_pick tourism_brief_1 tourism_brief_2 tourism_brief_3 tourism_card_1 tourism_card_2 tourism_card_3 tourism_card_4 tourism_card_5 tourism_card_6 tourism_aviation_1 tourism_aviation_2]
+      ),
+      "theatre" => Profile.new(
+        key: "theatre",
+        label: "Jornal de Teatro",
+        groups: {
+          "Primeira página" => [["Manchete principal", "hero"], ["Escolha do editor", "theatre_editor_pick"]],
+          "Em cartaz" => (1..5).map { |n| ["Em cartaz #{n}", "theatre_billboard_#{n}"] },
+          "Crítica e entrevistas" => (1..5).map { |n| ["Crítica #{n}", "theatre_review_#{n}"] },
+          "Bastidores e agenda" => (1..5).map { |n| ["Bastidores #{n}", "theatre_backstage_#{n}"] }
+        },
+        automatic_order: %w[hero theatre_editor_pick theatre_billboard_1 theatre_billboard_2 theatre_billboard_3 theatre_billboard_4 theatre_billboard_5 theatre_review_1 theatre_review_2 theatre_review_3 theatre_review_4 theatre_review_5 theatre_backstage_1 theatre_backstage_2 theatre_backstage_3 theatre_backstage_4 theatre_backstage_5]
+      ),
       "barra" => Profile.new(
         key: "barra",
         label: "Jornal da Barra",
