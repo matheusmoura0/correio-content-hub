@@ -10,7 +10,7 @@ class Article < ApplicationRecord
   }.freeze
 
   belongs_to :feed
-  belongs_to :rewritten_by, class_name: "User", optional: true, inverse_of: :rewritten_articles
+  belongs_to :rewritten_by, class_name: "User", optional: true, inverse_of: :rewritten_articles\n  belongs_to :reported_by, class_name: "User", optional: true
   belongs_to :image_rights_confirmed_by, class_name: "User", optional: true
   has_many :site_articles, dependent: :destroy
   has_many :sites, through: :site_articles
@@ -38,7 +38,7 @@ class Article < ApplicationRecord
   end
 
   def publication_ready?
-    feed.correio_source? || licensed_image_ready?
+    feed.correio_source? || feed.turismo_hoje_authored? || licensed_image_ready?
   end
 
   def image_optional?
