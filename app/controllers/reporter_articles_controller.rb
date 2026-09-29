@@ -28,18 +28,20 @@ class ReporterArticlesController < ApplicationController
   def edit; end
 
   def update
-    if Article.transaction do
+    saved = Article.transaction do
       was_published = @article.status == "published"
       @article.assign_attributes(article_params)
       @article.status = "reviewing" if was_published
-      @article.save && begin
-        category = @site.categories.find_by(id: params[:category_id].presence)
-        distribution = @article.site_articles.find_or_initialize_by(site: @site)
-        distribution.assign_attributes(category:, status: "draft", published_at: nil) if was_published
-        distribution.update!(category:)
-        true
-      end
+      next false unless @article.save
+
+      category = @site.categories.find_by(id: params[:category_id].presence)
+      distribution = @article.site_articles.find_or_initialize_by(site: @site)
+      distribution.assign_attributes(status: "draft", published_at: nil) if was_published
+      distribution.update!(category:)
+      true
     end
+
+    if saved
       redirect_to edit_reporter_article_path(@article), notice: "Rascunho atualizado para revisão."
     else
       render :edit, status: :unprocessable_entity
@@ -58,7 +60,7 @@ class ReporterArticlesController < ApplicationController
       .find(params[:id])
     return if current_user.admin? || @article.reported_by_id == current_user.id
 
-    redirect_to reporter_articles_path, alert: "Você só pode editar as matérias que criou."
+    redirect_to articles_path(site_domain: @site.domain), alert: "Você só pode editar as matérias que criou."
   end
 
   def reporter_feed
