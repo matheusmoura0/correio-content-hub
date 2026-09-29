@@ -16,7 +16,7 @@ Rails.application.routes.draw do
   resources :feeds, except: :show do
     post :import, on: :member, action: :import_feed
   end
-  resources :articles, only: %i[index show update] do
+  resources :reporter_articles, only: %i[new create edit update], path: "minhas-materias"\n  resources :articles, only: %i[index show update] do
     delete :bulk_delete, on: :collection, action: :destroy_bulk, as: :destroy_bulk
     patch :publish_to_gastronomy, on: :member
     patch :unpublish_from_gastronomy, on: :member
