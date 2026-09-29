@@ -16,9 +16,15 @@ class ReporterArticlesController < ApplicationController
       reported_by: current_user
     )
 
-    if @article.save
+    saved = Article.transaction do
+      next false unless @article.save
+
       category = @site.categories.find_by(id: params[:category_id].presence)
       @article.site_articles.create!(site: @site, category:, status: "draft")
+      true
+    end
+
+    if saved
       redirect_to edit_reporter_article_path(@article), notice: "Matéria salva como rascunho para revisão editorial."
     else
       render :new, status: :unprocessable_entity
