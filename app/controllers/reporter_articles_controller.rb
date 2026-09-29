@@ -29,6 +29,8 @@ class ReporterArticlesController < ApplicationController
 
   def update
     if @article.update(article_params)
+      category = @site.categories.find_by(id: params[:category_id].presence)
+      @article.site_articles.find_or_initialize_by(site: @site).update!(category:)
       redirect_to edit_reporter_article_path(@article), notice: "Rascunho atualizado."
     else
       render :edit, status: :unprocessable_entity
