@@ -43,7 +43,7 @@ class Article < ApplicationRecord
   end
 
   def image_optional?
-    feed.correio_source?
+    feed.correio_source? || feed.turismo_hoje_authored?
   end
 
   private
