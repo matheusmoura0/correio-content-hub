@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+set -o errexit
+
+if [[ "${1:-}" == "bundle" && "${2:-}" == "exec" && "${3:-}" == "puma" ]]; then
+  bundle exec rails db:migrate
+fi
+
+exec "$@"

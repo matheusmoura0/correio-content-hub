@@ -1,0 +1,10 @@
+<%= form_with model: category do |form| %>
+  <% category.errors.full_messages.each do |message| %><p class="alert"><%= message %></p><% end %>
+  <%= form.label :site_id, "Site" %>
+  <%= form.collection_select :site_id, Site.order(:name), :id, :name, prompt: "Selecione" %>
+  <%= form.label :name, "Nome" %>
+  <%= form.text_field :name, required: true %>
+  <%= form.label :slug, "Slug" %>
+  <%= form.text_field :slug, required: true, placeholder: "economia" %>
+  <%= form.submit %>
+<% end %>

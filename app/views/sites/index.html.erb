@@ -1,0 +1,17 @@
+<div class="page-heading">
+  <div><h1>Sites</h1><p class="muted">Destinos preparados para publicação futura.</p></div>
+  <%= link_to "Novo site", new_site_path, class: "button" %>
+</div>
+<table>
+  <thead><tr><th>Nome</th><th>Domínio</th><th>Situação</th><th>Ações</th></tr></thead>
+  <tbody>
+    <% @sites.each do |site| %>
+      <tr>
+        <td data-label="Nome"><%= site.name %></td>
+        <td data-label="Domínio"><%= site.domain %></td>
+        <td data-label="Situação"><%= site.active? ? "Ativo" : "Inativo" %></td>
+        <td data-label="Ações"><div class="actions"><%= link_to "Gerenciar conteúdo", publication_path(site.publication_key), class: "button" %><%= link_to "Editar", edit_site_path(site), class: "button secondary" %></div></td>
+      </tr>
+    <% end %>
+  </tbody>
+</table>

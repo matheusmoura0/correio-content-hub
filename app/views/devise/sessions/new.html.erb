@@ -1,0 +1,19 @@
+<div class="auth-card card">
+  <p class="eyebrow">Acesso restrito</p>
+  <h1>Entrar no Content Hub</h1>
+  <p class="muted">Use as credenciais fornecidas pelo administrador.</p>
+
+  <%= form_for(resource, as: resource_name, url: session_path(resource_name)) do |form| %>
+    <%= form.label :email, "E-mail" %>
+    <%= form.email_field :email, autofocus: true, autocomplete: "email", required: true %>
+
+    <%= form.label :password, "Senha" %>
+    <%= form.password_field :password, autocomplete: "current-password", required: true %>
+
+    <% if devise_mapping.rememberable? %>
+      <label class="check"><%= form.check_box :remember_me %> Lembrar de mim neste dispositivo</label>
+    <% end %>
+
+    <%= form.submit "Entrar" %>
+  <% end %>
+</div>

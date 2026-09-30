@@ -1,0 +1,283 @@
+<div class="page-heading"><div><p class="eyebrow">Matéria original</p><h1><%= @article.title %></h1></div><span class="<%= article_status_class(@article.status) %>"><%= article_status_label(@article.status) %></span></div>
+<p class="muted"><%= @article.feed.name %> · <%= @article.published_at&.strftime("%d/%m/%Y %H:%M") %></p>
+
+<div class="card">
+  <p><strong>Origem:</strong> <%= link_to @article.source_url, @article.source_url, target: "_blank", rel: "noopener" %></p>
+  <% if (@article.original_image_url.presence || @article.image_url).present? %><div class="source-image-reference"><%= image_tag(@article.image_url.presence || @article.original_image_url, alt: "") %><span><%= @article.feed.correio_source? ? "Imagem original do Correio — autorizada para uso e opcional na publicação" : "Imagem coletada da fonte — apenas referência, sem autorização automática de publicação" %></span></div><% end %>
+  <div class="article-copy"><%= simple_format(@article.content.presence || @article.description) %></div>
+</div>
+
+<% if @article.feed.correio_source? %>
+<section class="card image-rights-panel">
+  <div class="page-heading compact">
+    <div><p class="eyebrow">Imagem da matéria</p><h2>Imagem opcional</h2></div>
+    <span class="badge status-approved">Conteúdo próprio</span>
+  </div>
+  <% if @article.image_url.present? %>
+    <div class="licensed-image-preview"><%= image_tag @article.image_url, alt: "" %><span>Correio da Manhã · imagem obtida automaticamente da matéria original.</span></div>
+  <% else %>
+    <p class="muted">A página original não forneceu uma imagem. Isso não impede a publicação: o site deverá usar o layout sem imagem.</p>
+  <% end %>
+</section>
+<% else %>
+<section class="card image-rights-panel">
+  <div class="page-heading compact">
+    <div><p class="eyebrow">Direitos de imagem</p><h2>Imagem licenciada para publicação</h2></div>
+    <% if @article.licensed_image_ready? %><span class="badge status-approved">Direitos confirmados</span><% else %><span class="badge status-reviewing">Revisão necessária</span><% end %>
+  </div>
+  <p class="muted">Não use automaticamente a imagem coletada da fonte. Escolha uma imagem própria, autorizada ou de um banco com licença compatível.</p>
+  <div class="licensed-image-sources">
+    <%= link_to "Buscar no Pexels ↗", "https://www.pexels.com/search/#{@article.title.parameterize}/", target: "_blank", rel: "noopener", class: "button secondary" %>
+    <%= link_to "Buscar no Unsplash ↗", "https://unsplash.com/s/photos/#{@article.title.parameterize}", target: "_blank", rel: "noopener", class: "button secondary" %>
+  </div>
+
+  <% if @article.errors.any? %><div class="alert"><%= @article.errors.full_messages.to_sentence %></div><% end %>
+
+  <%= form_with model: @article, class: "image-rights-form" do |form| %>
+    <%= hidden_field_tag :image_rights_review, "1" %>
+    <div class="image-rights-grid">
+      <div class="wide"><%= form.label :image_url, "URL direta da imagem licenciada" %><%= form.url_field :image_url, placeholder: "https://..." %></div>
+      <div class="wide"><%= form.label :image_source_url, "Página de origem da imagem" %><%= form.url_field :image_source_url, placeholder: "Página do Pexels, Unsplash ou autorização" %></div>
+      <div><%= form.label :image_author, "Fotógrafo ou autor" %><%= form.text_field :image_author, placeholder: "Nome do autor" %></div>
+      <div><%= form.label :image_license, "Licença" %><%= form.select :image_license, [["Selecione", ""]] + Article::IMAGE_LICENSES.map { |value, label| [label, value] } %></div>
+      <div class="wide"><%= form.label :image_license_url, "Link da licença ou autorização" %><%= form.url_field :image_license_url, placeholder: "Opcional para imagem própria; recomendado nos demais casos" %></div>
+    </div>
+    <% if @article.image_url.present? %><div class="licensed-image-preview"><%= image_tag @article.image_url, alt: "" %><span><%= @article.image_credit.presence || "Crédito ainda não informado" %></span></div><% end %>
+    <label class="rights-confirmation">
+      <%= check_box_tag :image_rights_confirmed, "1", @article.image_rights_confirmed_at.present? %>
+      <span>Confirmo que a imagem possui autorização ou licença compatível com publicação editorial e comercial.</span>
+    </label>
+    <% if @article.image_rights_confirmed_at.present? %><p class="rights-audit">Confirmado por <%= @article.image_rights_confirmed_by&.name.presence || @article.image_rights_confirmed_by&.email %> em <%= @article.image_rights_confirmed_at.strftime("%d/%m/%Y às %H:%M") %>.</p><% end %>
+    <%= form.submit "Salvar direitos da imagem", class: "accent", data: { loading_label: "Validando imagem…" } %>
+  <% end %>
+</section>
+<% end %>
+
+<section class="card rewrite-panel">
+  <p class="eyebrow">Assistente editorial</p>
+  <h2>Reescrever com IA</h2>
+  <p class="muted">A IA usa somente o texto-fonte acima. O resultado precisa ser revisado antes de qualquer publicação.</p>
+  <%= form_with url: rewrite_article_path(@article), method: :post do |form| %>
+    <%= form.label :rewrite_instructions, "Orientações opcionais" %>
+    <%= form.text_area :rewrite_instructions, value: @article.rewrite_instructions, rows: 3, placeholder: "Ex.: texto de 500 palavras, tom econômico e intertítulos curtos" %>
+    <%= form.submit @article.rewritten_at.present? ? "Gerar nova versão" : "Reescrever matéria", class: "accent", data: { loading_label: "Reescrevendo matéria…" } %>
+  <% end %>
+</section>
+
+<% if @article.rewritten_at.present? %>
+  <section class="card rewritten">
+    <div class="page-heading compact"><div><p class="eyebrow">Versão gerada por IA</p><h2><%= @article.rewritten_title %></h2></div><span class="muted"><%= @article.rewritten_at.strftime("%d/%m/%Y %H:%M") %></span></div>
+    <%= form_with model: @article do |form| %>
+      <%= form.label :rewritten_title, "Título revisado" %><%= form.text_field :rewritten_title %>
+      <%= form.label :rewritten_content, "Texto revisado" %><%= form.text_area :rewritten_content, rows: 18 %>
+      <%= form.hidden_field :status, value: @article.status %>
+      <%= form.submit "Salvar alterações" %>
+    <% end %>
+  </section>
+<% end %>
+
+<section class="card publication-panel">
+  <div class="page-heading compact">
+    <div><p class="eyebrow">Revista de Gastronomia</p><h2>Publicação direta</h2></div>
+    <% if @gastronomy_distribution&.status == "published" %><span class="badge status-published">No ar</span><% else %><span class="badge">Fora do ar</span><% end %>
+  </div>
+
+  <% if @gastronomy_site.nil? %>
+    <div class="alert">O site Revista de Gastronomia ainda não está configurado no Content Hub.</div>
+  <% elsif !@article.publication_ready? %>
+    <div class="publication-requirement">
+      <strong>Matéria ainda não pronta</strong>
+      <p>Para fontes externas, confirme os direitos da imagem antes de publicar.</p>
+    </div>
+  <% else %>
+    <div class="publication-preview <%= "without-image" if @article.image_url.blank? %>">
+      <%= image_tag @article.image_url, alt: "" if @article.image_url.present? %>
+      <div><span><%= @gastronomy_distribution&.category&.name || "Sem editoria" %></span><strong><%= @article.rewritten_title.presence || @article.title %></strong><small><%= @article.image_url.present? ? @article.image_credit : "Publicação sem imagem" %></small></div>
+    </div>
+
+    <%= form_with url: publish_to_gastronomy_article_path(@article), method: :patch, scope: :publication, class: "visual-publication-editor", id: "visual-publication-editor" do |form| %>
+      <% selected_slot = @gastronomy_distribution&.slot_key %>
+      <% preview_title = @gastronomy_distribution&.display_title.presence || @article.rewritten_title.presence || @article.title %>
+      <div class="editor-workspace">
+        <div class="cover-map-panel">
+          <div class="editor-section-heading">
+            <div><span>1</span><div><strong>Escolha onde a matéria aparece</strong><small>Use a capa principal ou uma página de editoria.</small></div></div>
+            <button type="button" class="secondary auto-slot-button" data-slot="">Usar automático</button>
+          </div>
+
+          <div class="publication-destination-tabs" role="tablist">
+            <button type="button" class="destination-tab active" data-map-target="home">Capa principal</button>
+            <button type="button" class="destination-tab" data-map-target="category">Página de editoria</button>
+          </div>
+
+          <div class="gastronomy-cover-map" data-publication-map="home" aria-label="Mapa visual dos slots da capa">
+            <div class="mock-masthead">REVISTA DE <b>GASTRONOMIA</b></div>
+            <div class="mock-breaking">
+              <span>AGORA</span>
+              <% 3.times do |index| %><button type="button" data-slot="breaking_<%= index + 1 %>">Ticker <%= index + 1 %></button><% end %>
+            </div>
+            <div class="mock-cover-body">
+              <div class="mock-primary">
+                <button type="button" class="mock-slot mock-hero" data-slot="hero"><span>Manchete principal</span><strong>Imagem e título em destaque</strong></button>
+                <div class="mock-fresh-grid">
+                  <% 6.times do |index| %><button type="button" class="mock-slot" data-slot="fresh_<%= index + 1 %>"><span>Novidades <%= index + 1 %></span><i></i><strong>Card de matéria</strong></button><% end %>
+                </div>
+              </div>
+              <aside>
+                <button type="button" class="mock-slot mock-editor-pick" data-slot="editor_pick"><span>Escolha do editor</span><strong>Destaque lateral</strong></button>
+                <div class="mock-popular"><b>MAIS LIDAS</b><% 5.times do |index| %><button type="button" data-slot="popular_<%= index + 1 %>"><em><%= index + 1 %></em> Matéria mais lida</button><% end %></div>
+              </aside>
+            </div>
+          </div>
+
+          <div class="gastronomy-cover-map category-page-map" data-publication-map="category" aria-label="Mapa visual dos slots da página de editoria" hidden>
+            <div class="mock-masthead">REVISTA DE <b>GASTRONOMIA</b></div>
+            <div class="mock-category-nav">RECEITAS&nbsp;&nbsp; RESTAURANTES&nbsp;&nbsp; TENDÊNCIAS&nbsp;&nbsp; VIAGENS&nbsp;&nbsp; BEBIDAS</div>
+            <div class="mock-category-title"><span>EDITORIA</span><strong id="mock-category-name">Gastronomia</strong></div>
+            <div class="mock-category-leads">
+              <button type="button" class="mock-slot mock-category-hero" data-slot="section_hero"><span>Destaque principal</span><strong>Grande chamada da editoria</strong></button>
+              <div>
+                <button type="button" class="mock-slot" data-slot="section_feature_1"><span>Destaque secundário 1</span><strong>Chamada lateral</strong></button>
+                <button type="button" class="mock-slot" data-slot="section_feature_2"><span>Destaque secundário 2</span><strong>Chamada lateral</strong></button>
+              </div>
+            </div>
+            <div class="mock-category-list">
+              <b>ÚLTIMAS DA EDITORIA</b>
+              <% 9.times do |index| %><button type="button" data-slot="section_list_<%= index + 1 %>"><i></i><span>Matéria da lista <%= index + 1 %></span></button><% end %>
+            </div>
+          </div>
+
+          <div class="selected-slot-summary">
+            <span class="selection-dot"></span>
+            <div><small>POSIÇÃO SELECIONADA</small><strong id="selected-slot-label"><%= selected_slot ? SiteArticle::SLOT_LABELS[selected_slot] : "Automático" %></strong></div>
+          </div>
+          <div class="accessible-slot-select">
+            <%= form.label :slot_key, "Posição da matéria" %>
+            <%= form.select :slot_key, grouped_options_for_select(SiteArticle::SLOT_GROUPS.merge(SiteArticle::CATEGORY_SLOT_GROUPS), selected_slot), { include_blank: "Automático — posição disponível" } %>
+          </div>
+        </div>
+
+        <div class="publication-customizer">
+          <div class="editor-section-heading"><div><span>2</span><div><strong>Ajuste a apresentação</strong><small>A prévia responde aos controles em tempo real.</small></div></div></div>
+
+          <div class="live-card-preview <%= "without-image" if @article.image_url.blank? %>" id="live-card-preview">
+            <% if @article.image_url.present? %><div class="live-image-frame"><%= image_tag @article.image_url, alt: "", id: "live-preview-image" %></div><% end %>
+            <div class="live-preview-copy"><span id="live-category">Gastronomia</span><strong id="live-preview-title"><%= preview_title %></strong><small id="live-slot-caption"><%= selected_slot ? SiteArticle::SLOT_LABELS[selected_slot] : "Posição automática" %></small></div>
+          </div>
+
+          <div class="title-control">
+            <div class="control-label"><%= form.label :display_title, "Título exibido na Revista" %><button type="button" class="text-action" id="reset-publication-title">Restaurar original</button></div>
+            <%= form.text_area :display_title, value: preview_title, rows: 3, maxlength: 180, id: "publication-display-title" %>
+            <small><span id="title-character-count"><%= preview_title.length %></span>/180 caracteres. O conteúdo original não será alterado.</small>
+          </div>
+
+          <% if @article.image_url.present? %>
+            <div class="image-composer">
+              <div class="control-label"><strong>Enquadramento da imagem</strong><button type="button" class="text-action" id="reset-image-crop">Centralizar</button></div>
+              <div class="crop-actions">
+                <button type="button" class="secondary crop-button" data-dx="-5" aria-label="Mover imagem para esquerda">←</button>
+                <button type="button" class="secondary crop-button" data-dy="-5" aria-label="Mover imagem para cima">↑</button>
+                <button type="button" class="secondary crop-button" data-dy="5" aria-label="Mover imagem para baixo">↓</button>
+                <button type="button" class="secondary crop-button" data-dx="5" aria-label="Mover imagem para direita">→</button>
+                <button type="button" class="secondary zoom-button" data-zoom="-0.1">− Menor</button>
+                <button type="button" class="secondary zoom-button" data-zoom="0.1">+ Maior</button>
+              </div>
+              <div class="range-control"><span>Zoom</span><%= form.range_field :image_zoom, min: 1, max: 2, step: 0.05, value: @gastronomy_distribution&.image_zoom || 1, id: "publication-image-zoom" %><output id="zoom-output"><%= ((@gastronomy_distribution&.image_zoom || 1).to_f * 100).round %>%</output></div>
+              <%= form.hidden_field :image_focus_x, value: @gastronomy_distribution&.image_focus_x || 50, id: "publication-image-focus-x" %>
+              <%= form.hidden_field :image_focus_y, value: @gastronomy_distribution&.image_focus_y || 50, id: "publication-image-focus-y" %>
+            </div>
+          <% else %>
+            <div class="image-empty-note">Esta matéria será apresentada no layout sem imagem.</div>
+          <% end %>
+
+          <div class="category-control">
+            <%= form.label :category_id, "Editoria" %>
+            <%= form.select :category_id, [["Sem editoria", ""]] + @gastronomy_site.categories.order(:name).map { |category| [category.name, category.id] }, selected: @gastronomy_distribution&.category_id, id: "publication-category" %>
+          </div>
+          <%= form.submit @gastronomy_distribution&.status == "published" ? "Salvar e atualizar na Revista" : "Publicar na Revista", class: "accent publish-visual-button", data: { loading_label: "Publicando na revista…" } %>
+        </div>
+      </div>
+    <% end %>
+
+    <script>
+      (() => {
+        const editor = document.getElementById("visual-publication-editor");
+        if (!editor) return;
+        const slotSelect = editor.querySelector("#publication_slot_key");
+        const categorySelect = editor.querySelector("#publication-category");
+        const maps = [...editor.querySelectorAll("[data-publication-map]")];
+        const destinationTabs = [...editor.querySelectorAll("[data-map-target]")];
+        const slotButtons = [...editor.querySelectorAll("[data-slot]")];
+        const slotLabel = document.getElementById("selected-slot-label");
+        const slotCaption = document.getElementById("live-slot-caption");
+        const titleInput = document.getElementById("publication-display-title");
+        const titlePreview = document.getElementById("live-preview-title");
+        const titleCount = document.getElementById("title-character-count");
+        const originalTitle = <%= raw((@article.rewritten_title.presence || @article.title).to_json) %>;
+        const labels = <%= raw(SiteArticle::SLOT_LABELS.to_json) %>;
+
+        const showMap = (name) => {
+          maps.forEach(map => { map.hidden = map.dataset.publicationMap !== name; });
+          destinationTabs.forEach(tab => tab.classList.toggle("active", tab.dataset.mapTarget === name));
+        };
+        destinationTabs.forEach(tab => tab.addEventListener("click", () => showMap(tab.dataset.mapTarget)));
+
+        const selectSlot = (value) => {
+          slotSelect.value = value;
+          showMap(value.startsWith("section_") ? "category" : "home");
+          slotButtons.forEach(button => button.classList.toggle("selected", button.dataset.slot === value));
+          const label = labels[value] || "Automático";
+          slotLabel.textContent = label;
+          slotCaption.textContent = value ? label : "Posição automática";
+        };
+        slotButtons.forEach(button => button.addEventListener("click", () => selectSlot(button.dataset.slot)));
+        slotSelect.addEventListener("change", () => selectSlot(slotSelect.value));
+        selectSlot(slotSelect.value);
+        categorySelect?.addEventListener("change", () => {
+          const label = categorySelect.options[categorySelect.selectedIndex]?.text || "Gastronomia";
+          document.getElementById("mock-category-name").textContent = label;
+          document.getElementById("live-category").textContent = label;
+        });
+        categorySelect?.dispatchEvent(new Event("change"));
+
+        const updateTitle = () => {
+          titlePreview.textContent = titleInput.value.trim() || originalTitle;
+          titleCount.textContent = titleInput.value.length;
+        };
+        titleInput.addEventListener("input", updateTitle);
+        document.getElementById("reset-publication-title")?.addEventListener("click", () => { titleInput.value = originalTitle; updateTitle(); });
+
+        const image = document.getElementById("live-preview-image");
+        const focusX = document.getElementById("publication-image-focus-x");
+        const focusY = document.getElementById("publication-image-focus-y");
+        const zoom = document.getElementById("publication-image-zoom");
+        const zoomOutput = document.getElementById("zoom-output");
+        const refreshImage = () => {
+          if (!image) return;
+          image.style.objectPosition = `${focusX.value}% ${focusY.value}%`;
+          image.style.transform = `scale(${zoom.value})`;
+          zoomOutput.textContent = `${Math.round(Number(zoom.value) * 100)}%`;
+        };
+        editor.querySelectorAll(".crop-button").forEach(button => button.addEventListener("click", () => {
+          focusX.value = Math.max(0, Math.min(100, Number(focusX.value) + Number(button.dataset.dx || 0)));
+          focusY.value = Math.max(0, Math.min(100, Number(focusY.value) + Number(button.dataset.dy || 0)));
+          refreshImage();
+        }));
+        editor.querySelectorAll(".zoom-button").forEach(button => button.addEventListener("click", () => {
+          zoom.value = Math.max(1, Math.min(2, Number(zoom.value) + Number(button.dataset.zoom)));
+          refreshImage();
+        }));
+        zoom?.addEventListener("input", refreshImage);
+        document.getElementById("reset-image-crop")?.addEventListener("click", () => { focusX.value = 50; focusY.value = 50; zoom.value = 1; refreshImage(); });
+        refreshImage();
+      })();
+    </script>
+
+    <% if @gastronomy_distribution&.status == "published" %>
+      <div class="unpublish-row">
+        <span>Publicada em <%= @gastronomy_distribution.published_at&.strftime("%d/%m/%Y às %H:%M") %> · <%= @gastronomy_distribution.slot_label %> · <%= @gastronomy_distribution.assignment_mode == "manual" ? "Manual" : "Automático" %></span>
+        <%= button_to "Retirar do ar", unpublish_from_gastronomy_article_path(@article), method: :patch, class: "secondary", data: { loading_label: "Retirando do ar…" } %>
+      </div>
+    <% end %>
+  <% end %>
+</section>

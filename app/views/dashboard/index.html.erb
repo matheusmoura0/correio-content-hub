@@ -1,0 +1,27 @@
+<div class="page-heading"><div><p class="eyebrow">Rede de Conteúdo</p><h1>Distribuição editorial</h1><p class="muted">Acompanhe a entrada por RSS, a revisão e a publicação nos sites da rede.</p></div></div>
+<div class="grid">
+  <div class="card stat"><strong><%= @feeds_count %></strong><span>canais RSS ativos</span></div>
+  <div class="card stat"><strong><%= @articles_count %></strong><span>matérias no acervo</span></div>
+  <div class="card stat"><strong><%= @pending_count %></strong><span>aguardando revisão</span></div>
+  <div class="card stat"><strong><%= @published_count %></strong><span>distribuições no ar</span></div>
+</div>
+
+<div class="card callout"><div><p class="eyebrow">Fluxo principal</p><h2>Abasteça a rede pelos canais oficiais</h2><p>Atualize os feeds RSS do Correio, revise as matérias e distribua com crédito e link para a publicação original.</p></div><%= link_to "Gerenciar canais RSS", feeds_path, class: "button accent" %></div>
+
+<div class="dashboard-columns">
+  <section>
+    <div class="section-heading"><h2>Entradas mais recentes</h2><%= link_to "Abrir acervo", articles_path %></div>
+    <div class="news-list"><% @recent_articles.each do |article| %>
+      <article><strong><%= link_to article.title, article_path(article) %></strong><div class="muted"><%= article.feed&.publisher_name.presence || "Fonte indisponível" %> · <%= article_status_label(article.status) %></div></article>
+    <% end %></div>
+  </section>
+  <aside>
+    <div class="section-heading"><h2>Equipe online</h2><span class="online-count"><%= @online_users.size %></span></div>
+    <div class="online-list"><% @online_users.each do |user| %>
+      <div><span class="presence-dot online"></span><strong><%= user.name.presence || user.email %></strong><small>Online agora</small></div>
+    <% end %><% if @online_users.empty? %><p class="muted">Nenhum usuário online.</p><% end %></div>
+
+    <% if current_user.admin? %><div class="section-heading activity-title"><h2>Atividade recente</h2><%= link_to "Ver histórico", activity_logs_path %></div>
+    <div class="mini-activity"><% @recent_activities.each do |activity| %><div><strong><%= activity.user&.name.presence || activity.user&.email || "Usuário removido" %></strong><span><%= activity.description %></span><small><%= time_ago_in_words(activity.created_at) %> atrás</small></div><% end %></div><% end %>
+  </aside>
+</div>

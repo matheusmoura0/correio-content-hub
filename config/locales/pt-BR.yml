@@ -1,0 +1,31 @@
+pt-BR:
+  activerecord:
+    models:
+      article: Matéria
+      category: Categoria
+      feed: Feed
+      site: Site
+      topic: Pesquisa
+      user: Usuário
+    attributes:
+      user:
+        email: E-mail
+        password: Senha
+        password_confirmation: Confirmação da senha
+        remember_me: Lembrar de mim
+      topic:
+        name: Nome
+        keywords: Palavras-chave
+        search_mode: Local da pesquisa
+        match_mode: Regra de correspondência
+  helpers:
+    submit:
+      create: Criar %{model}
+      update: Salvar alterações
+      submit: Salvar %{model}
+  date:
+    formats:
+      default: "%d/%m/%Y"
+  time:
+    formats:
+      short: "%d/%m/%Y às %H:%M"

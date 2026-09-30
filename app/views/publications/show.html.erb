@@ -1,0 +1,139 @@
+<div class="page-heading publication-console-heading">
+  <div><p class="eyebrow">Central de publicação</p><h1><%= @site.name %></h1><p class="muted">Posicione matérias manualmente ou preencha o site a partir de uma pesquisa.</p></div>
+  <div class="actions"><%= link_to "Abrir site ↗", "https://#{@site.domain}", target: "_blank", rel: "noopener", class: "button secondary" %><%= link_to "Configurar site", edit_site_path(@site), class: "button secondary" if current_user.admin? %><%= form_with url: clear_publication_path(@site.publication_key), method: :post, class: "inline-form", data: { turbo_confirm: "Retirar todas as matérias publicadas de #{@site.name}? O acervo será preservado." } do |form| %><%= form.submit "Limpar site", class: "button danger" %><% end if current_user.admin? %></div>
+</div>
+
+<nav class="publication-workflow" aria-label="Etapas de publicação">
+  <button type="button" class="workflow-tab active" data-publication-tab="manual" aria-selected="true"><span>1</span><strong>Montar página</strong><small>Escolha matéria e posição</small></button>
+  <button type="button" class="workflow-tab" data-publication-tab="automatic" aria-selected="false"><span>2</span><strong>Preencher automaticamente</strong><small>Distribua o acervo nos espaços</small></button>
+  <button type="button" class="workflow-tab" data-publication-tab="bulk" aria-selected="false"><span>3</span><strong>Operações em lote</strong><small>Reescreva, publique ou retire</small></button>
+</nav>
+
+<section class="publication-mode-panel" data-publication-panel="automatic" hidden>
+  <div class="mode-introduction"><div><p class="eyebrow">Preenchimento assistido</p><h2>Popular espaços livres</h2><p class="muted">Escolha uma origem e uma editoria. O Hub preserva as posições já preenchidas manualmente.</p></div><span class="mode-icon" aria-hidden="true">↗</span></div>
+  <div class="publication-command-bar">
+  <%= form_with url: populate_publication_path(@site.publication_key), method: :post, class: "populate-form", data: { turbo_confirm: "Atualizar as posições automáticas da página selecionada, preservando as posições manuais?" } do |form| %>
+    <% if @site.layout_profile == "icaro" %>
+      <div><%= form.label :target, "Página a preencher" %><%= form.select :target, [["Capa", "home"], ["Página da editoria selecionada", "section"]] %></div>
+    <% end %>
+    <div><%= form.label :topic_id, "Usar matérias da pesquisa" %><%= form.select :topic_id, [["Todas as matérias coletadas", ""]] + @topics.map { |topic| [topic.name, topic.id] } %></div>
+    <div><%= form.label :category_id, (@site.layout_profile == "icaro" ? "Editoria da página / categoria na capa" : "Editoria padrão") %><%= form.select :category_id, [["Definir depois", ""]] + @site.categories.order(:name).map { |category| [category.name, category.id] } %></div>
+    <%= form.submit "Popular site automaticamente", class: "accent", data: { loading_label: "Distribuindo matérias…" } %>
+  <% end %>
+  </div>
+  <div class="workflow-note"><strong>Como funciona</strong><p><% if @site.layout_profile == "icaro" %>Para cada editoria, selecione “Página da editoria selecionada”, uma pesquisa com matérias desse tema e a editoria correspondente. Cada página tem 12 posições próprias. A atualização preserva a capa e as demais editorias; matérias já posicionadas em outra página não são movidas. Na capa, a editoria selecionada apenas classifica as matérias.<% elsif @site.layout_profile == "cinemagazine" %>O sistema usa as matérias com imagem da editoria Cinema do Correio, reposiciona as que ficaram fora do layout e preserva os espaços montados manualmente.<% else %>O sistema seleciona matérias disponíveis, respeita os slots ocupados e distribui o restante conforme o perfil editorial deste site.<% end %></p></div>
+</section>
+
+<section class="publication-mode-panel active" data-publication-panel="manual">
+<div class="mode-introduction"><div><p class="eyebrow">Editor visual</p><h2>Monte a página em dois passos</h2><p class="muted">Selecione uma matéria no painel lateral e depois clique no espaço desejado no mock.</p></div><span class="mode-status">Seleção manual</span></div>
+<div class="publication-console-grid">
+  <section class="site-mock-panel">
+    <div class="mock-toolbar"><div><span class="presence-dot online"></span><strong>Prévia estrutural</strong></div><small>Clique em um espaço para selecioná-lo.</small></div>
+
+    <% if @site.layout_profile == "cinemagazine" %>
+      <div class="site-layout-mock cinemagazine-mock">
+        <header><b>CINEMA<span>MAGAZINE</span></b><nav>EM CARTAZ · STREAMING · SÉRIES · TRAILERS</nav></header>
+        <%= button_tag type: "button", class: "visual-slot cinema-lead", data: { slot: "cm_news_lead" } do %><small>DESTAQUE EDITORIAL</small><strong><%= @distributions["cm_news_lead"]&.article&.title || "Matéria principal" %></strong><em>Imagem panorâmica + título</em><% end %>
+        <div class="cinema-ticker"><b>AGORA</b><% 3.times do |i| %><%= button_tag(@distributions["cm_ticker_#{i + 1}"]&.article&.title || "Chamada #{i + 1}", type: "button", data: { slot: "cm_ticker_#{i + 1}" }) %><% end %></div>
+        <div class="external-catalog-preview"><span>TMDB</span><b>EM CARTAZ</b><div><i></i><i></i><i></i><i></i><i></i></div><small>Catálogo preenchido automaticamente pela API</small></div>
+        <div class="cinema-news-mock"><h3>NOTÍCIAS E LISTAS</h3><div><% 6.times do |i| %><%= button_tag type: "button", class: "visual-slot", data: { slot: "cm_news_#{i + 1}" } do %><i></i><small>Card <%= i + 1 %></small><strong><%= @distributions["cm_news_#{i + 1}"]&.article&.title || "Matéria editorial" %></strong><% end %><% end %></div></div>
+      </div>
+    <% elsif @site.layout_profile == "cinema_journal" %>
+      <div class="site-layout-mock cinema-journal-mock">
+        <header><small>JORNAL DO</small><b>CINEMA</b><nav>CRÍTICA · ENSAIOS · ENTREVISTAS · FESTIVAIS</nav></header>
+        <div class="journal-front-mock">
+          <%= button_tag type: "button", class: "visual-slot journal-lead", data: { slot: "jc_lead" } do %><small>MANCHETE</small><strong><%= @distributions["jc_lead"]&.article&.title || "Matéria principal da edição" %></strong><em>Imagem, título e linha fina</em><% end %>
+          <div class="journal-secondary"><% 2.times do |i| %><%= button_tag type: "button", class: "visual-slot", data: { slot: "jc_secondary_#{i + 1}" } do %><i></i><small>DESTAQUE <%= i + 1 %></small><strong><%= @distributions["jc_secondary_#{i + 1}"]&.article&.title || "Destaque secundário" %></strong><% end %><% end %></div>
+          <aside><b>EM PAUTA</b><% 5.times do |i| %><%= button_tag(@distributions["jc_brief_#{i + 1}"]&.article&.title || "Nota em pauta #{i + 1}", type: "button", data: { slot: "jc_brief_#{i + 1}" }) %><% end %></aside>
+        </div>
+        <% [["CRÍTICA", "jc_critique", 5], ["ENSAIOS", "jc_essay", 4], ["FESTIVAIS E ENTREVISTAS", "jc_festival", 4]].each do |label, prefix, amount| %>
+          <div class="journal-section-mock"><h3><%= label %></h3><div><% amount.times do |i| %><%= button_tag type: "button", class: "visual-slot", data: { slot: "#{prefix}_#{i + 1}" } do %><i></i><strong><%= @distributions["#{prefix}_#{i + 1}"]&.article&.title || "#{label.titleize} #{i + 1}" %></strong><% end %><% end %></div></div>
+        <% end %>
+      </div>
+    <% else %>
+      <div class="site-layout-mock generic-mock">
+        <% @profile.groups.each do |group, slots| %><section><h3><%= group %></h3><div><% slots.each do |label, key| %><%= button_tag type: "button", class: "visual-slot", data: { slot: key } do %><small><%= label %></small><strong><%= @distributions[key]&.article&.title || "Espaço livre" %></strong><% end %><% end %></div></section><% end %>
+      </div>
+    <% end %>
+  </section>
+
+  <aside class="manual-placement-panel">
+    <p class="eyebrow">Passo 1</p><h2>Escolha a matéria</h2>
+    <%= form_with url: assign_publication_path(@site.publication_key), method: :post, id: "assign-form" do |form| %>
+      <%= form.hidden_field :slot_key, id: "selected-publication-slot" %>
+      <div class="manual-article-picker">
+        <% @articles.each do |article| %>
+          <label class="manual-article-option">
+            <%= radio_button_tag :article_id, article.id, false, class: "manual-article-radio" %>
+            <span><strong><%= article.rewritten_title.presence || article.title %></strong><small><%= article.feed.name %></small></span>
+          </label>
+        <% end %>
+      </div>
+      <div class="placement-step"><p class="eyebrow">Passo 2</p><div class="chosen-slot"><small>ESPAÇO ESCOLHIDO</small><strong id="chosen-slot-label">Clique em um espaço do mock</strong></div></div>
+      <%= form.label :category_id, "Editoria" %><%= form.select :category_id, [["Sem editoria", ""]] + @site.categories.order(:name).map { |category| [category.name, category.id] } %>
+      <%= form.submit "Posicionar matéria selecionada", class: "accent", disabled: true, id: "assign-submit" %>
+    <% end %>
+    <div class="slot-legend"><span><i class="manual"></i> Manual</span><span><i class="automatic"></i> Automático</span><span><i></i> Livre</span></div>
+  </aside>
+</div>
+</section>
+
+<section class="publication-mode-panel" data-publication-panel="bulk" hidden>
+<div class="mode-introduction"><div><p class="eyebrow">Gestão do acervo</p><h2>Operações em lote</h2><p class="muted">Selecione as matérias primeiro; depois escolha uma única ação para aplicar ao grupo.</p></div><span class="mode-status"><%= @articles.size %> matérias</span></div>
+<div class="card bulk-publication-panel">
+  <div class="page-heading compact"><div><p class="eyebrow">Acervo disponível</p><h2>Reescrever e publicar em lote</h2></div><span class="badge"><%= @articles.size %> mais recentes</span></div>
+  <%= form_with url: bulk_publication_path(@site.publication_key), method: :post, id: "bulk-publication-form" do |form| %>
+    <div class="bulk-options">
+      <label><input type="checkbox" id="select-all-publication"> Selecionar todas</label>
+      <%= form.select :category_id, [["Editoria depois", ""]] + @site.categories.order(:name).map { |category| [category.name, category.id] } %>
+      <%= form.text_field :rewrite_instructions, placeholder: "Orientação opcional para a IA" %>
+      <%= form.select :bulk_action, [["Publicar automaticamente", "publish"], ["Reescrever com IA e publicar", "rewrite_publish"], ["Despublicar", "unpublish"]] %>
+      <%= form.submit "Executar em lote", class: "accent", disabled: true, id: "bulk-publication-submit", data: { turbo_confirm: "Executar esta ação nas matérias selecionadas?" } %>
+    </div>
+    <div class="publication-article-list">
+      <% @articles.each do |article| %>
+        <% distribution = article.site_articles.find { |item| item.site_id == @site.id } %>
+        <article>
+          <label class="bulk-check"><%= check_box_tag "article_ids[]", article.id, false, class: "bulk-publication-check" %></label>
+          <div><strong><%= article.rewritten_title.presence || article.title %></strong><small><%= article.feed.name %> · <%= article.publication_ready? ? "Pronta para publicar" : "Revisão de imagem necessária" %></small></div>
+          <span class="badge <%= "status-published" if distribution&.status == "published" %>"><%= distribution&.status == "published" ? distribution.slot_label : article_status_label(article.status) %></span>
+        </article>
+      <% end %>
+    </div>
+  <% end %>
+</div>
+</section>
+
+<script>
+(() => {
+  const tabs = [...document.querySelectorAll("[data-publication-tab]")];
+  const panels = [...document.querySelectorAll("[data-publication-panel]")];
+  const activateMode = name => {
+    tabs.forEach(tab => { const active = tab.dataset.publicationTab === name; tab.classList.toggle("active", active); tab.setAttribute("aria-selected", String(active)); });
+    panels.forEach(panel => { const active = panel.dataset.publicationPanel === name; panel.classList.toggle("active", active); panel.hidden = !active; });
+    history.replaceState(null, "", `#${name}`);
+  };
+  tabs.forEach(tab => tab.addEventListener("click", () => activateMode(tab.dataset.publicationTab)));
+  const requestedMode = location.hash.slice(1);
+  if (tabs.some(tab => tab.dataset.publicationTab === requestedMode)) activateMode(requestedMode);
+
+  const labels = <%= raw(@profile.groups.values.flatten(1).to_h { |label, key| [key, label] }.to_json) %>;
+  const slotInput = document.getElementById("selected-publication-slot");
+  const slotLabel = document.getElementById("chosen-slot-label");
+  const assignButton = document.getElementById("assign-submit");
+  const radios = [...document.querySelectorAll(".manual-article-radio")];
+  const refreshAssign = () => { assignButton.disabled = !slotInput.value || !radios.some(radio => radio.checked); };
+  document.querySelectorAll("[data-slot]").forEach(button => button.addEventListener("click", () => {
+    document.querySelectorAll("[data-slot]").forEach(item => item.classList.remove("selected"));
+    button.classList.add("selected"); slotInput.value = button.dataset.slot; slotLabel.textContent = labels[button.dataset.slot] || button.dataset.slot; refreshAssign();
+  }));
+  radios.forEach(radio => radio.addEventListener("change", refreshAssign));
+
+  const all = document.getElementById("select-all-publication");
+  const checks = [...document.querySelectorAll(".bulk-publication-check")];
+  const bulkSubmit = document.getElementById("bulk-publication-submit");
+  const refreshBulk = () => { bulkSubmit.disabled = !checks.some(check => check.checked); };
+  all?.addEventListener("change", () => { checks.forEach(check => check.checked = all.checked); refreshBulk(); });
+  checks.forEach(check => check.addEventListener("change", refreshBulk));
+})();
+</script>
