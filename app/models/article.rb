@@ -21,7 +21,7 @@ class Article < ApplicationRecord
   before_validation :separate_unverified_imported_image, on: :create
 
   validates :title, :source_url, :status, presence: true
-  validates :content, presence: true, if: -> { feed&.turismo_hoje_authored? }
+  validates :content, presence: true, if: -> { feed&.hub_authored? }
   validates :source_url, uniqueness: true
   validates :status, inclusion: { in: STATUSES }
   validates :image_license, inclusion: { in: IMAGE_LICENSES.keys }, allow_blank: true
@@ -40,11 +40,11 @@ class Article < ApplicationRecord
   end
 
   def publication_ready?
-    feed.correio_source? || feed.turismo_hoje_authored? || licensed_image_ready?
+    feed.correio_source? || feed.hub_authored? || licensed_image_ready?
   end
 
   def image_optional?
-    feed.correio_source? || feed.turismo_hoje_authored?
+    feed.correio_source? || feed.hub_authored?
   end
 
   private

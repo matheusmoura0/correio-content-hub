@@ -4,7 +4,7 @@
     <h1><%= @site ? @site.name : "Matérias" %></h1>
     <p class="muted"><%= @site ? "Controle as matérias, posições e o estado publicado no site." : "Revise, distribua e organize as matérias recebidas pelos canais RSS." %></p>
   </div>
-  <% if @site&.domain == "turismohoje.com.br" %><%= link_to "Escrever matéria", new_reporter_article_path, class: "button" %><% end %>
+  <%= link_to "Escrever matéria", new_reporter_article_path(site_id: @site&.id), class: "button" %>
   <% if @site %><%= link_to "Abrir site ↗", "https://#{@site.domain}", target: "_blank", rel: "noopener", class: "button secondary" %><% end %>
 </div>
 

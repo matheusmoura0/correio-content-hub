@@ -499,57 +499,100 @@
       }
       @media (max-width:420px) { .grid { grid-template-columns:1fr; } .brand-name { font-size:15px; } .brand-product { letter-spacing:.08em; } .session .logout { padding:6px 9px !important; } .nav-link,.nav-menu > summary { padding-inline:8px; } }
     </style>
+    <link rel="stylesheet" href="/content-hub.css?v=20260930-4">
   </head>
-  <body>
+  <body class="<%= user_signed_in? ? 'hub-authenticated' : 'hub-guest' %>">
     <% if user_signed_in? %>
       <% publication_sites = Site.where(active: true).where.not(publication_key: [nil, ""]).order(:name).load %>
       <% publication_active = params[:publication_key].present? %>
       <% admin_active = %w[feeds sites categories users activity_logs].include?(controller_name) %>
     <% end %>
-    <header class="site-header">
-      <div class="masthead"><div class="header-inner">
-        <%= link_to root_path, class: "brand" do %>
-          <span class="brand-mark">CM</span>
-          <span><span class="brand-name">Correio da Manhã</span><span class="brand-product">Rede de Conteúdo</span></span>
-        <% end %>
-        <% if user_signed_in? %><div class="session"><span class="presence"><span class="presence-dot online"></span><%= user_display_name(current_user) %></span><%= button_to "Sair", destroy_user_session_path, method: :delete, class: "logout" %></div><% end %>
-      </div></div>
-      <% if user_signed_in? %><nav class="main-nav" aria-label="Navegação principal"><div class="header-inner">
-        <div class="nav-primary">
-          <%= link_to "Painel", root_path, class: nav_link_class(root_path) %>
-          <%= link_to "Monitoramento", topics_path, class: nav_link_class(topics_path) %>
-          <%= link_to "Acervo", articles_path, class: nav_link_class(articles_path) %>
-          <%= link_to "Métricas", analytics_path, class: nav_link_class(analytics_path) %>
-        </div>
-        <details class="nav-menu <%= 'active' if publication_active %>">
-          <summary>Publicações <span class="nav-count"><%= publication_sites.size %></span></summary>
-          <div class="nav-dropdown">
-            <span class="nav-dropdown-label">Sites conectados</span>
-            <% publication_sites.each do |site| %>
-              <%= link_to site.name, publication_path(site.publication_key), class: "nav-link #{'active' if params[:publication_key] == site.publication_key}" %>
-            <% end %>
-          </div>
-        </details>
-        <% if current_user.admin? %>
-          <details class="nav-menu admin-menu <%= 'active' if admin_active %>">
-            <summary>Admin</summary>
-            <div class="nav-dropdown">
-              <span class="nav-dropdown-label">Configuração</span>
-              <%= link_to "Canais RSS", feeds_path, class: nav_link_class(feeds_path) %>
-              <%= link_to "Sites", sites_path, class: nav_link_class(sites_path) %>
-              <%= link_to "Categorias", categories_path, class: nav_link_class(categories_path) %>
-              <%= link_to "Usuários", users_path, class: nav_link_class(users_path) %>
-              <%= link_to "Atividades", activity_logs_path, class: nav_link_class(activity_logs_path) %>
+    <% if user_signed_in? %>
+      <div class="hub-shell">
+        <aside class="hub-sidebar" aria-label="Navegação principal">
+          <%= link_to root_path, class: "hub-brand" do %>
+            <span class="hub-brand-mark">CM</span>
+            <span><strong>Correio da Manhã</strong><small>Content Hub</small></span>
+          <% end %>
+
+          <nav class="hub-sidebar-nav">
+            <%= link_to root_path, class: "hub-nav-link #{'active' if current_page?(root_path)}" do %><%= ui_icon("layout-dashboard") %><span>Radar editorial</span><% end %>
+            <%= link_to topics_path, class: "hub-nav-link #{'active' if controller_name == 'topics'}" do %><%= ui_icon("search") %><span>Pesquisar</span><% end %>
+            <%= link_to articles_path, class: "hub-nav-link #{'active' if controller_name.in?(%w[articles article_rewrites reporter_articles])}" do %><%= ui_icon("file-text") %><span>Produção</span><% end %>
+            <details class="hub-nav-group nav-menu <%= 'active' if publication_active %>">
+              <summary><%= ui_icon("send") %><span>Publicações</span><span class="hub-nav-count"><%= publication_sites.size %></span></summary>
+              <div class="hub-nav-submenu">
+                <% publication_sites.each do |site| %>
+                  <%= link_to site.name, publication_path(site.publication_key), class: ('active' if params[:publication_key] == site.publication_key) %>
+                <% end %>
+              </div>
+            </details>
+            <%= link_to analytics_path, class: "hub-nav-link #{'active' if controller_name == 'analytics'}" do %><%= ui_icon("chart-no-axes-column-increasing") %><span>Análises</span><% end %>
+          </nav>
+
+          <% if current_user.admin? %>
+            <div class="hub-sidebar-section">
+              <span>Administração</span>
+              <%= link_to feeds_path, class: "hub-nav-link #{'active' if controller_name == 'feeds'}" do %><%= ui_icon("rss") %><span>Canais RSS</span><% end %>
+              <%= link_to sites_path, class: "hub-nav-link #{'active' if controller_name == 'sites'}" do %><%= ui_icon("globe") %><span>Sites</span><% end %>
+              <%= link_to users_path, class: "hub-nav-link #{'active' if controller_name == 'users'}" do %><%= ui_icon("users") %><span>Equipe</span><% end %>
             </div>
-          </details>
-        <% end %>
-      </div></nav><% end %>
-    </header>
-    <main>
-      <% if notice.present? %><div class="notice"><%= notice %></div><% end %>
-      <% if alert.present? %><div class="alert"><%= alert %></div><% end %>
-      <%= yield %>
-    </main>
+          <% end %>
+
+          <div class="hub-sidebar-footer">
+            <% if current_user.admin? %><%= link_to activity_logs_path, class: "hub-nav-link #{'active' if controller_name == 'activity_logs'}" do %><%= ui_icon("activity") %><span>Atividades</span><% end %><% end %>
+            <%= link_to "#", class: "hub-nav-link", aria: { label: "Ajuda" } do %><%= ui_icon("circle-question-mark") %><span>Ajuda</span><% end %>
+          </div>
+        </aside>
+
+        <div class="hub-frame">
+          <header class="hub-topbar">
+            <%= link_to root_path, class: "hub-mobile-brand" do %><span class="hub-brand-mark">CM</span><span><strong>Radar</strong><small>Correio da Manhã</small></span><% end %>
+            <%= form_with url: articles_path, method: :get, class: "hub-global-search", data: { turbo: false } do |form| %>
+              <%= ui_icon("search") %>
+              <%= form.search_field :q, value: params[:q], placeholder: "Buscar matérias, fontes ou palavras-chave", aria: { label: "Buscar no acervo" } %>
+            <% end %>
+            <div class="hub-topbar-actions">
+              <span class="hub-live-status"><span></span>Redação ativa</span>
+              <%= link_to activity_logs_path, class: "hub-icon-button", aria: { label: "Notificações" } do %><%= ui_icon("bell") %><% end %>
+              <details class="hub-user-menu nav-menu <%= 'active' if admin_active %>">
+                <summary><span class="hub-avatar"><%= user_display_name(current_user).first.upcase %></span><span class="hub-user-copy"><strong><%= user_display_name(current_user) %></strong><small><%= current_user.admin? ? "Administrador" : "Redação" %></small></span></summary>
+                <div class="hub-user-dropdown">
+                  <% if current_user.admin? %>
+                    <%= link_to "Configurações", sites_path %>
+                    <%= link_to "Categorias", categories_path %>
+                  <% end %>
+                  <%= button_to destroy_user_session_path, method: :delete, class: "hub-sign-out" do %><%= ui_icon("log-out") %><span>Sair</span><% end %>
+                </div>
+              </details>
+            </div>
+          </header>
+
+          <main class="hub-main">
+            <% if notice.present? %><div class="notice"><%= notice %></div><% end %>
+            <% if alert.present? %><div class="alert"><%= alert %></div><% end %>
+            <%= yield %>
+          </main>
+        </div>
+
+        <nav class="hub-mobile-nav" aria-label="Navegação principal mobile">
+          <%= link_to root_path, class: ('active' if current_page?(root_path)) do %><%= ui_icon("layout-dashboard") %><span>Radar</span><% end %>
+          <%= link_to topics_path, class: ('active' if controller_name == 'topics') do %><%= ui_icon("search") %><span>Pesquisar</span><% end %>
+          <%= link_to articles_path, class: ('active' if controller_name.in?(%w[articles article_rewrites reporter_articles])) do %><%= ui_icon("file-text") %><span>Produção</span><% end %>
+          <%= link_to(publication_sites.first ? publication_path(publication_sites.first.publication_key) : root_path, class: ('active' if publication_active)) do %><%= ui_icon("send") %><span>Publicar</span><% end %>
+          <%= link_to analytics_path, class: ('active' if controller_name == 'analytics') do %><%= ui_icon("chart-no-axes-column-increasing") %><span>Análises</span><% end %>
+        </nav>
+      </div>
+    <% else %>
+      <header class="hub-auth-header">
+        <%= link_to root_path, class: "hub-brand" do %><span class="hub-brand-mark">CM</span><span><strong>Correio da Manhã</strong><small>Content Hub</small></span><% end %>
+      </header>
+      <main class="hub-auth-main">
+        <% if notice.present? %><div class="notice"><%= notice %></div><% end %>
+        <% if alert.present? %><div class="alert"><%= alert %></div><% end %>
+        <%= yield %>
+      </main>
+    <% end %>
     <div class="loading-indicator" id="loading-indicator" role="status" aria-live="polite" aria-hidden="true">
       <span class="loading-spinner"></span>
       <span class="loading-copy"><strong id="loading-title">Processando solicitação</strong><span>Isso pode levar alguns segundos.</span></span>

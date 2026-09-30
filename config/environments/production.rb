@@ -6,8 +6,9 @@ Rails.application.configure do
   config.consider_all_requests_local = false
   config.action_controller.perform_caching = true
   config.public_file_server.enabled = ENV["RAILS_SERVE_STATIC_FILES"].present?
-  config.force_ssl = true
-  config.assume_ssl = true
+  ssl_enabled = ENV.fetch("FORCE_SSL", "true") != "false"
+  config.force_ssl = ssl_enabled
+  config.assume_ssl = ssl_enabled
   config.log_tags = [:request_id]
   config.logger = ActiveSupport::TaggedLogging.logger($stdout)
   config.log_level = ENV.fetch("RAILS_LOG_LEVEL", "info")

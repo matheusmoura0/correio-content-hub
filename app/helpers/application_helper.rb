@@ -1,4 +1,10 @@
 module ApplicationHelper
+  UI_ICONS = %w[
+    activity bell chart-no-axes-column-increasing circle-question-mark ellipsis
+    file-text globe layout-dashboard library list-filter log-out menu newspaper
+    pencil plus rss scan-search search send settings tags users x
+  ].freeze
+
   ARTICLE_STATUS_LABELS = {
     "imported" => "Coletada",
     "reviewing" => "Em revisão",
@@ -17,6 +23,19 @@ module ApplicationHelper
 
   def nav_link_class(path)
     current_page?(path) ? "nav-link active" : "nav-link"
+  end
+
+  def ui_icon(name, class_name: nil)
+    icon = name.to_s
+    raise ArgumentError, "Unknown UI icon: #{icon}" unless UI_ICONS.include?(icon)
+
+    content_tag(
+      :span,
+      "",
+      class: ["ui-icon", class_name].compact,
+      style: "--ui-icon: url('/icons/#{icon}.svg')",
+      aria: { hidden: true }
+    )
   end
 
   def user_display_name(user)

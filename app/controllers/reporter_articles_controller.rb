@@ -1,16 +1,18 @@
 class ReporterArticlesController < ApplicationController
-  before_action :load_site
+  before_action :load_sites
   before_action :set_article, only: %i[edit update]
 
   def new
+    @site = selected_site
     @article = Article.new(author: current_user.name.presence || current_user.email)
   end
 
   def create
+    @site = selected_site
     @article = Article.new(article_params)
     @article.assign_attributes(
       feed: reporter_feed,
-      source_url: "https://hub.cm.com.br/originais/turismo-hoje/#{SecureRandom.uuid}",
+      source_url: "https://hub.cm.com.br/originais/#{@site.publication_key}/#{SecureRandom.uuid}",
       status: "reviewing",
       author: current_user.name.presence || current_user.email,
       reported_by: current_user
@@ -56,22 +58,28 @@ class ReporterArticlesController < ApplicationController
 
   private
 
-  def load_site
-    @site = Site.find_by!(domain: "turismohoje.com.br", active: true)
+  def load_sites
+    @sites = Site.where(active: true).where.not(publication_key: [nil, ""]).order(:name).includes(:categories).load
+  end
+
+  def selected_site
+    requested_id = params[:site_id].presence
+    requested_id ? @sites.find { |site| site.id == requested_id.to_i } || @sites.first! : @sites.first!
   end
 
   def set_article
-    @article = Article.joins(:site_articles)
-      .where(site_articles: { site_id: @site.id })
-      .find(params[:id])
+    @article = Article.includes(site_articles: :site).find(params[:id])
+    @site = @article.site_articles.first&.site
+    return redirect_to(articles_path, alert: "A matéria não possui uma publicação de destino.") unless @site
     return if current_user.admin? || @article.reported_by_id == current_user.id
 
     redirect_to articles_path(site_domain: @site.domain), alert: "Você só pode editar as matérias que criou."
   end
 
   def reporter_feed
-    Feed.find_or_create_by!(url: "https://hub.cm.com.br/origens/turismo-hoje") do |feed|
-      feed.name = "Redação Turismo Hoje"
+    feed_url = @site.domain == "turismohoje.com.br" ? "https://hub.cm.com.br/origens/turismo-hoje" : "https://hub.cm.com.br/origens/editorial/#{@site.publication_key}"
+    Feed.find_or_create_by!(url: feed_url) do |feed|
+      feed.name = "Redação #{@site.name}"
       feed.active = false
       feed.site = @site
     end

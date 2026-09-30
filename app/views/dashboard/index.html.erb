@@ -1,27 +1,129 @@
-<div class="page-heading"><div><p class="eyebrow">Rede de Conteúdo</p><h1>Distribuição editorial</h1><p class="muted">Acompanhe a entrada por RSS, a revisão e a publicação nos sites da rede.</p></div></div>
-<div class="grid">
-  <div class="card stat"><strong><%= @feeds_count %></strong><span>canais RSS ativos</span></div>
-  <div class="card stat"><strong><%= @articles_count %></strong><span>matérias no acervo</span></div>
-  <div class="card stat"><strong><%= @pending_count %></strong><span>aguardando revisão</span></div>
-  <div class="card stat"><strong><%= @published_count %></strong><span>distribuições no ar</span></div>
-</div>
+<% stage_config = {
+  entries: { label: "Entradas", description: "Novas matérias para triagem.", count: @workflow_counts.fetch("imported", 0) },
+  reviewing: { label: "Em revisão", description: "Apuração, edição e checagem.", count: @workflow_counts.fetch("reviewing", 0) },
+  ready: { label: "Prontas", description: "Aprovadas ou já publicadas.", count: @workflow_counts.fetch("approved", 0) + @workflow_counts.fetch("published", 0) }
+} %>
 
-<div class="card callout"><div><p class="eyebrow">Fluxo principal</p><h2>Abasteça a rede pelos canais oficiais</h2><p>Atualize os feeds RSS do Correio, revise as matérias e distribua com crédito e link para a publicação original.</p></div><%= link_to "Gerenciar canais RSS", feeds_path, class: "button accent" %></div>
+<div class="radar-page" data-radar-page>
+  <header class="radar-heading">
+    <div>
+      <p class="radar-kicker"><span></span><%= l(Date.current, format: :long) %></p>
+      <h1>Radar editorial</h1>
+      <p>Da descoberta à publicação, acompanhe o que pede atenção agora.</p>
+    </div>
+    <div class="radar-heading-actions">
+      <%= link_to new_topic_path, class: "button secondary" do %><%= ui_icon("search") %><span>Nova pesquisa</span><% end %>
+      <%= link_to new_reporter_article_path, class: "button radar-primary-action" do %><%= ui_icon("pencil") %><span>Escrever matéria</span><% end %>
+    </div>
+  </header>
 
-<div class="dashboard-columns">
-  <section>
-    <div class="section-heading"><h2>Entradas mais recentes</h2><%= link_to "Abrir acervo", articles_path %></div>
-    <div class="news-list"><% @recent_articles.each do |article| %>
-      <article><strong><%= link_to article.title, article_path(article) %></strong><div class="muted"><%= article.feed&.publisher_name.presence || "Fonte indisponível" %> · <%= article_status_label(article.status) %></div></article>
-    <% end %></div>
+  <section class="radar-pulse" aria-label="Pulso da redação">
+    <div class="radar-pulse-title"><span></span><strong>Pulso da redação</strong></div>
+    <div><small>Monitoramentos</small><strong><%= @topics_count %> ativos</strong></div>
+    <div><small>Entradas</small><strong><%= @pending_count %> aguardando triagem</strong></div>
+    <div><small>Publicações</small><strong><%= @published_count %> distribuições no ar</strong></div>
   </section>
-  <aside>
-    <div class="section-heading"><h2>Equipe online</h2><span class="online-count"><%= @online_users.size %></span></div>
-    <div class="online-list"><% @online_users.each do |user| %>
-      <div><span class="presence-dot online"></span><strong><%= user.name.presence || user.email %></strong><small>Online agora</small></div>
-    <% end %><% if @online_users.empty? %><p class="muted">Nenhum usuário online.</p><% end %></div>
 
-    <% if current_user.admin? %><div class="section-heading activity-title"><h2>Atividade recente</h2><%= link_to "Ver histórico", activity_logs_path %></div>
-    <div class="mini-activity"><% @recent_activities.each do |activity| %><div><strong><%= activity.user&.name.presence || activity.user&.email || "Usuário removido" %></strong><span><%= activity.description %></span><small><%= time_ago_in_words(activity.created_at) %> atrás</small></div><% end %></div><% end %>
-  </aside>
+  <div class="radar-mobile-tabs" role="tablist" aria-label="Etapas editoriais">
+    <% stage_config.each do |key, stage| %>
+      <button type="button" role="tab" aria-selected="<%= key == :reviewing %>" data-radar-tab="<%= key %>" class="<%= 'active' if key == :reviewing %>">
+        <span><%= stage[:label] %></span><small><%= stage[:count] %></small>
+      </button>
+    <% end %>
+  </div>
+
+  <div class="radar-mobile-sort">
+    <span><%= ui_icon("list-filter") %>Mais recentes</span>
+    <%= link_to articles_path do %>Filtrar <%= ui_icon("list-filter") %><% end %>
+  </div>
+
+  <div class="radar-workspace">
+    <section class="radar-board" aria-label="Fluxo editorial">
+      <% stage_config.each do |key, stage| %>
+        <section class="radar-column <%= 'mobile-active' if key == :reviewing %>" data-radar-stage="<%= key %>">
+          <header>
+            <div><h2><%= stage[:label] %> <span><%= stage[:count] %></span></h2><p><%= stage[:description] %></p></div>
+            <%= link_to articles_path(status: key == :ready ? "approved" : (key == :entries ? "imported" : "reviewing")), class: "radar-column-link", aria: { label: "Ver todas em #{stage[:label]}" } do %><%= ui_icon("list-filter") %><% end %>
+          </header>
+
+          <div class="radar-story-list">
+            <% @workflow_articles.fetch(key).each do |article| %>
+              <% owner = article.rewritten_by&.name.presence || article.author.presence %>
+              <article class="radar-story <%= 'selected' if article == @selected_article %>">
+                <%= link_to article_path(article), class: "radar-story-main" do %>
+                  <span class="radar-priority <%= article.status %>"></span>
+                  <span class="radar-story-copy">
+                    <strong><%= article.rewritten_title.presence || article.title %></strong>
+                    <small><%= article.feed&.publisher_name.presence || article.feed&.name || "Fonte não informada" %></small>
+                    <span class="radar-story-meta">
+                      <% if owner.present? %><i><%= owner.first.upcase %></i><%= owner %><% else %>Sem responsável<% end %>
+                      <b><%= article_status_label(article.status) %></b>
+                    </span>
+                  </span>
+                  <time datetime="<%= article.updated_at.iso8601 %>"><%= time_ago_in_words(article.updated_at) %></time>
+                <% end %>
+                <% if article == @selected_article %>
+                  <div class="radar-inline-actions">
+                    <%= link_to article_path(article) do %><%= ui_icon("file-text") %><span>Detalhes</span><% end %>
+                    <%= link_to article_path(article, anchor: "review") do %><%= ui_icon("pencil") %><span>Editar</span><% end %>
+                    <%= link_to article_path(article, anchor: "distribution") do %><%= ui_icon("send") %><span>Publicar</span><% end %>
+                    <%= link_to article_path(article), aria: { label: "Mais ações" } do %><%= ui_icon("ellipsis") %><span>Mais</span><% end %>
+                  </div>
+                <% end %>
+              </article>
+            <% end %>
+
+            <% if @workflow_articles.fetch(key).empty? %>
+              <div class="radar-empty"><%= ui_icon("newspaper") %><strong>Nada por aqui</strong><span>As matérias desta etapa aparecerão aqui.</span></div>
+            <% end %>
+          </div>
+        </section>
+      <% end %>
+    </section>
+
+    <aside class="radar-detail" aria-label="Matéria em destaque">
+      <% if @selected_article %>
+        <header><span class="radar-detail-status"><i></i><%= article_status_label(@selected_article.status) %></span><%= link_to article_path(@selected_article), aria: { label: "Abrir matéria" } do %><%= ui_icon("ellipsis") %><% end %></header>
+        <h2><%= @selected_article.rewritten_title.presence || @selected_article.title %></h2>
+        <p class="radar-detail-source"><%= @selected_article.feed&.publisher_name.presence || @selected_article.feed&.name %> · <%= @selected_article.updated_at.strftime("%d/%m/%Y, %H:%M") %></p>
+        <% if @selected_article.image_url.present? %><%= image_tag @selected_article.image_url, class: "radar-detail-image", alt: "" %><% end %>
+        <div class="radar-detail-summary"><strong>Resumo</strong><p><%= truncate(@selected_article.description.presence || @selected_article.content.to_s, length: 420) %></p></div>
+        <% unless @selected_article.image_optional? || @selected_article.licensed_image_ready? %>
+          <div class="radar-rights-warning"><strong>Direitos de imagem pendentes</strong><span>Confirme a origem antes de publicar.</span></div>
+        <% end %>
+        <section class="radar-destinations">
+          <h3>Destinos disponíveis</h3>
+          <% @publication_sites.each do |site| %>
+            <div><span class="publication-monogram"><%= site.name.first(2).upcase %></span><strong><%= site.name %></strong></div>
+          <% end %>
+        </section>
+        <footer>
+          <%= link_to article_path(@selected_article, anchor: "rewrite"), class: "button" do %><%= ui_icon("scan-search") %><span>Reescrever com IA</span><% end %>
+          <%= link_to article_path(@selected_article), class: "button secondary" do %><%= ui_icon("pencil") %><span>Revisar matéria</span><% end %>
+        </footer>
+      <% else %>
+        <div class="radar-empty"><%= ui_icon("newspaper") %><strong>O radar está vazio</strong><span>Importe um canal ou crie uma pesquisa para começar.</span></div>
+      <% end %>
+    </aside>
+  </div>
+
+  <%= link_to new_reporter_article_path, class: "radar-mobile-fab", aria: { label: "Escrever matéria" } do %><%= ui_icon("plus") %><% end %>
 </div>
+
+<script>
+  (() => {
+    const page = document.querySelector("[data-radar-page]");
+    if (!page || page.dataset.ready === "true") return;
+    page.dataset.ready = "true";
+    const tabs = Array.from(page.querySelectorAll("[data-radar-tab]"));
+    const stages = Array.from(page.querySelectorAll("[data-radar-stage]"));
+    tabs.forEach((tab) => tab.addEventListener("click", () => {
+      tabs.forEach((item) => {
+        const active = item === tab;
+        item.classList.toggle("active", active);
+        item.setAttribute("aria-selected", active);
+      });
+      stages.forEach((stage) => stage.classList.toggle("mobile-active", stage.dataset.radarStage === tab.dataset.radarTab));
+    }));
+  })();
+</script>

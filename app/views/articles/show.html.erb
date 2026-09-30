@@ -2,19 +2,19 @@
 <p class="muted"><%= @article.feed.name %> · <%= @article.published_at&.strftime("%d/%m/%Y %H:%M") %></p>
 
 <div class="card">
-  <p><strong>Origem:</strong> <%= link_to @article.source_url, @article.source_url, target: "_blank", rel: "noopener" %></p>
+  <p><strong>Origem:</strong> <% if @article.feed.hub_authored? %>Matéria criada no Content Hub<% else %><%= link_to @article.source_url, @article.source_url, target: "_blank", rel: "noopener" %><% end %></p>
   <% if (@article.original_image_url.presence || @article.image_url).present? %><div class="source-image-reference"><%= image_tag(@article.image_url.presence || @article.original_image_url, alt: "") %><span><%= @article.feed.correio_source? ? "Imagem original do Correio — autorizada para uso e opcional na publicação" : "Imagem coletada da fonte — apenas referência, sem autorização automática de publicação" %></span></div><% end %>
   <div class="article-copy"><%= simple_format(@article.content.presence || @article.description) %></div>
 </div>
 
-<% if @article.feed.correio_source? %>
+<% if @article.feed.correio_source? || @article.feed.hub_authored? %>
 <section class="card image-rights-panel">
   <div class="page-heading compact">
     <div><p class="eyebrow">Imagem da matéria</p><h2>Imagem opcional</h2></div>
     <span class="badge status-approved">Conteúdo próprio</span>
   </div>
   <% if @article.image_url.present? %>
-    <div class="licensed-image-preview"><%= image_tag @article.image_url, alt: "" %><span>Correio da Manhã · imagem obtida automaticamente da matéria original.</span></div>
+    <div class="licensed-image-preview"><%= image_tag @article.image_url, alt: "" %><span><%= @article.feed.publisher_name %> · imagem editorial própria.</span></div>
   <% else %>
     <p class="muted">A página original não forneceu uma imagem. Isso não impede a publicação: o site deverá usar o layout sem imagem.</p>
   <% end %>

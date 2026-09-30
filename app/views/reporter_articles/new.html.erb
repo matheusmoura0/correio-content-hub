@@ -1,16 +1,47 @@
 <div class="page-heading">
-  <div><p class="eyebrow">Turismo Hoje · pauta própria</p><h1>Escrever matéria</h1><p class="muted">O rascunho fica no Hub para revisão antes da publicação.</p></div>
-  <%= link_to "Voltar às matérias", articles_path(site_domain: @site.domain), class: "button secondary" %>
+  <div><p class="eyebrow"><%= @site.name %> · conteúdo próprio</p><h1>Escrever matéria</h1><p class="muted">Crie a reportagem do zero e envie o rascunho para revisão editorial.</p></div>
+  <%= link_to "Voltar às matérias", articles_path(site_domain: @site&.domain), class: "button secondary" %>
 </div>
 <% if @article.errors.any? %><div class="alert"><%= @article.errors.full_messages.to_sentence %></div><% end %>
 <section class="card">
   <%= form_with model: @article, url: @article.persisted? ? reporter_article_path(@article) : reporter_articles_path, class: "reporter-article-form" do |form| %>
+    <% unless @article.persisted? %>
+      <%= label_tag :site_id, "Publicação de destino" %>
+      <%= select_tag :site_id, options_from_collection_for_select(@sites, :id, :name, @site&.id), required: true, data: { destination_select: true } %>
+    <% else %>
+      <div class="editor-destination"><span>Publicação de destino</span><strong><%= @site.name %></strong></div>
+    <% end %>
     <%= form.label :title, "Título" %><%= form.text_field :title, required: true, maxlength: 180, placeholder: "Escreva um título claro e informativo" %>
     <%= form.label :description, "Linha fina" %><%= form.text_area :description, rows: 3, maxlength: 320, placeholder: "Resuma a notícia em uma ou duas frases" %>
     <%= form.label :content, "Texto da matéria" %><%= form.text_area :content, rows: 22, required: true, placeholder: "Escreva o texto da reportagem…" %>
     <%= label_tag :category_id, "Editoria" %>
-    <%= select_tag :category_id, options_from_collection_for_select(@site.categories.order(:name), :id, :name, @article.site_articles.find_by(site: @site)&.category_id), include_blank: "Escolha uma editoria" %>
+    <select name="category_id" id="category_id">
+      <option value="">Escolha uma editoria</option>
+      <% (@article.persisted? ? [@site] : @sites).each do |site| %>
+        <% site.categories.sort_by(&:name).each do |category| %>
+          <option value="<%= category.id %>" data-site-id="<%= site.id %>" <%= "selected" if @article.site_articles.find { |item| item.site_id == site.id }&.category_id == category.id %>><%= category.name %></option>
+        <% end %>
+      <% end %>
+    </select>
     <p class="muted">Repórter: <strong><%= @article.author.presence || current_user.name.presence || current_user.email %></strong>. Imagens podem ser adicionadas pela edição após a confirmação dos direitos de uso.</p>
     <%= form.submit @article.persisted? ? "Salvar rascunho" : "Enviar para revisão", class: "accent" %>
   <% end %>
 </section>
+
+<script>
+  (() => {
+    const destination = document.querySelector("[data-destination-select]");
+    const categories = document.getElementById("category_id");
+    if (!destination || !categories) return;
+    const refreshCategories = () => {
+      Array.from(categories.options).forEach((option) => {
+        if (!option.dataset.siteId) return;
+        option.hidden = option.dataset.siteId !== destination.value;
+        option.disabled = option.hidden;
+      });
+      if (categories.selectedOptions[0]?.disabled) categories.value = "";
+    };
+    destination.addEventListener("change", refreshCategories);
+    refreshCategories();
+  })();
+</script>

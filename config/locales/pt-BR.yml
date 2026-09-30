@@ -1,4 +1,7 @@
 pt-BR:
+  devise:
+    failure:
+      unauthenticated: "Faça login para continuar."
   activerecord:
     models:
       article: Matéria

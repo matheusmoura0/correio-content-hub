@@ -27,13 +27,22 @@ class Feed < ApplicationRecord
     false
   end
 
+  def hub_authored?
+    uri = URI.parse(url.to_s)
+    uri.host.to_s.downcase == "hub.cm.com.br" && uri.path.start_with?("/origens/")
+  rescue URI::InvalidURIError, TypeError
+    false
+  end
+
   def publisher_name
+    return site.name if hub_authored? && site
     return "Turismo Hoje" if turismo_hoje_authored?
 
     correio_source? ? "Correio da Manhã" : name
   end
 
   def publisher_url
+    return "https://#{site.domain}" if hub_authored? && site
     return "https://turismohoje.com.br" if turismo_hoje_authored?
     return unless correio_source?
 
