@@ -18,10 +18,10 @@ class EditorialReportTest < Minitest::Test
     ActiveRecord::Base.connection.rollback_transaction
   end
 
-  def event(key: "a", author: "Ana", category: "Cinema", type: "page_view", at: @from, value: 0, title: "Cinema", site: @site)
+  def event(key: "a", author: "Ana", category: "Cinema", type: "page_view", at: @from, value: 0, title: "Cinema", site: @site, image_url: nil, author_image_url: nil)
     site.analytics_events.create!(content_key: key, content_author: author, content_category: category,
       event_type: type, occurred_at: at, value: value, page_title: title, path: "/#{key}",
-      visitor_hash: "visitor", session_hash: "session", device_type: "desktop")
+      visitor_hash: "visitor", session_hash: "session", device_type: "desktop", image_url:, author_image_url:)
   end
 
   def report(**options)
@@ -37,10 +37,12 @@ class EditorialReportTest < Minitest::Test
     assert_equal 1, report.summary(previous: true)[:views]
     assert_equal 100.0, report.rows.first[:views_change]
     assert_equal 7, report.daily_views.size
+    assert_equal 7, report.daily_views(previous: true).size
+    assert_equal 1, report.daily_views(previous: true).sum { |day| day[:views] }
   end
 
   def test_author_totals_and_median_do_not_count_clicks_as_views
-    3.times { event }
+    3.times { event(image_url: "https://cdn.example/cinema.jpg", author_image_url: "https://cdn.example/ana.jpg") }
     event(key: "b")
     event(type: "click")
     event(type: "engagement", value: 30)
@@ -50,6 +52,8 @@ class EditorialReportTest < Minitest::Test
     assert_equal 2.0, row[:median_views]
     assert_equal 1, row[:clicks]
     assert_equal 30, row[:engagement_seconds]
+    assert_equal "https://cdn.example/cinema.jpg", row[:image_url]
+    assert_equal "https://cdn.example/ana.jpg", row[:author_image_url]
     assert_nil row[:views_change]
   end
 

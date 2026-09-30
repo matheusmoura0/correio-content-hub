@@ -499,11 +499,11 @@
       }
       @media (max-width:420px) { .grid { grid-template-columns:1fr; } .brand-name { font-size:15px; } .brand-product { letter-spacing:.08em; } .session .logout { padding:6px 9px !important; } .nav-link,.nav-menu > summary { padding-inline:8px; } }
     </style>
-    <link rel="stylesheet" href="/content-hub.css?v=20260930-4">
+    <link rel="stylesheet" href="/content-hub.css?v=20260930-5">
   </head>
   <body class="<%= user_signed_in? ? 'hub-authenticated' : 'hub-guest' %>">
     <% if user_signed_in? %>
-      <% publication_sites = Site.where(active: true).where.not(publication_key: [nil, ""]).order(:name).load %>
+      <% publication_sites = Site.publication_destinations.order(:name).load %>
       <% publication_active = params[:publication_key].present? %>
       <% admin_active = %w[feeds sites categories users activity_logs].include?(controller_name) %>
     <% end %>

@@ -5,6 +5,30 @@
   const endpoint = "https://hub.cm.com.br/api/v1/analytics/events";
   if (!site) return;
 
+  const imageValue = (value) => {
+    if (typeof value === "string") return value;
+    return value?.url || value?.contentUrl || "";
+  };
+  const authorImageFromJsonLd = (authorName) => {
+    const candidates = [];
+    document.querySelectorAll('script[type="application/ld+json"]').forEach((node) => {
+      try {
+        const queue = [JSON.parse(node.textContent || "null")];
+        while (queue.length) {
+          const item = queue.shift();
+          if (Array.isArray(item)) { queue.push(...item); continue; }
+          if (!item || typeof item !== "object") continue;
+          if (item.author) candidates.push(...(Array.isArray(item.author) ? item.author : [item.author]));
+          if (item["@graph"]) queue.push(item["@graph"]);
+        }
+      } catch (_) {}
+    });
+    const normalized = authorName.toLocaleLowerCase("pt-BR");
+    const match = candidates.find((author) => typeof author === "object" && author.name?.toLocaleLowerCase("pt-BR") === normalized) ||
+      candidates.find((author) => typeof author === "object" && imageValue(author.image));
+    return imageValue(match?.image);
+  };
+
   const sessionId = () => {
     let value = sessionStorage.getItem("cm_analytics_session");
     if (!value) {
@@ -13,10 +37,13 @@
     }
     return value;
   };
+  const author = script?.dataset.author || meta("cm:author");
   const editorial = {
     article_id: script?.dataset.articleId || meta("cm:article-id") || new URLSearchParams(location.search).get("id") || "",
     category: script?.dataset.category || meta("cm:category"),
-    author: script?.dataset.author || meta("cm:author")
+    author,
+    author_image_url: script?.dataset.authorImage || meta("cm:author-image") || authorImageFromJsonLd(author || ""),
+    image_url: script?.dataset.image || meta("cm:image") || document.querySelector('meta[property="og:image"]')?.content || ""
   };
   const send = (eventType, data = {}) => {
     const payload = new URLSearchParams({

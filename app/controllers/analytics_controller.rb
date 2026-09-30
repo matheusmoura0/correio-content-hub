@@ -5,8 +5,12 @@ class AnalyticsController < ApplicationController
 
   def index
     @total = @report.total_rows
-    @page = params[:page].to_i.clamp(1, [(@total / 50.0).ceil, 1].max)
-    @rows = @report.rows(limit: 50, offset: (@page - 1) * 50)
+    @per_page = [25, 50, 100].include?(params[:per_page].to_i) ? params[:per_page].to_i : 25
+    @page = params[:page].to_i.clamp(1, [(@total / @per_page.to_f).ceil, 1].max)
+    @rows = @report.rows(limit: @per_page, offset: (@page - 1) * @per_page)
+    @devices = @report.devices
+    @top_clicks = @report.top_clicks.first(8)
+    @recent_activities = ActivityLog.includes(:user).recent.limit(6).load
   end
 
   def export
@@ -40,7 +44,7 @@ class AnalyticsController < ApplicationController
     @report = Analytics::EditorialReport.new(site: @site, from: @from, to: @to, filters: filters,
       dimension: params[:dimension], sort: params[:sort])
     @filter_params = @report.filters.merge(site_id: @site.id, from: start_date.iso8601, to: end_date.iso8601,
-      dimension: @report.dimension, sort: @report.sort)
+      dimension: @report.dimension, sort: @report.sort, per_page: params[:per_page].presence)
   end
 
   def parse_date(value)
@@ -50,7 +54,7 @@ class AnalyticsController < ApplicationController
   end
 
   def csv_data
-    columns = %i[key name author category views previous_views views_change visitors articles clicks engagement_seconds median_views]
+    columns = %i[key name author category image_url author_image_url views previous_views views_change visitors articles clicks engagement_seconds median_views]
     CSV.generate do |csv|
       csv << ["Publicação", @site.name, "Visão", @report.label, "Início UTC", @from.iso8601, "Fim exclusivo UTC", @to.iso8601].map { |v| csv_cell(v) }
       csv << ["Filtros", @report.filters.to_json].map { |v| csv_cell(v) }

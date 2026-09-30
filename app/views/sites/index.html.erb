@@ -9,8 +9,8 @@
       <tr>
         <td data-label="Nome"><%= site.name %></td>
         <td data-label="Domínio"><%= site.domain %></td>
-        <td data-label="Situação"><%= site.active? ? "Ativo" : "Inativo" %></td>
-        <td data-label="Ações"><div class="actions"><%= link_to "Gerenciar conteúdo", publication_path(site.publication_key), class: "button" %><%= link_to "Editar", edit_site_path(site), class: "button secondary" %></div></td>
+        <td data-label="Situação"><%= site.active? ? (site.publication_destination? ? "Destino ativo" : "Somente fonte") : "Inativo" %></td>
+        <td data-label="Ações"><div class="actions"><%= link_to "Gerenciar conteúdo", publication_path(site.publication_key), class: "button" if site.publication_destination? %><%= link_to "Editar", edit_site_path(site), class: "button secondary" %></div></td>
       </tr>
     <% end %>
   </tbody>

@@ -14,6 +14,7 @@ module Publishing
     end
 
     def call
+      raise ArgumentError, "#{@site.name} é somente fonte e não recebe matérias do Hub" unless @site.publication_destination?
       profile = SiteProfile.for(@site)
       if @target == "section"
         raise ArgumentError, "Escolha uma editoria válida da Ícaro" unless @site.layout_profile == "icaro" && @category&.site_id == @site.id

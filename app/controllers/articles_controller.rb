@@ -103,7 +103,7 @@ class ArticlesController < ApplicationController
   end
 
   def load_sites
-    @sites = Site.where(active: true).includes(:categories).order(:name)
+    @sites = Site.publication_destinations.includes(:categories).order(:name)
     @gastronomy_site = @sites.find { |site| site.domain == "revistadegastronomia.com.br" }
     @gastronomy_distribution = @article.site_articles.find_by(site: @gastronomy_site) if @gastronomy_site
     @gastronomy_slot_occupancy = @gastronomy_site&.site_articles&.includes(:article)&.where(status: "published", slot_key: SiteArticle::SLOT_KEYS)&.index_by(&:slot_key) || {}
@@ -144,7 +144,7 @@ class ArticlesController < ApplicationController
     @article.site_articles.where.not(site_id: selected_ids).destroy_all
 
     selected_ids.each do |site_id|
-      site = Site.find(site_id)
+      site = Site.publication_destinations.find(site_id)
       next if site.domain == "revistadegastronomia.com.br"
 
       distribution = @article.site_articles.find_or_initialize_by(site_id:)

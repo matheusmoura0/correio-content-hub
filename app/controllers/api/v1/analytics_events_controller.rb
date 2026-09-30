@@ -19,6 +19,8 @@ module Api
           content_key: clean(params[:article_id], 180),
           content_category: clean(params[:category], 120),
           content_author: clean(params[:author], 160),
+          image_url: clean(params[:image_url], 1_500),
+          author_image_url: clean(params[:author_image_url], 1_500),
           target_url: clean(params[:target_url], 500),
           target_text: clean(params[:target_text], 160),
           referrer: clean(params[:referrer], 500),

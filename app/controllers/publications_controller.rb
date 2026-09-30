@@ -78,6 +78,6 @@ class PublicationsController < ApplicationController
   private
 
   def set_site
-    @site = Site.find_by!(publication_key: params[:publication_key])
+    @site = Site.publication_destinations.find_by!(publication_key: params[:publication_key])
   end
 end

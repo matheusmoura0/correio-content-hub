@@ -14,6 +14,8 @@
   </div>
   <%= form.label :allowed_origins, "Origens autorizadas (uma por linha)" %>
   <%= form.text_area :allowed_origins, rows: 4, placeholder: "https://cinemagazine.com.br\nhttps://preview.vercel.app" %>
+  <label><%= form.check_box :receives_hub_content, disabled: site.correio_source? %> Recebe matérias e publicações do Hub</label>
+  <% if site.correio_source? %><p class="muted">O Correio da Manhã é uma fonte editorial e não pode ser usado como destino.</p><% end %>
   <label><%= form.check_box :active %> Ativo</label><br><br>
   <%= form.submit %>
 <% end %>

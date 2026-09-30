@@ -62,10 +62,13 @@ module Analytics
       end
     end
 
-    def daily_views
+    def daily_views(previous: false)
       # The dashboard explicitly uses UTC, matching the ingestion timestamps.
-      counts = scope.where(event_type: "page_view").group(Arel.sql("DATE(occurred_at)")).count
-      (from.to_date...to.to_date).map { |date| { date: date.iso8601, views: counts.fetch(date, 0) } }
+      relation = scope(previous).where(event_type: "page_view")
+      counts = relation.group(Arel.sql("DATE(occurred_at)")).count
+      range_start = previous ? previous_from : from
+      range_end = previous ? from : to
+      (range_start.to_date...range_end.to_date).map { |date| { date: date.iso8601, views: counts.fetch(date, 0) } }
     end
 
     def devices
@@ -123,7 +126,7 @@ module Analytics
 
     def aggregate(relation, grouped: false)
       expressions = []
-      expressions += ["#{group_expression} AS group_key", "MAX(page_title)", "MAX(content_author)", "MAX(content_category)"] if grouped
+      expressions += ["#{group_expression} AS group_key", "MAX(page_title)", "MAX(content_author)", "MAX(content_category)", "MAX(image_url)", "MAX(author_image_url)"] if grouped
       expressions += [
         "SUM(CASE WHEN event_type = 'page_view' THEN 1 ELSE 0 END) AS views",
         "COUNT(DISTINCT CASE WHEN event_type = 'page_view' THEN visitor_hash END) AS visitors",
@@ -134,8 +137,10 @@ module Analytics
       relation.pluck(*expressions.map { |sql| Arel.sql(sql) }).map do |values|
         row = {}
         if grouped
-          key, title, author, category = values.shift(4)
-          row.merge!(key: key, title: title.presence || key, author: author.presence || "Sem autoria", category: category.presence || "Sem editoria")
+          key, title, author, category, image_url, author_image_url = values.shift(6)
+          row.merge!(key: key, title: title.presence || key, author: author.presence || "Sem autoria",
+            category: category.presence || "Sem editoria", image_url: image_url.presence,
+            author_image_url: author_image_url.presence)
           row[:name] = dimension == "articles" ? row[:title] : (key == MISSING ? "Não informado" : key)
         end
         %i[views visitors articles clicks engagement_seconds].zip(values).each { |key, value| row[key] = value.to_i }

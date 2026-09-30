@@ -29,6 +29,10 @@ class Site < ApplicationRecord
   has_many :analytics_events, dependent: :destroy
   has_many :articles, through: :site_articles
 
+  scope :publication_destinations, -> {
+    where(active: true, receives_hub_content: true).where.not(publication_key: [nil, ""])
+  }
+
   validates :name, :domain, :publication_key, presence: true
   validates :domain, :publication_key, uniqueness: true
   validates :site_type, inclusion: { in: SITE_TYPES.keys }
@@ -37,6 +41,15 @@ class Site < ApplicationRecord
   validates :external_provider, inclusion: { in: EXTERNAL_PROVIDERS.keys }, allow_blank: true
 
   before_validation :normalize_identifiers
+
+  def publication_destination?
+    active? && receives_hub_content?
+  end
+
+  def correio_source?
+    domain.to_s.delete_prefix("www.") == "correiodamanha.com.br" ||
+      publication_key == "correio-da-manha" || name.to_s.casecmp("Correio da Manhã").zero?
+  end
 
   def allowed_origin_list
     allowed_origins.to_s.lines.map(&:strip).reject(&:blank?)
@@ -47,5 +60,6 @@ class Site < ApplicationRecord
   def normalize_identifiers
     self.domain = domain.to_s.downcase.strip.sub(%r{\Ahttps?://}, "").sub(%r{/.*\z}, "")
     self.publication_key = publication_key.presence || name.to_s.parameterize
+    self.receives_hub_content = false if correio_source?
   end
 end

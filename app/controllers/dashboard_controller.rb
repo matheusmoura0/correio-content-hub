@@ -17,7 +17,7 @@ class DashboardController < ApplicationController
     @workflow_counts = safely({}, "workflow_counts") { Article.group(:status).count }
     @selected_article = @workflow_articles[:reviewing].first || @workflow_articles[:entries].first || @recent_articles.first
     @publication_sites = safely([], "publication_sites") do
-      Site.where(active: true).where.not(publication_key: [nil, ""]).order(:name).limit(7).load.to_a
+      Site.publication_destinations.order(:name).limit(7).load.to_a
     end
     @online_users = safely([], "online_users") { User.where("last_seen_at >= ?", 5.minutes.ago).order(:name, :email).load.to_a }
     @recent_activities = safely([], "recent_activities") { ActivityLog.includes(:user).recent.limit(8).load.to_a }

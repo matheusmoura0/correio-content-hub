@@ -36,4 +36,21 @@
 - Browser console reports no warnings or errors during the final mobile pass.
 - `git diff --check` passes.
 
+## Audience Analytics
+
+- Replaced the long spreadsheet-first layout with a decision-focused dashboard: compact period controls, four summary indicators, current-versus-previous daily trend, device distribution, clicked destinations, and a ranked content view.
+- Added quick 7/30/90-day periods, advanced filters, configurable 25/50/100 row pagination, and a consolidated export menu while preserving CSV, JSON, and PDF outputs.
+- Desktop was verified at 1280x720 with the complete 2153px page captured. The redesigned content stays inside the viewport and keeps the sidebar and top bar intact.
+- Mobile was verified at 390x844. Filters stack into touch-friendly controls, indicators use a two-column grid, supporting panels become a single reading flow, and ranking rows become metric cards instead of a horizontally scrolling table.
+- The export control, advanced-filter disclosure, dimension navigation, comparison series, device totals, and ranking metadata were checked with representative local analytics events.
+- Rails runtime checks confirm that current and previous daily series both contain seven days, their sums match their summaries, and device totals match page views.
+- Correio da Manhã is modeled as a source-only product: it is excluded from destination selectors and publication navigation, and the publishing services reject it even when called directly.
+- Source-only destination tests pass with 7 assertions; the analytics report suite passes with 34 assertions. Browser console remains free of warnings and errors after the final responsive pass.
+- Article ranking now receives editorial images from `data-image`, `cm:image`, or the page's `og:image`, with a stable 4:3 fallback when no image is available. Twelve populated rows were verified on desktop and mobile.
+- Recent team activity is integrated below the ranking as a three-column operational stream on desktop and a single-column timeline on mobile. Six populated activities were verified with user and relative time metadata.
+- The extended analytics suite passes with 35 assertions, including preservation of the image URL in grouped report rows. The final media pass had no browser console issues.
+- The Journalist dimension now pairs each normalized signature with a circular profile photo collected from `data-author-image`, `cm:author-image`, or matching JSON-LD author data. Initials provide the fallback.
+- Four populated columnist profiles were verified at 1280px and 390px. Every image completed at its expected 160px source size, names and metrics remained readable, and no browser console issues were reported.
+- Analytics tests now pass with 36 assertions, including grouped preservation of both article and author image URLs.
+
 final result: passed

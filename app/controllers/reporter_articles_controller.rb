@@ -59,7 +59,7 @@ class ReporterArticlesController < ApplicationController
   private
 
   def load_sites
-    @sites = Site.where(active: true).where.not(publication_key: [nil, ""]).order(:name).includes(:categories).load
+    @sites = Site.publication_destinations.order(:name).includes(:categories).load
   end
 
   def selected_site
