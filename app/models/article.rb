@@ -11,6 +11,7 @@ class Article < ApplicationRecord
 
   belongs_to :feed
   belongs_to :rewritten_by, class_name: "User", optional: true, inverse_of: :rewritten_articles
+  belongs_to :reported_by, class_name: "User", optional: true
   belongs_to :image_rights_confirmed_by, class_name: "User", optional: true
   has_many :site_articles, dependent: :destroy
   has_many :sites, through: :site_articles
@@ -20,6 +21,7 @@ class Article < ApplicationRecord
   before_validation :separate_unverified_imported_image, on: :create
 
   validates :title, :source_url, :status, presence: true
+  validates :content, presence: true, if: -> { feed&.turismo_hoje_authored? }
   validates :source_url, uniqueness: true
   validates :status, inclusion: { in: STATUSES }
   validates :image_license, inclusion: { in: IMAGE_LICENSES.keys }, allow_blank: true
@@ -38,11 +40,11 @@ class Article < ApplicationRecord
   end
 
   def publication_ready?
-    feed.correio_source? || licensed_image_ready?
+    feed.correio_source? || feed.turismo_hoje_authored? || licensed_image_ready?
   end
 
   def image_optional?
-    feed.correio_source?
+    feed.correio_source? || feed.turismo_hoje_authored?
   end
 
   private

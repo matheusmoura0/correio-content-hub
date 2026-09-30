@@ -47,7 +47,7 @@ module Api
           image_optional: article.image_optional?,
           author: article.author,
           source_url: article.source_url,
-          canonical_url: article.source_url,
+          canonical_url: article.feed.turismo_hoje_authored? ? "https://turismohoje.com.br/materia/#{article.id}" : article.source_url,
           published_at: distribution&.published_at || article.published_at,
           updated_at: [article.updated_at, distribution&.updated_at].compact.max,
           category: distribution&.category&.slug,
@@ -62,11 +62,11 @@ module Api
           source: article.feed.name,
           publisher: publisher,
           publisher_url: publisher_url,
-          credit: "Publicado originalmente por #{publisher}",
+          credit: article.feed.turismo_hoje_authored? ? "Reportagem de #{article.author} para Turismo Hoje" : "Publicado originalmente por #{publisher}",
           attribution: {
             name: publisher,
             url: publisher_url,
-            canonical_url: article.source_url,
+            canonical_url: article.feed.turismo_hoje_authored? ? "https://turismohoje.com.br/materia/#{article.id}" : article.source_url,
             required: true
           },
           image_credit: article.image_credit,
