@@ -33,7 +33,9 @@ class ReporterArticlesController < ApplicationController
     end
   end
 
-  def edit; end
+  def edit
+    render :new
+  end
 
   def update
     saved = Article.transaction do
@@ -52,7 +54,7 @@ class ReporterArticlesController < ApplicationController
     if saved
       redirect_to edit_reporter_article_path(@article), notice: "Rascunho atualizado para revisão."
     else
-      render :edit, status: :unprocessable_entity
+      render :new, status: :unprocessable_entity
     end
   end
 
