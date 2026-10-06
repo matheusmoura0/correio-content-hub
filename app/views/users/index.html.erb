@@ -1,4 +1,108 @@
-<div class="page-heading"><div><h1>Usuários do beta</h1><p class="muted"><%= @users.size %> de <%= User::MAX_BETA_USERS %> contas utilizadas</p></div><%= link_to "Novo usuário", new_user_path, class: "button" if @users.size < User::MAX_BETA_USERS %></div>
-<div class="card"><table><thead><tr><th>Usuário</th><th>Perfil</th><th>Presença</th><th>Última atividade</th><th>Ações</th></tr></thead><tbody>
-<% @users.each do |user| %><% last_activity = user.activity_logs.max_by(&:created_at) %><tr><td data-label="Usuário"><strong><%= user.name.presence || "—" %></strong><small><%= user.email %></small></td><td data-label="Perfil"><span class="badge"><%= user.admin? ? "Administrador" : "Usuário" %></span></td><td data-label="Presença"><span class="presence"><span class="presence-dot <%= user.online? ? 'online' : 'offline' %>"></span><%= user.online? ? "Online" : "Offline" %></span><small><%= user.last_seen_at.present? ? "Visto #{time_ago_in_words(user.last_seen_at)} atrás" : "Ainda não acessou" %></small></td><td data-label="Última atividade"><%= last_activity&.description || "Nenhuma atividade" %><% if last_activity %><small><%= l(last_activity.created_at, format: :short) %></small><% end %></td><td data-label="Ações" class="actions"><%= link_to "Editar", edit_user_path(user) %><% unless user == current_user %><%= button_to "Excluir", user_path(user), method: :delete, class: "link-danger", form: { data: { turbo_confirm: "Excluir este usuário?" } } %><% end %></td></tr><% end %>
-</tbody></table></div>
+<% online_count = @users.count(&:online?) %>
+<% available_count = User::MAX_BETA_USERS - @users.size %>
+
+<div class="team-page">
+  <header class="team-heading">
+    <div>
+      <p class="eyebrow">Administração</p>
+      <h1>Equipe</h1>
+      <p>Gerencie os acessos, perfis e a presença da redação no Content Hub.</p>
+    </div>
+
+    <% if available_count.positive? %>
+      <%= link_to new_user_path, class: "button team-add-button" do %>
+        <%= ui_icon("plus") %>
+        <span>Novo usuário</span>
+      <% end %>
+    <% end %>
+  </header>
+
+  <section class="team-summary" aria-label="Resumo da equipe">
+    <div>
+      <span>Contas utilizadas</span>
+      <strong><%= @users.size %><small>/ <%= User::MAX_BETA_USERS %></small></strong>
+    </div>
+    <div>
+      <span>Online agora</span>
+      <strong><%= online_count %></strong>
+    </div>
+    <div>
+      <span>Convites disponíveis</span>
+      <strong><%= available_count %></strong>
+    </div>
+    <div class="team-capacity" aria-label="<%= @users.size %> de <%= User::MAX_BETA_USERS %> contas utilizadas">
+      <span style="width: <%= (@users.size.to_f / User::MAX_BETA_USERS * 100).round %>%"></span>
+    </div>
+  </section>
+
+  <section class="team-list" aria-labelledby="team-list-title">
+    <div class="team-list-heading">
+      <div>
+        <h2 id="team-list-title">Pessoas com acesso</h2>
+        <p><%= pluralize(@users.size, "pessoa", "pessoas") %> cadastrada<%= "s" unless @users.one? %></p>
+      </div>
+      <span class="team-beta-badge">Acesso beta</span>
+    </div>
+
+    <div class="team-table-wrap">
+      <table class="team-table">
+        <thead>
+          <tr>
+            <th>Usuário</th>
+            <th>Perfil</th>
+            <th>Presença</th>
+            <th>Última atividade</th>
+            <th><span class="visually-hidden">Ações</span></th>
+          </tr>
+        </thead>
+        <tbody>
+          <% @users.each do |user| %>
+            <% last_activity = user.activity_logs.max_by(&:created_at) %>
+            <tr>
+              <td data-label="Usuário">
+                <div class="team-person">
+                  <span class="team-avatar"><%= user_display_name(user).first.upcase %></span>
+                  <div>
+                    <strong><%= user.name.presence || "Sem nome" %></strong>
+                    <small><%= user.email %></small>
+                  </div>
+                </div>
+              </td>
+              <td data-label="Perfil">
+                <span class="team-role"><%= user.admin? ? "Administrador" : "Redação" %></span>
+              </td>
+              <td data-label="Presença">
+                <span class="team-presence <%= user.online? ? 'online' : 'offline' %>">
+                  <span class="presence-dot <%= user.online? ? 'online' : 'offline' %>"></span>
+                  <%= user.online? ? "Online" : "Offline" %>
+                </span>
+                <small><%= user.last_seen_at.present? ? "Visto #{time_ago_in_words(user.last_seen_at)} atrás" : "Ainda não acessou" %></small>
+              </td>
+              <td data-label="Última atividade">
+                <div class="team-activity">
+                  <strong><%= last_activity&.description || "Nenhuma atividade registrada" %></strong>
+                  <% if last_activity %>
+                    <small><%= l(last_activity.created_at, format: :short) %></small>
+                  <% else %>
+                    <small>As próximas ações aparecerão aqui</small>
+                  <% end %>
+                </div>
+              </td>
+              <td data-label="Ações" class="team-actions">
+                <% if user == current_user %><span class="team-you">Você</span><% end %>
+                <%= link_to edit_user_path(user), class: "team-action", title: "Editar #{user_display_name(user)}", aria: { label: "Editar #{user_display_name(user)}" } do %>
+                  <%= ui_icon("pencil") %>
+                <% end %>
+                <% unless user == current_user %>
+                  <%= button_to user_path(user), method: :delete, class: "team-action team-action-danger", form_class: "team-action-form", title: "Excluir #{user_display_name(user)}", aria: { label: "Excluir #{user_display_name(user)}" }, form: { data: { turbo_confirm: "Excluir #{user_display_name(user)}? Esta ação não pode ser desfeita." } } do %>
+                    <%= ui_icon("trash-2") %>
+                  <% end %>
+                <% end %>
+              </td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    </div>
+  </section>
+</div>

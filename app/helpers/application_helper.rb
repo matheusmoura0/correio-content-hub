@@ -2,7 +2,7 @@ module ApplicationHelper
   UI_ICONS = %w[
     activity bell chart-no-axes-column-increasing circle-question-mark ellipsis
     file-text globe layout-dashboard library list-filter log-out menu newspaper
-    pencil plus rss scan-search search send settings tags users x
+    pencil plus rss scan-search search send settings tags trash-2 users x
   ].freeze
 
   ARTICLE_STATUS_LABELS = {
