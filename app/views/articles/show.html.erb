@@ -1,5 +1,6 @@
 <div class="page-heading"><div><p class="eyebrow">Matéria original</p><h1><%= @article.title %></h1></div><span class="<%= article_status_class(@article.status) %>"><%= article_status_label(@article.status) %></span></div>
 <p class="muted"><%= @article.feed.name %> · <%= @article.published_at&.strftime("%d/%m/%Y %H:%M") %></p>
+<% if @article.errors.any? %><div class="alert"><%= @article.errors.full_messages.to_sentence %></div><% end %>
 
 <div class="card">
   <p><strong>Origem:</strong> <% if @article.feed.hub_authored? %>Matéria criada no Content Hub<% else %><%= link_to @article.source_url, @article.source_url, target: "_blank", rel: "noopener" %><% end %></p>
@@ -30,8 +31,6 @@
     <%= link_to "Buscar no Pexels ↗", "https://www.pexels.com/search/#{@article.title.parameterize}/", target: "_blank", rel: "noopener", class: "button secondary" %>
     <%= link_to "Buscar no Unsplash ↗", "https://unsplash.com/s/photos/#{@article.title.parameterize}", target: "_blank", rel: "noopener", class: "button secondary" %>
   </div>
-
-  <% if @article.errors.any? %><div class="alert"><%= @article.errors.full_messages.to_sentence %></div><% end %>
 
   <%= form_with model: @article, class: "image-rights-form" do |form| %>
     <%= hidden_field_tag :image_rights_review, "1" %>
@@ -76,6 +75,15 @@
   </section>
 <% end %>
 
+<section class="reporter-destinations">
+  <h2>Jornais relacionados</h2>
+  <div class="actions">
+    <% @eligible_sites.each do |site| %><%= link_to site.name, publication_path(site.publication_key, article_id: @article.id), class: "button secondary" %><% end %>
+    <% if @eligible_sites.empty? %><p class="muted">Nenhum jornal corresponde ao assunto desta matéria. Revise o conteúdo ou a linha editorial com a equipe.</p><% end %>
+  </div>
+</section>
+
+<% if @eligible_sites.include?(@gastronomy_site) || @gastronomy_distribution&.status == "published" %>
 <section class="card publication-panel">
   <div class="page-heading compact">
     <div><p class="eyebrow">Revista de Gastronomia</p><h2>Publicação direta</h2></div>
@@ -84,6 +92,8 @@
 
   <% if @gastronomy_site.nil? %>
     <div class="alert">O site Revista de Gastronomia ainda não está configurado no Content Hub.</div>
+  <% elsif !@eligible_sites.include?(@gastronomy_site) %>
+    <div class="alert">Esta matéria não corresponde à linha editorial da Revista de Gastronomia.</div>
   <% elsif !@article.publication_ready? %>
     <div class="publication-requirement">
       <strong>Matéria ainda não pronta</strong>
@@ -273,11 +283,12 @@
       })();
     </script>
 
+  <% end %>
     <% if @gastronomy_distribution&.status == "published" %>
       <div class="unpublish-row">
         <span>Publicada em <%= @gastronomy_distribution.published_at&.strftime("%d/%m/%Y às %H:%M") %> · <%= @gastronomy_distribution.slot_label %> · <%= @gastronomy_distribution.assignment_mode == "manual" ? "Manual" : "Automático" %></span>
         <%= button_to "Retirar do ar", unpublish_from_gastronomy_article_path(@article), method: :patch, class: "secondary", data: { loading_label: "Retirando do ar…" } %>
       </div>
     <% end %>
-  <% end %>
 </section>
+<% end %>

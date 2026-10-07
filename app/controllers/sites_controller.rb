@@ -45,7 +45,7 @@ class SitesController < ApplicationController
   def site_params
     params.require(:site).permit(
       :name, :domain, :publication_key, :site_type, :content_mode,
-      :external_provider, :layout_profile, :allowed_origins, :receives_hub_content, :active
+      :external_provider, :layout_profile, :allowed_origins, :receives_hub_content, :editorial_keywords, :active
     )
   end
 end

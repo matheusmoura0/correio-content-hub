@@ -3,15 +3,30 @@ class ArticlesController < ApplicationController
   before_action :require_admin!, only: :destroy_bulk
 
   def index
-    @site = Site.find_by(domain: params[:site_domain]) if params[:site_domain].present?
+    @destinations = Site.publication_destinations.order(:name).load
+    session[:reporter_site_domain] = params[:site_domain].presence if params.key?(:site_domain)
+    domain = params[:site_domain].presence || session[:reporter_site_domain]
+    @site = Site.find_by(domain:) if domain.present?
     @articles = Article.includes(:feed, :topics, site_articles: [:site, :category]).order(created_at: :desc)
-    @articles = @articles.joins(:site_articles).where(site_articles: { site_id: @site.id }).distinct if @site
+    if @site
+      @articles = if @site.publication_destination?
+        relevant = Publishing::EditorialPolicy.scope(@site, @articles)
+        original_feeds = Feed.where(site_id: @site.id).where("url LIKE ?", "https://hub.cm.com.br/origens/%").select(:id)
+        relevant.or(@articles.where(feed_id: original_feeds))
+      else
+        @articles.joins(:site_articles).where(site_articles: { site_id: @site.id }).distinct
+      end
+    end
+    @articles = @articles.where(reported_by: current_user) if params[:mine] == "1"
     @articles = @articles.where(status: params[:status]) if params[:status].present?
     @articles = @articles.joins(:topic_articles).where(topic_articles: { topic_id: params[:topic_id] }).distinct if params[:topic_id].present?
     if params[:q].present?
       query = "%#{ActiveRecord::Base.sanitize_sql_like(params[:q])}%"
       @articles = @articles.where("articles.title ILIKE :query OR articles.description ILIKE :query OR articles.rewritten_title ILIKE :query", query:)
     end
+    @page = [params[:page].to_i, 1].max
+    @total_articles = @articles.except(:order).count
+    @articles = @articles.limit(30).offset((@page - 1) * 30)
   end
 
   def show
@@ -22,15 +37,24 @@ class ArticlesController < ApplicationController
     @article.assign_attributes(article_params)
     apply_image_rights_review if params[:image_rights_review].present?
 
-    if @article.save
+    saved = Article.transaction do
+      next false unless @article.save
+
       sync_sites if params.key?(:site_ids)
       revoke_unsafe_gastronomy_distribution if params[:image_rights_review].present? && !@article.licensed_image_ready?
+      true
+    end
+    if saved
       notice = params[:image_rights_review].present? ? "Dados e direitos da imagem atualizados." : "Matéria atualizada."
       redirect_to @article, notice:
     else
       load_sites
       render :show, status: :unprocessable_entity
     end
+  rescue ActiveRecord::RecordInvalid => error
+    @article.errors.add(:base, error.record.errors.full_messages.to_sentence)
+    load_sites
+    render :show, status: :unprocessable_entity
   end
 
   def destroy_bulk
@@ -48,6 +72,7 @@ class ArticlesController < ApplicationController
   def publish_to_gastronomy
     site = gastronomy_site
     return redirect_to(@article, alert: "A matéria ainda não está pronta para publicação.") unless @article.publication_ready?
+    Publishing::EditorialPolicy.new(site).validate!(@article)
 
     settings = gastronomy_params
     slot_key = settings[:slot_key].presence
@@ -104,6 +129,7 @@ class ArticlesController < ApplicationController
 
   def load_sites
     @sites = Site.publication_destinations.includes(:categories).order(:name)
+    @eligible_sites = @sites.select { |site| Publishing::EditorialPolicy.new(site).eligible?(@article) }
     @gastronomy_site = @sites.find { |site| site.domain == "revistadegastronomia.com.br" }
     @gastronomy_distribution = @article.site_articles.find_by(site: @gastronomy_site) if @gastronomy_site
     @gastronomy_slot_occupancy = @gastronomy_site&.site_articles&.includes(:article)&.where(status: "published", slot_key: SiteArticle::SLOT_KEYS)&.index_by(&:slot_key) || {}

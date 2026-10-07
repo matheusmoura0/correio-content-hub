@@ -44,6 +44,7 @@ class SiteArticle < ApplicationRecord
   validates :image_focus_x, :image_focus_y, inclusion: { in: 0..100 }
   validates :image_zoom, numericality: { greater_than_or_equal_to: 1, less_than_or_equal_to: 2 }
   validates :article_id, uniqueness: { scope: :site_id }
+  validate :editorial_destination, if: -> { status == "published" }
   validates :slot_key,
     uniqueness: { scope: :site_id, conditions: -> { where(status: "published") } },
     if: -> { status == "published" && slot_key.present? }
@@ -84,5 +85,19 @@ class SiteArticle < ApplicationRecord
 
   def slot_label
     Publishing::SiteProfile.label_for(site, slot_key) || SLOT_LABELS[slot_key] || "Sem posição fixa"
+  end
+
+  private
+
+  def editorial_destination
+    return unless site && article
+
+    errors.add(:site, "não recebe matérias do Hub") unless site.publication_destination?
+    if category && category.site_id != site_id
+      errors.add(:category, "deve pertencer à publicação selecionada")
+    end
+    unless Publishing::EditorialPolicy.new(site).eligible?(article)
+      errors.add(:article, "não corresponde à linha editorial de #{site.name}")
+    end
   end
 end

@@ -1,5 +1,5 @@
 <div class="page-heading">
-  <div><p class="eyebrow"><%= @site.name %> · conteúdo próprio</p><h1>Escrever matéria</h1><p class="muted">Crie a reportagem do zero e envie o rascunho para revisão editorial.</p></div>
+  <div><p class="eyebrow"><%= @site.name %> · conteúdo próprio</p><h1><%= @article.persisted? ? "Editar matéria" : "Escrever matéria" %></h1></div>
   <%= link_to "Voltar às matérias", articles_path(site_domain: @site&.domain), class: "button secondary" %>
 </div>
 <% if @article.errors.any? %><div class="alert"><%= @article.errors.full_messages.to_sentence %></div><% end %>
@@ -15,7 +15,7 @@
     <%= form.label :description, "Linha fina" %><%= form.text_area :description, rows: 3, maxlength: 320, placeholder: "Resuma a notícia em uma ou duas frases" %>
     <%= form.label :content, "Texto da matéria" %><%= form.text_area :content, rows: 22, required: true, placeholder: "Escreva o texto da reportagem…" %>
     <%= label_tag :category_id, "Editoria" %>
-    <select name="category_id" id="category_id">
+    <select name="category_id" id="category_id" required>
       <option value="">Escolha uma editoria</option>
       <% (@article.persisted? ? [@site] : @sites).each do |site| %>
         <% site.categories.sort_by(&:name).each do |category| %>

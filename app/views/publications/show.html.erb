@@ -1,6 +1,6 @@
 <div class="page-heading publication-console-heading">
-  <div><p class="eyebrow">Central de publicação</p><h1><%= @site.name %></h1><p class="muted">Posicione matérias manualmente ou preencha o site a partir de uma pesquisa.</p></div>
-  <div class="actions"><%= link_to "Abrir site ↗", "https://#{@site.domain}", target: "_blank", rel: "noopener", class: "button secondary" %><%= link_to "Configurar site", edit_site_path(@site), class: "button secondary" if current_user.admin? %><%= form_with url: clear_publication_path(@site.publication_key), method: :post, class: "inline-form", data: { turbo_confirm: "Retirar todas as matérias publicadas de #{@site.name}? O acervo será preservado." } do |form| %><%= form.submit "Limpar site", class: "button danger" %><% end if current_user.admin? %></div>
+  <div><p class="eyebrow">Central de publicação</p><h1><%= @site.name %></h1></div>
+  <div class="actions"><%= link_to "Matérias do jornal", articles_path(site_domain: @site.domain), class: "button secondary" %><%= link_to "Escrever matéria", new_reporter_article_path(site_id: @site.id), class: "button" %><%= link_to "Configurar site", edit_site_path(@site), class: "button secondary" if current_user.admin? %><%= form_with url: clear_publication_path(@site.publication_key), method: :post, class: "inline-form", data: { turbo_confirm: "Retirar todas as matérias publicadas de #{@site.name}? O acervo será preservado." } do |form| %><%= form.submit "Limpar site", class: "button danger" %><% end if current_user.admin? %></div>
 </div>
 
 <nav class="publication-workflow" aria-label="Etapas de publicação">
@@ -64,7 +64,7 @@
       <div class="manual-article-picker">
         <% @articles.each do |article| %>
           <label class="manual-article-option">
-            <%= radio_button_tag :article_id, article.id, false, class: "manual-article-radio" %>
+            <%= radio_button_tag :article_id, article.id, article == @selected_article, class: "manual-article-radio" %>
             <span><strong><%= article.rewritten_title.presence || article.title %></strong><small><%= article.feed.name %></small></span>
           </label>
         <% end %>

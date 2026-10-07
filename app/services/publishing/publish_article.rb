@@ -15,6 +15,7 @@ module Publishing
     def call
       raise ArgumentError, "#{@site.name} é somente fonte e não recebe matérias do Hub" unless @site.publication_destination?
       raise ActiveRecord::RecordInvalid, @article unless @article.publication_ready?
+      EditorialPolicy.new(@site).validate!(@article)
       profile = SiteProfile.for(@site)
       @slot_key = nil unless SiteProfile.slot_keys(@site).include?(@slot_key)
 

@@ -6,7 +6,9 @@ class PublicationsController < ApplicationController
     @profile = Publishing::SiteProfile.for(@site)
     @distributions = @site.site_articles.includes(:article, :category).where(status: "published").index_by(&:slot_key)
     @topics = Topic.order(:name)
-    @articles = Article.includes(:feed, site_articles: :site).order(created_at: :desc).limit(120)
+    @articles = Publishing::EditorialPolicy.scope(@site).includes(:feed, site_articles: :site).order(created_at: :desc).limit(120)
+    @selected_article = Publishing::EditorialPolicy.scope(@site).find_by(id: params[:article_id]) if params[:article_id].present?
+    @articles = [@selected_article, *@articles.to_a].compact.uniq if @selected_article
   end
 
   def populate
@@ -37,8 +39,8 @@ class PublicationsController < ApplicationController
 
     Publishing::PublishArticle.call(article:, site: @site, category:, slot_key:, assignment_mode: "manual")
     redirect_to publication_path(@site.publication_key), notice: "Matéria posicionada no site."
-  rescue ActiveRecord::RecordInvalid
-    redirect_to publication_path(@site.publication_key), alert: "A matéria não está pronta para publicação. Verifique texto e direitos da imagem."
+  rescue ActiveRecord::RecordInvalid => error
+    redirect_to publication_path(@site.publication_key), alert: error.record.errors.full_messages.to_sentence.presence || "A matéria não está pronta para publicação. Verifique texto e direitos da imagem."
   end
 
   def bulk
@@ -46,6 +48,9 @@ class PublicationsController < ApplicationController
     action = params[:bulk_action].to_s
     return redirect_to(publication_path(@site.publication_key), alert: "Selecione ao menos uma matéria.") if ids.empty?
     return redirect_to(publication_path(@site.publication_key), alert: "Ação em lote inválida.") unless action.in?(%w[publish rewrite_publish unpublish])
+    if action != "unpublish" && Publishing::EditorialPolicy.scope(@site, Article.where(id: ids)).count != ids.size
+      return redirect_to(publication_path(@site.publication_key), alert: "Selecione apenas matérias relacionadas à linha editorial de #{@site.name}.")
+    end
 
     ids.each do |article_id|
       BulkPublicationJob.perform_later(

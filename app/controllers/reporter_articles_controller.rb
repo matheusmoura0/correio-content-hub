@@ -18,10 +18,11 @@ class ReporterArticlesController < ApplicationController
       reported_by: current_user
     )
 
-    saved = Article.transaction do
+    category = @site.categories.find_by(id: params[:category_id].presence)
+    @article.errors.add(:base, "Escolha uma editoria de #{@site.name}.") unless category
+    saved = category && Article.transaction do
       next false unless @article.save
 
-      category = @site.categories.find_by(id: params[:category_id].presence)
       @article.site_articles.create!(site: @site, category:, status: "draft")
       true
     end
@@ -38,13 +39,20 @@ class ReporterArticlesController < ApplicationController
   end
 
   def update
-    saved = Article.transaction do
+    category = @site.categories.find_by(id: params[:category_id].presence)
+    @article.assign_attributes(article_params)
+    @article.errors.add(:base, "Escolha uma editoria de #{@site.name}.") unless category
+    saved = category && Article.transaction do
       was_published = @article.status == "published"
       @article.assign_attributes(article_params)
       @article.status = "reviewing" if was_published
       next false unless @article.save
 
-      category = @site.categories.find_by(id: params[:category_id].presence)
+      if was_published
+        @article.site_articles.where(status: "published").update_all(
+          status: "draft", published_at: nil, slot_key: nil, placement: "latest", position: 0, updated_at: Time.current
+        )
+      end
       distribution = @article.site_articles.find_or_initialize_by(site: @site)
       distribution.assign_attributes(status: "draft", published_at: nil) if was_published
       distribution.update!(category:)
@@ -66,7 +74,9 @@ class ReporterArticlesController < ApplicationController
 
   def selected_site
     requested_id = params[:site_id].presence
-    requested_id ? @sites.find { |site| site.id == requested_id.to_i } || @sites.first! : @sites.first!
+    return @sites.find { |site| site.id == requested_id.to_i } || raise(ActiveRecord::RecordNotFound) if requested_id
+
+    @sites.find { |site| site.domain == session[:reporter_site_domain] } || @sites.first!
   end
 
   def set_article

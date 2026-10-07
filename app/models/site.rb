@@ -41,6 +41,7 @@ class Site < ApplicationRecord
   validates :external_provider, inclusion: { in: EXTERNAL_PROVIDERS.keys }, allow_blank: true
 
   before_validation :normalize_identifiers
+  before_validation :set_editorial_defaults, on: :create
 
   def publication_destination?
     active? && receives_hub_content?
@@ -56,6 +57,10 @@ class Site < ApplicationRecord
   end
 
   private
+
+  def set_editorial_defaults
+    self.editorial_keywords = Publishing::EditorialPolicy.default_terms(self) if editorial_keywords.blank?
+  end
 
   def normalize_identifiers
     self.domain = domain.to_s.downcase.strip.sub(%r{\Ahttps?://}, "").sub(%r{/.*\z}, "")

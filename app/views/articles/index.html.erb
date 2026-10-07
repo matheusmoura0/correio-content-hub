@@ -1,35 +1,31 @@
 <div class="page-heading">
   <div>
-    <p class="eyebrow"><%= @site ? "Canal de publicação" : "Acervo editorial" %></p>
+    <p class="eyebrow">Produção editorial</p>
     <h1><%= @site ? @site.name : "Matérias" %></h1>
-    <p class="muted"><%= @site ? "Controle as matérias, posições e o estado publicado no site." : "Revise, distribua e organize as matérias recebidas pelos canais RSS." %></p>
   </div>
-  <%= link_to "Escrever matéria", new_reporter_article_path(site_id: @site&.id), class: "button" %>
+  <% unless @site && !@site.publication_destination? %>
+    <%= link_to new_reporter_article_path(site_id: @site&.id), class: "button reporter-write-button" do %><%= ui_icon("pencil") %><span>Escrever matéria</span><% end %>
+  <% end %>
   <% if @site %><%= link_to "Abrir site ↗", "https://#{@site.domain}", target: "_blank", rel: "noopener", class: "button secondary" %><% end %>
 </div>
 
-<% if @site %>
-  <% distributions = SiteArticle.where(site: @site) %>
-  <div class="grid publication-stats">
-    <div class="card stat"><strong><%= distributions.where(status: "published").count %></strong><span>Publicadas</span></div>
-    <div class="card stat"><strong><%= distributions.where(status: "draft").count %></strong><span>Rascunhos</span></div>
-    <div class="card stat"><strong><%= distributions.where(status: "published", slot_key: SiteArticle::SLOT_KEYS).count %>/16</strong><span>Slots ocupados</span></div>
-    <div class="card stat"><strong><%= distributions.where(status: "published", assignment_mode: "manual").count %></strong><span>Posições manuais</span></div>
-  </div>
+<%= form_with url: articles_path, method: :get, class: "reporter-filters" do |form| %>
+  <div><%= form.label :site_domain, "Jornal" %><%= form.select :site_domain, [["Acervo completo", ""]] + @destinations.map { |site| [site.name, site.domain] }, selected: @site&.domain %></div>
+  <div><%= form.label :q, "Buscar matéria" %><%= form.search_field :q, value: params[:q], placeholder: "Título ou assunto" %></div>
+  <label class="reporter-mine"><%= form.check_box :mine, { checked: params[:mine] == "1" }, "1", "0" %> Minhas matérias</label>
+  <%= form.hidden_field :status, value: params[:status] if params[:status].present? %>
+  <%= form.submit "Aplicar" %>
 <% end %>
 
-<div class="filter-links publication-tabs">
-  <%= link_to "Todas", articles_path(site_domain: params[:site_domain]) %>
-  <%= link_to "Importadas", articles_path(status: "imported", site_domain: params[:site_domain]) %>
-  <%= link_to "Aprovadas", articles_path(status: "approved", site_domain: params[:site_domain]) %>
-  <%= link_to "Publicadas", articles_path(status: "published", site_domain: params[:site_domain]) %>
+<nav class="reporter-status-tabs" aria-label="Situação editorial">
+  <% [["Todas", nil], ["Coletadas", "imported"], ["Em revisão", "reviewing"], ["Aprovadas", "approved"], ["Publicadas", "published"]].each do |label, status| %>
+    <%= link_to label, articles_path(site_domain: @site&.domain, status:, mine: params[:mine], q: params[:q]), class: ("active" if params[:status].presence == status), aria: { current: ("page" if params[:status].presence == status) } %>
+  <% end %>
+</nav>
+<div class="reporter-results-heading">
+  <span><%= @total_articles %> matéria(s)<%= " no acervo de #{@site.name}" if @site&.publication_destination? %></span>
+  <% if @site&.publication_destination? %><%= link_to "Publicação do jornal", publication_path(@site.publication_key) %><% end %>
 </div>
-<%= form_with url: articles_path, method: :get, class: "search-bar" do |form| %>
-  <%= form.hidden_field :site_domain, value: params[:site_domain] if params[:site_domain].present? %>
-  <%= form.hidden_field :status, value: params[:status] if params[:status].present? %>
-  <%= form.search_field :q, value: params[:q], placeholder: "Buscar por título ou conteúdo" %>
-  <%= form.submit "Buscar" %>
-<% end %>
 
 <%= form_with url: destroy_bulk_articles_path, method: :delete, id: "bulk-delete-form", data: { turbo_confirm: "Excluir permanentemente as matérias selecionadas? Elas também serão retiradas de todos os sites associados." } do %>
   <% if current_user.admin? %>
@@ -45,16 +41,23 @@
         <% distribution = @site && article.site_articles.find { |item| item.site_id == @site.id } %>
         <tr>
           <% if current_user.admin? %><td data-label="Selecionar" class="selection-cell"><%= check_box_tag "article_ids[]", article.id, false, class: "article-selector", aria: { label: "Selecionar #{article.title}" } %></td><% end %>
-          <td data-label="Título"><%= link_to article.rewritten_title.presence || article.title, article_path(article) %><% if article.rewritten_at.present? %><small>Versão revisada com IA</small><% end %><small class="<%= article.licensed_image_ready? ? "image-ok" : "image-pending" %>"><%= article.licensed_image_ready? ? "Imagem autorizada" : "Direitos da imagem pendentes" %></small></td>
+          <td data-label="Título"><%= link_to article.rewritten_title.presence || article.title, article_path(article) %><% if article.reported_by_id == current_user.id %><small><%= link_to "Editar meu rascunho", edit_reporter_article_path(article) %></small><% end %><% if article.rewritten_at.present? %><small>Versão revisada com IA</small><% end %><small class="<%= article.publication_ready? ? "image-ok" : "image-pending" %>"><%= article.image_optional? ? "Imagem opcional" : article.licensed_image_ready? ? "Imagem autorizada" : "Direitos da imagem pendentes" %></small></td>
           <td data-label="Fonte"><%= article.feed.name %><% if article.topics.any? %><small><%= article.topics.map(&:name).join(", ") %></small><% end %></td>
           <td data-label="Data"><%= article.updated_at.strftime("%d/%m/%Y %H:%M") %></td>
           <td data-label="Situação"><span class="<%= article_status_class(article.status) %>"><%= article_status_label(article.status) %></span></td>
-          <% if @site %><td data-label="No site"><span class="badge <%= distribution&.status == "published" ? "status-published" : "" %>"><%= distribution&.status == "published" ? "No ar" : "Rascunho" %></span><small><%= distribution&.slot_label || "Sem posição fixa" %><%= distribution ? " · #{distribution.assignment_mode == "manual" ? "Manual" : "Automático"}" : "" %><%= " · #{distribution.category.name}" if distribution&.category %></small></td><% end %>
+          <% if @site %><td data-label="No site"><span class="badge <%= distribution&.status == "published" ? "status-published" : "" %>"><%= distribution&.status == "published" ? "No ar" : distribution ? "Rascunho" : "Disponível" %></span><% if distribution %><small><%= distribution.slot_label %><%= " · #{distribution.category.name}" if distribution.category %></small><% end %></td><% end %>
         </tr>
       <% end %>
     </tbody>
   </table>
 <% end %>
+
+<% if @articles.empty? %><div class="empty-state"><h2>Nenhuma matéria encontrada</h2><p>Altere os filtros ou escreva uma reportagem para este jornal.</p></div><% end %>
+<nav class="reporter-pager" aria-label="Páginas de matérias">
+  <% if @page > 1 %><%= link_to "Anterior", articles_path(site_domain: @site&.domain, status: params[:status], mine: params[:mine], q: params[:q], page: @page - 1), class: "button secondary" %><% end %>
+  <span>Página <%= @page %></span>
+  <% if @page * 30 < @total_articles %><%= link_to "Próxima", articles_path(site_domain: @site&.domain, status: params[:status], mine: params[:mine], q: params[:q], page: @page + 1), class: "button secondary" %><% end %>
+</nav>
 
 <script>
   (() => {

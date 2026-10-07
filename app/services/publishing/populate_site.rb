@@ -64,7 +64,7 @@ module Publishing
     private
 
     def eligible_candidates
-      relation = @scope.includes(:feed, :site_articles)
+      relation = EditorialPolicy.scope(@site, @scope).includes(:feed, :site_articles)
       return relation unless @site.layout_profile == "cinemagazine"
 
       relation.where.not(image_url: nil).where.not(image_url: "").where(
