@@ -1,0 +1,62 @@
+<% editable = edition.status == "ready" && current_user.admin? %>
+<% submitted = params.key?(:categories) %>
+<% selected_ids = Array(params[:item_ids]).map(&:to_s) %>
+<%= form_with url: approve_editorial_edition_path(edition), method: :post, class: "edition-review product-edition-review", id: "edition-review-#{edition.id}", data: { turbo_confirm: "Aprovar e publicar as matérias marcadas em #{edition.site.name}?" } do %>
+  <%= hidden_field_tag :product_context, "1" if product_context %>
+  <% if editable %><div class="product-selection-bar"><label><input type="checkbox" data-select-edition checked> Selecionar todas</label><span data-edition-count><%= items.size %> selecionadas</span></div><% end %>
+  <section class="edition-items">
+    <% items.each do |item| %>
+      <article class="edition-review-item">
+        <div class="edition-item-selection">
+          <% if editable %><%= check_box_tag "item_ids[]", item.id, submitted ? selected_ids.include?(item.id.to_s) : true, id: "edition-item-#{item.id}", data: { edition_choice: true }, aria: { label: "Aprovar #{item.title}" } %><% else %><span class="badge"><%= item.approved? ? "Publicada" : "Não publicada" %></span><% end %>
+        </div>
+        <div class="edition-item-copy">
+          <p class="eyebrow"><%= Publishing::SiteProfile.label_for(edition.site, item.slot_key) %></p>
+          <h2><%= item.title %></h2>
+          <% if item.article.image_url.present? %><%= image_tag item.article.image_url, alt: "", class: "edition-image", loading: "lazy" %><% end %>
+          <p><%= truncate(strip_tags(item.article.description.to_s), length: 240) %></p>
+          <small><%= item.article.feed.name %> · <%= item.article.author.presence || "Autoria não informada" %></small>
+          <details class="product-text-preview"><summary>Conferir texto completo</summary><div><%= simple_format(item.article.rewritten_content.presence || item.article.content.presence || item.article.description) %></div></details>
+          <%= link_to "Abrir edição da matéria", article_path(item.article, product_key: edition.site.publication_key), class: "edition-article-link" %>
+        </div>
+        <div class="edition-item-category">
+          <% if editable %>
+            <%= label_tag "edition-category-#{item.id}", "Editoria" %>
+            <% category_id = submitted ? params.dig(:categories, item.id.to_s) : item.category_id %>
+            <%= select_tag "categories[#{item.id}]", options_from_collection_for_select(categories, :id, :name, category_id), include_blank: "Escolha a editoria", id: "edition-category-#{item.id}" %>
+          <% else %><span><%= item.category&.name || "Sem editoria" %></span><% end %>
+        </div>
+      </article>
+    <% end %>
+  </section>
+  <% if editable %>
+    <footer class="edition-approval-bar product-approval-bar">
+      <span data-edition-count><%= items.size %> selecionadas</span>
+      <button type="submit"><%= ui_icon("send") %><span>Aprovar e publicar</span></button>
+    </footer>
+  <% end %>
+<% end %>
+<% if editable %>
+  <%= button_to "Descartar proposta", reject_editorial_edition_path(edition), method: :post, params: { product_context: product_context ? "1" : "0" }, class: "secondary", form: { data: { turbo_confirm: "Descartar esta proposta sem alterar as matérias publicadas?" } } %>
+  <script>
+    (() => {
+      const form = document.getElementById("edition-review-<%= edition.id %>");
+      if (!form) return;
+      const choices = [...form.querySelectorAll("[data-edition-choice]")];
+      const all = form.querySelector("[data-select-edition]");
+      const submit = form.querySelector("button[type=submit]");
+      const refresh = () => {
+        const count = choices.filter(choice => choice.checked).length;
+        all.checked = count > 0 && count === choices.length;
+        all.indeterminate = count > 0 && count < choices.length;
+        form.querySelectorAll("[data-edition-count]").forEach(label => { label.textContent = `${count} selecionadas`; });
+        submit.disabled = count === 0;
+      };
+      all.addEventListener("change", () => { choices.forEach(choice => { choice.checked = all.checked; }); refresh(); });
+      choices.forEach(choice => choice.addEventListener("change", refresh));
+      refresh();
+    })();
+  </script>
+<% elsif edition.approved_at %>
+  <p class="muted">Aprovada por <%= edition.approved_by&.name.presence || "Administrador" %> em <%= l(edition.approved_at, format: :short) %>.</p>
+<% end %>

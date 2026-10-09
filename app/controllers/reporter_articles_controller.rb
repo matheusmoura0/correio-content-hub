@@ -4,11 +4,13 @@ class ReporterArticlesController < ApplicationController
 
   def new
     @site = selected_site
+    @fixed_destination = params[:site_id].present?
     @article = Article.new(author: current_user.name.presence || current_user.email)
   end
 
   def create
     @site = selected_site
+    @fixed_destination = params[:fixed_destination] == "1"
     @article = Article.new(article_params)
     @article.assign_attributes(
       feed: reporter_feed,
@@ -81,7 +83,8 @@ class ReporterArticlesController < ApplicationController
 
   def set_article
     @article = Article.includes(site_articles: :site).find(params[:id])
-    @site = @article.site_articles.first&.site
+    @site = @article.feed.site if @article.feed.hub_authored?
+    @site ||= @article.site_articles.first&.site
     return redirect_to(articles_path, alert: "A matéria não possui uma publicação de destino.") unless @site
     return if current_user.admin? || @article.reported_by_id == current_user.id
 

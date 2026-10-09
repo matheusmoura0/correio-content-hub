@@ -1,14 +1,16 @@
 <div class="page-heading">
   <div><p class="eyebrow"><%= @site.name %> · conteúdo próprio</p><h1><%= @article.persisted? ? "Editar matéria" : "Escrever matéria" %></h1></div>
-  <%= link_to "Voltar às matérias", articles_path(site_domain: @site&.domain), class: "button secondary" %>
+  <%= link_to "Voltar a #{@site.name}", product_path(@site.publication_key, view: "work"), class: "button secondary" %>
 </div>
 <% if @article.errors.any? %><div class="alert"><%= @article.errors.full_messages.to_sentence %></div><% end %>
 <section class="card">
   <%= form_with model: @article, url: @article.persisted? ? reporter_article_path(@article) : reporter_articles_path, class: "reporter-article-form" do |form| %>
-    <% unless @article.persisted? %>
+    <% unless @article.persisted? || @fixed_destination %>
       <%= label_tag :site_id, "Publicação de destino" %>
       <%= select_tag :site_id, options_from_collection_for_select(@sites, :id, :name, @site&.id), required: true, data: { destination_select: true } %>
     <% else %>
+      <%= hidden_field_tag :site_id, @site.id %>
+      <%= hidden_field_tag :fixed_destination, "1" %>
       <div class="editor-destination"><span>Publicação de destino</span><strong><%= @site.name %></strong></div>
     <% end %>
     <%= form.label :title, "Título" %><%= form.text_field :title, required: true, maxlength: 180, placeholder: "Escreva um título claro e informativo" %>
@@ -17,9 +19,10 @@
     <%= label_tag :category_id, "Editoria" %>
     <select name="category_id" id="category_id" required>
       <option value="">Escolha uma editoria</option>
-      <% (@article.persisted? ? [@site] : @sites).each do |site| %>
+      <% (@article.persisted? || @fixed_destination ? [@site] : @sites).each do |site| %>
         <% site.categories.sort_by(&:name).each do |category| %>
-          <option value="<%= category.id %>" data-site-id="<%= site.id %>" <%= "selected" if @article.site_articles.find { |item| item.site_id == site.id }&.category_id == category.id %>><%= category.name %></option>
+          <% selected_category_id = params[:category_id].presence || @article.site_articles.find { |item| item.site_id == site.id }&.category_id %>
+          <option value="<%= category.id %>" data-site-id="<%= site.id %>" <%= "selected" if selected_category_id.to_s == category.id.to_s %>><%= category.name %></option>
         <% end %>
       <% end %>
     </select>

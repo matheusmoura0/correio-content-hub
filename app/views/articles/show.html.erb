@@ -1,3 +1,4 @@
+<% if @product %><%= link_to "Voltar a #{@product.name}", product_path(@product.publication_key), class: "product-back" %><% end %>
 <div class="page-heading"><div><p class="eyebrow">Matéria original</p><h1><%= @article.title %></h1></div><span class="<%= article_status_class(@article.status) %>"><%= article_status_label(@article.status) %></span></div>
 <p class="muted"><%= @article.feed.name %> · <%= @article.published_at&.strftime("%d/%m/%Y %H:%M") %></p>
 <% if @article.errors.any? %><div class="alert"><%= @article.errors.full_messages.to_sentence %></div><% end %>
@@ -33,6 +34,7 @@
   </div>
 
   <%= form_with model: @article, class: "image-rights-form" do |form| %>
+    <%= hidden_field_tag :product_key, @product.publication_key if @product %>
     <%= hidden_field_tag :image_rights_review, "1" %>
     <div class="image-rights-grid">
       <div class="wide"><%= form.label :image_url, "URL direta da imagem licenciada" %><%= form.url_field :image_url, placeholder: "https://..." %></div>
@@ -67,6 +69,7 @@
   <section class="card rewritten">
     <div class="page-heading compact"><div><p class="eyebrow">Versão gerada por IA</p><h2><%= @article.rewritten_title %></h2></div><span class="muted"><%= @article.rewritten_at.strftime("%d/%m/%Y %H:%M") %></span></div>
     <%= form_with model: @article do |form| %>
+      <%= hidden_field_tag :product_key, @product.publication_key if @product %>
       <%= form.label :rewritten_title, "Título revisado" %><%= form.text_field :rewritten_title %>
       <%= form.label :rewritten_content, "Texto revisado" %><%= form.text_area :rewritten_content, rows: 18 %>
       <%= form.hidden_field :status, value: @article.status %>

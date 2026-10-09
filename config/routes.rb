@@ -3,7 +3,11 @@ Rails.application.routes.draw do
 
   devise_for :users, skip: :registrations
 
-  root "dashboard#index"
+  root "products#index"
+  get "radar", to: "dashboard#index", as: :radar
+  get "produtos", to: "products#index", as: :products
+  get "produtos/:publication_key", to: "products#show", as: :product
+  post "produtos/:publication_key/retirar/:distribution_id", to: "products#unpublish", as: :unpublish_product
 
   resources :sites, except: :show
   resources :editorial_editions, only: %i[index show], path: "edicoes" do

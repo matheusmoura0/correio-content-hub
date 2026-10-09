@@ -499,12 +499,15 @@
       }
       @media (max-width:420px) { .grid { grid-template-columns:1fr; } .brand-name { font-size:15px; } .brand-product { letter-spacing:.08em; } .session .logout { padding:6px 9px !important; } .nav-link,.nav-menu > summary { padding-inline:8px; } }
     </style>
-    <link rel="stylesheet" href="/content-hub.css?v=20261009-1">
+    <link rel="stylesheet" href="/content-hub.css?v=20261009-2">
   </head>
   <body class="<%= user_signed_in? ? 'hub-authenticated' : 'hub-guest' %>">
     <% if user_signed_in? %>
       <% publication_sites = Site.publication_destinations.order(:name).load %>
-      <% publication_active = params[:publication_key].present? %>
+      <% current_product = @product || @edition&.site || @site %>
+      <% current_product ||= publication_sites.find { |site| site.domain == session[:reporter_site_domain] } unless controller_name == "products" && action_name == "index" %>
+      <% current_product = nil unless current_product && publication_sites.any? { |site| site.id == current_product.id } %>
+      <% publication_active = current_product.present? %>
       <% admin_active = %w[feeds sites categories users activity_logs].include?(controller_name) %>
     <% end %>
     <% if user_signed_in? %>
@@ -516,46 +519,58 @@
           <% end %>
 
           <nav class="hub-sidebar-nav">
-            <%= link_to editorial_editions_path, class: "hub-nav-link #{'active' if controller_name == 'editorial_editions'}" do %><%= ui_icon("library") %><span>Edições para aprovação</span><% end %>
-            <%= link_to root_path, class: "hub-nav-link #{'active' if current_page?(root_path)}" do %><%= ui_icon("layout-dashboard") %><span>Radar editorial</span><% end %>
-            <%= link_to topics_path, class: "hub-nav-link #{'active' if controller_name == 'topics'}" do %><%= ui_icon("search") %><span>Pesquisar</span><% end %>
-            <%= link_to articles_path, class: "hub-nav-link #{'active' if controller_name.in?(%w[articles article_rewrites reporter_articles])}" do %><%= ui_icon("file-text") %><span>Produção</span><% end %>
+            <%= link_to products_path, class: "hub-nav-link #{'active' if controller_name == 'products' && action_name == 'index'}" do %><%= ui_icon("layout-dashboard") %><span>Produtos</span><% end %>
+            <%= link_to editorial_editions_path, class: "hub-nav-link #{'active' if controller_name == 'editorial_editions' && action_name == 'index'}" do %><%= ui_icon("library") %><span>Pendências de aprovação</span><% end %>
             <details class="hub-nav-group nav-menu <%= 'active' if publication_active %>">
-              <summary><%= ui_icon("send") %><span>Publicações</span><span class="hub-nav-count"><%= publication_sites.size %></span></summary>
+              <summary><%= ui_icon("newspaper") %><span>Jornais e revistas</span><span class="hub-nav-count"><%= publication_sites.size %></span></summary>
               <div class="hub-nav-submenu">
                 <% publication_sites.each do |site| %>
-                  <%= link_to site.name, publication_path(site.publication_key), class: ('active' if params[:publication_key] == site.publication_key) %>
+                  <%= link_to site.name, product_path(site.publication_key), class: ('active' if current_product&.id == site.id) %>
                 <% end %>
               </div>
             </details>
-            <%= link_to analytics_path, class: "hub-nav-link #{'active' if controller_name == 'analytics'}" do %><%= ui_icon("chart-no-axes-column-increasing") %><span>Análises</span><% end %>
+            <%= link_to analytics_path(site_id: current_product&.id), class: "hub-nav-link #{'active' if controller_name == 'analytics'}" do %><%= ui_icon("chart-no-axes-column-increasing") %><span>Audiência</span><% end %>
           </nav>
+
+          <% if current_product %>
+            <div class="hub-sidebar-section hub-product-section">
+              <span><%= current_product.name %></span>
+              <%= link_to product_path(current_product.publication_key), class: "hub-nav-link #{'active' if controller_name == 'products' && @view == 'review' || controller_name == 'editorial_editions' && action_name == 'show'}" do %><%= ui_icon("library") %><span>Para conferir</span><% end %>
+              <%= link_to product_path(current_product.publication_key, view: "work"), class: "hub-nav-link #{'active' if controller_name == 'products' && @view == 'work' || controller_name == 'reporter_articles'}" do %><%= ui_icon("pencil") %><span>Em produção</span><% end %>
+              <%= link_to product_path(current_product.publication_key, view: "live"), class: "hub-nav-link #{'active' if controller_name == 'products' && @view == 'live'}" do %><%= ui_icon("globe") %><span>No ar</span><% end %>
+            </div>
+          <% end %>
 
           <% if current_user.admin? %>
             <div class="hub-sidebar-section">
               <span>Administração</span>
-              <%= link_to feeds_path, class: "hub-nav-link #{'active' if controller_name == 'feeds'}" do %><%= ui_icon("rss") %><span>Canais RSS</span><% end %>
-              <%= link_to sites_path, class: "hub-nav-link #{'active' if controller_name == 'sites'}" do %><%= ui_icon("globe") %><span>Sites</span><% end %>
+              <%= link_to feeds_path, class: "hub-nav-link #{'active' if controller_name == 'feeds'}" do %><%= ui_icon("rss") %><span>Fontes de notícias</span><% end %>
+              <%= link_to sites_path, class: "hub-nav-link #{'active' if controller_name == 'sites'}" do %><%= ui_icon("globe") %><span>Produtos e assuntos</span><% end %>
+              <%= link_to topics_path, class: "hub-nav-link #{'active' if controller_name == 'topics'}" do %><%= ui_icon("search") %><span>Pesquisas</span><% end %>
               <%= link_to users_path, class: "hub-nav-link #{'active' if controller_name == 'users'}" do %><%= ui_icon("users") %><span>Equipe</span><% end %>
             </div>
           <% end %>
 
           <div class="hub-sidebar-footer">
-            <% if current_user.admin? %><%= link_to activity_logs_path, class: "hub-nav-link #{'active' if controller_name == 'activity_logs'}" do %><%= ui_icon("activity") %><span>Atividades</span><% end %><% end %>
-            <%= link_to "#", class: "hub-nav-link", aria: { label: "Ajuda" } do %><%= ui_icon("circle-question-mark") %><span>Ajuda</span><% end %>
+            <% if current_user.admin? %>
+              <%= link_to articles_path(site_domain: ""), class: "hub-nav-link" do %><%= ui_icon("file-text") %><span>Acervo geral</span><% end %>
+              <%= link_to radar_path, class: "hub-nav-link #{'active' if controller_name == 'dashboard'}" do %><%= ui_icon("activity") %><span>Radar editorial</span><% end %>
+              <%= link_to activity_logs_path, class: "hub-nav-link #{'active' if controller_name == 'activity_logs'}" do %><%= ui_icon("activity") %><span>Atividades</span><% end %>
+            <% end %>
           </div>
         </aside>
 
         <div class="hub-frame">
           <header class="hub-topbar">
-            <%= link_to root_path, class: "hub-mobile-brand" do %><span class="hub-brand-mark">CM</span><span><strong>Radar</strong><small>Correio da Manhã</small></span><% end %>
-            <%= form_with url: articles_path, method: :get, class: "hub-global-search", data: { turbo: false } do |form| %>
+            <%= link_to root_path, class: "hub-mobile-brand" do %><span class="hub-brand-mark">CM</span><span><strong>Content Hub</strong><small><%= current_product&.name || "Produtos editoriais" %></small></span><% end %>
+            <%= form_with url: current_product ? product_path(current_product.publication_key) : articles_path, method: :get, class: "hub-global-search", data: { turbo: false } do |form| %>
               <%= ui_icon("search") %>
-              <%= form.search_field :q, value: params[:q], placeholder: "Buscar matérias, fontes ou palavras-chave", aria: { label: "Buscar no acervo" } %>
+              <%= form.hidden_field :view, value: "work" if current_product %>
+              <%= form.search_field :q, value: params[:q], placeholder: current_product ? "Buscar matérias neste produto" : "Buscar matérias no acervo", aria: { label: "Buscar matérias" } %>
             <% end %>
             <div class="hub-topbar-actions">
               <span class="hub-live-status"><span></span>Redação ativa</span>
-              <%= link_to activity_logs_path, class: "hub-icon-button", aria: { label: "Notificações" } do %><%= ui_icon("bell") %><% end %>
+              <%= link_to editorial_editions_path, class: "hub-icon-button", title: "Pendências de aprovação", aria: { label: "Pendências de aprovação" } do %><%= ui_icon("bell") %><% end %>
               <details class="hub-user-menu nav-menu <%= 'active' if admin_active %>">
                 <summary><span class="hub-avatar"><%= user_display_name(current_user).first.upcase %></span><span class="hub-user-copy"><strong><%= user_display_name(current_user) %></strong><small><%= current_user.admin? ? "Administrador" : "Redação" %></small></span></summary>
                 <div class="hub-user-dropdown">
@@ -577,11 +592,11 @@
         </div>
 
         <nav class="hub-mobile-nav" aria-label="Navegação principal mobile">
-          <%= link_to root_path, class: ('active' if current_page?(root_path)) do %><%= ui_icon("layout-dashboard") %><span>Radar</span><% end %>
-          <%= link_to topics_path, class: ('active' if controller_name == 'topics') do %><%= ui_icon("search") %><span>Pesquisar</span><% end %>
-          <%= link_to articles_path, class: ('active' if controller_name.in?(%w[articles article_rewrites reporter_articles])) do %><%= ui_icon("file-text") %><span>Produção</span><% end %>
-          <%= link_to editorial_editions_path, class: ('active' if controller_name == 'editorial_editions') do %><%= ui_icon("send") %><span><%= current_user.admin? ? "Aprovar" : "Edições" %></span><% end %>
-          <%= link_to analytics_path, class: ('active' if controller_name == 'analytics') do %><%= ui_icon("chart-no-axes-column-increasing") %><span>Análises</span><% end %>
+          <%= link_to products_path, class: ('active' if controller_name == 'products' && action_name == 'index') do %><%= ui_icon("layout-dashboard") %><span>Produtos</span><% end %>
+          <%= link_to current_product ? product_path(current_product.publication_key) : editorial_editions_path, class: ('active' if controller_name == 'editorial_editions' || controller_name == 'products' && @view == 'review') do %><%= ui_icon("library") %><span>Conferir</span><% end %>
+          <%= link_to current_product ? product_path(current_product.publication_key, view: "work") : products_path, class: ('active' if controller_name == 'reporter_articles' || controller_name == 'products' && @view == 'work') do %><%= ui_icon("pencil") %><span>Produção</span><% end %>
+          <%= link_to current_product ? product_path(current_product.publication_key, view: "live") : products_path, class: ('active' if controller_name == 'products' && @view == 'live') do %><%= ui_icon("globe") %><span>No ar</span><% end %>
+          <%= link_to analytics_path(site_id: current_product&.id), class: ('active' if controller_name == 'analytics') do %><%= ui_icon("chart-no-axes-column-increasing") %><span>Audiência</span><% end %>
         </nav>
       </div>
     <% else %>

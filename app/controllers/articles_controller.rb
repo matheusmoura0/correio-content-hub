@@ -1,6 +1,7 @@
 class ArticlesController < ApplicationController
   before_action :set_article, only: %i[show update publish_to_gastronomy unpublish_from_gastronomy]
   before_action :require_admin!, only: %i[destroy_bulk publish_to_gastronomy unpublish_from_gastronomy]
+  before_action :set_product_context, only: %i[show update]
 
   def index
     @destinations = Site.publication_destinations.order(:name).load
@@ -49,7 +50,7 @@ class ArticlesController < ApplicationController
     end
     if saved
       notice = params[:image_rights_review].present? ? "Dados e direitos da imagem atualizados." : "Matéria atualizada."
-      redirect_to @article, notice:
+      redirect_to article_path(@article, product_key: @product&.publication_key), notice:
     else
       load_sites
       render :show, status: :unprocessable_entity
@@ -131,6 +132,11 @@ class ArticlesController < ApplicationController
 
   def set_article
     @article = Article.find(params[:id])
+  end
+
+  def set_product_context
+    @product = Site.publication_destinations.find_by(publication_key: params[:product_key]) if params[:product_key].present?
+    session[:reporter_site_domain] = @product.domain if @product
   end
 
   def load_sites

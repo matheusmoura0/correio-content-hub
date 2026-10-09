@@ -17,9 +17,9 @@ Há no máximo uma proposta pendente por jornal. Enquanto o administrador confer
 uma edição, o worker continua coletando sem substituir essa proposta. A edição
 fica persistida no PostgreSQL e sobrevive a reinicializações do serviço.
 
-Em Edições para aprovação, o administrador confere título, resumo, fonte, imagem,
-texto completo e posição. Pode desmarcar matérias e ajustar editorias. Aprovar
-e publicar selecionadas aplica o conjunto em uma transação: qualquer falha
+Em Produtos > Para conferir, o administrador confere título, resumo, fonte,
+imagem, texto completo e posição. Pode desmarcar matérias e ajustar editorias.
+Aprovar e publicar aplica o conjunto em uma transação: qualquer falha
 cancela todas as mudanças de publicação. Itens desmarcados não são publicados.
 Uma proposta pode ser descartada e refeita com o acervo disponível.
 
@@ -28,6 +28,32 @@ página tiver mudado desde a proposta, é necessário descartá-la e preparar ou
 A auditoria registra administrador, horário e matérias aprovadas. Publicações
 manuais continuam disponíveis para administradores; repórteres não podem usar
 os caminhos de publicação manual, automática ou em lote.
+
+## Espaço do produto
+
+A página inicial agora lista os jornais e revistas que recebem conteúdo do Hub,
+com as pendências, rascunhos e matérias publicadas em cada destino. O Correio da
+Manhã continua sendo apenas fonte de conteúdo, sem ações de publicação.
+
+Cada produto reúne três etapas:
+
+- **Para conferir**: proposta automática com texto completo expansível,
+  seleção de matérias e editorias. Só administradores aprovam ou descartam.
+- **Em produção**: acervo relacionado ao produto, originais e distribuições
+  existentes, sem matérias que já estão publicadas nesse destino. A busca e o
+  filtro Minhas matérias operam dentro do jornal selecionado.
+- **No ar**: distribuições efetivamente publicadas naquele produto, com editoria
+  e posição. Retirar uma matéria exige administrador e preserva o acervo e as
+  publicações em outros jornais.
+
+Escrever matéria a partir de um produto fixa seu destino. A edição de um original
+usa o produto da fonte original, não uma distribuição posterior em outro jornal.
+Posicionamento avançado e configurações permanecem disponíveis ao administrador;
+o radar e o acervo geral continuam acessíveis como ferramentas auxiliares.
+
+Esta reorganização não adiciona migrações. Na VPS, confira também a navegação
+mobile, leitura expandida, filtros por produto, retorno da edição e retirada
+isolada de uma publicação. Nenhuma validação funcional é feita localmente.
 
 ## VPS
 
