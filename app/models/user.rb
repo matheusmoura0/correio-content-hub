@@ -6,6 +6,7 @@ class User < ApplicationRecord
 
   has_many :rewritten_articles, class_name: "Article", foreign_key: :rewritten_by_id, inverse_of: :rewritten_by
   has_many :activity_logs, dependent: :destroy
+  has_many :approved_editions, class_name: "EditorialEdition", foreign_key: :approved_by_id, dependent: :nullify
 
   validates :role, inclusion: { in: ROLES }
   validate :beta_user_limit, on: :create

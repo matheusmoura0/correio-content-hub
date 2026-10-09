@@ -83,7 +83,7 @@
   </div>
 </section>
 
-<% if @eligible_sites.include?(@gastronomy_site) || @gastronomy_distribution&.status == "published" %>
+<% if current_user.admin? && (@eligible_sites.include?(@gastronomy_site) || @gastronomy_distribution&.status == "published") %>
 <section class="card publication-panel">
   <div class="page-heading compact">
     <div><p class="eyebrow">Revista de Gastronomia</p><h2>Publicação direta</h2></div>

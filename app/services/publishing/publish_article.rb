@@ -19,7 +19,7 @@ module Publishing
       profile = SiteProfile.for(@site)
       @slot_key = nil unless SiteProfile.slot_keys(@site).include?(@slot_key)
 
-      Article.transaction do
+      @site.with_lock do
         distribution = @article.site_articles.find_or_initialize_by(site: @site)
         if @slot_key
           @site.site_articles.where(status: "published", slot_key: @slot_key)

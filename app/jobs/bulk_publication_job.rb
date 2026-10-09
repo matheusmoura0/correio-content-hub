@@ -2,6 +2,7 @@ class BulkPublicationJob < ApplicationJob
   queue_as :default
 
   def perform(article_id:, site_id:, action:, user_id:, instructions: nil, category_id: nil)
+    raise ArgumentError, "Publicação em lote exige um administrador." unless User.find(user_id).admin?
     article = Article.find(article_id)
     site = Site.find(site_id)
     category = site.categories.find_by(id: category_id)
@@ -22,7 +23,9 @@ class BulkPublicationJob < ApplicationJob
     when "publish", "rewrite_publish"
       Publishing::PublishArticle.call(article:, site:, category:, assignment_mode: "automatic")
     when "unpublish"
-      article.site_articles.find_by(site:)&.update!(status: "draft", published_at: nil, slot_key: nil)
+      site.with_lock do
+        article.site_articles.find_by(site:)&.update!(status: "draft", published_at: nil, slot_key: nil)
+      end
     end
   rescue StandardError => error
     Rails.logger.error("Falha no lote para matéria #{article_id}: #{error.class}: #{error.message}")

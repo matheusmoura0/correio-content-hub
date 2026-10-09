@@ -1,6 +1,6 @@
 class ArticlesController < ApplicationController
   before_action :set_article, only: %i[show update publish_to_gastronomy unpublish_from_gastronomy]
-  before_action :require_admin!, only: :destroy_bulk
+  before_action :require_admin!, only: %i[destroy_bulk publish_to_gastronomy unpublish_from_gastronomy]
 
   def index
     @destinations = Site.publication_destinations.order(:name).load
@@ -34,6 +34,9 @@ class ArticlesController < ApplicationController
   end
 
   def update
+    if !current_user.admin? && (params.key?(:site_ids) || params.dig(:article, :status) == "published")
+      return redirect_to @article, alert: "A publicação exige aprovação do administrador."
+    end
     @article.assign_attributes(article_params)
     apply_image_rights_review if params[:image_rights_review].present?
 
@@ -82,7 +85,7 @@ class ArticlesController < ApplicationController
       return redirect_to(@article, alert: "Escolha uma editoria para usar uma posição da página de editoria.")
     end
 
-    Article.transaction do
+    site.with_lock do
       distribution = @article.site_articles.find_or_initialize_by(site:)
       if slot_key
         occupied = site.site_articles.where(status: "published", slot_key:).where.not(article_id: @article.id)
@@ -116,8 +119,11 @@ class ArticlesController < ApplicationController
   end
 
   def unpublish_from_gastronomy
-    distribution = @article.site_articles.find_by(site: gastronomy_site)
-    distribution&.update!(status: "draft", published_at: nil, slot_key: nil)
+    site = gastronomy_site
+    site.with_lock do
+      distribution = @article.site_articles.find_by(site:)
+      distribution&.update!(status: "draft", published_at: nil, slot_key: nil)
+    end
     redirect_to @article, notice: "Matéria retirada da Revista de Gastronomia."
   end
 

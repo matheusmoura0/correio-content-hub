@@ -3,6 +3,17 @@
   <div class="actions"><%= link_to "Matérias do jornal", articles_path(site_domain: @site.domain), class: "button secondary" %><%= link_to "Escrever matéria", new_reporter_article_path(site_id: @site.id), class: "button" %><%= link_to "Configurar site", edit_site_path(@site), class: "button secondary" if current_user.admin? %><%= form_with url: clear_publication_path(@site.publication_key), method: :post, class: "inline-form", data: { turbo_confirm: "Retirar todas as matérias publicadas de #{@site.name}? O acervo será preservado." } do |form| %><%= form.submit "Limpar site", class: "button danger" %><% end if current_user.admin? %></div>
 </div>
 
+<section class="edition-publication-banner">
+  <div><h2><%= @pending_edition ? "Edição pronta para conferência" : "Preparação automática" %></h2><span><%= @pending_edition ? "#{@pending_edition.items.count} matérias aguardam aprovação." : "O Hub coleta notícias e prepara propostas para este jornal." %></span></div>
+  <% if @pending_edition %>
+    <%= link_to current_user.admin? ? "Conferir e aprovar" : "Ver proposta", editorial_edition_path(@pending_edition), class: "button" %>
+  <% else %>
+    <%= button_to "Preparar com o acervo", prepare_editorial_editions_path, params: { site_id: @site.id }, class: "secondary" %>
+  <% end %>
+  <%= link_to "Todas as edições", editorial_editions_path %>
+</section>
+
+<% if current_user.admin? %>
 <nav class="publication-workflow" aria-label="Etapas de publicação">
   <button type="button" class="workflow-tab active" data-publication-tab="manual" aria-selected="true"><span>1</span><strong>Montar página</strong><small>Escolha matéria e posição</small></button>
   <button type="button" class="workflow-tab" data-publication-tab="automatic" aria-selected="false"><span>2</span><strong>Preencher automaticamente</strong><small>Distribua o acervo nos espaços</small></button>
@@ -137,3 +148,4 @@
   checks.forEach(check => check.addEventListener("change", refreshBulk));
 })();
 </script>
+<% end %>

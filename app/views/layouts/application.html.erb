@@ -499,7 +499,7 @@
       }
       @media (max-width:420px) { .grid { grid-template-columns:1fr; } .brand-name { font-size:15px; } .brand-product { letter-spacing:.08em; } .session .logout { padding:6px 9px !important; } .nav-link,.nav-menu > summary { padding-inline:8px; } }
     </style>
-    <link rel="stylesheet" href="/content-hub.css?v=20261007-1">
+    <link rel="stylesheet" href="/content-hub.css?v=20261009-1">
   </head>
   <body class="<%= user_signed_in? ? 'hub-authenticated' : 'hub-guest' %>">
     <% if user_signed_in? %>
@@ -516,6 +516,7 @@
           <% end %>
 
           <nav class="hub-sidebar-nav">
+            <%= link_to editorial_editions_path, class: "hub-nav-link #{'active' if controller_name == 'editorial_editions'}" do %><%= ui_icon("library") %><span>Edições para aprovação</span><% end %>
             <%= link_to root_path, class: "hub-nav-link #{'active' if current_page?(root_path)}" do %><%= ui_icon("layout-dashboard") %><span>Radar editorial</span><% end %>
             <%= link_to topics_path, class: "hub-nav-link #{'active' if controller_name == 'topics'}" do %><%= ui_icon("search") %><span>Pesquisar</span><% end %>
             <%= link_to articles_path, class: "hub-nav-link #{'active' if controller_name.in?(%w[articles article_rewrites reporter_articles])}" do %><%= ui_icon("file-text") %><span>Produção</span><% end %>
@@ -579,7 +580,7 @@
           <%= link_to root_path, class: ('active' if current_page?(root_path)) do %><%= ui_icon("layout-dashboard") %><span>Radar</span><% end %>
           <%= link_to topics_path, class: ('active' if controller_name == 'topics') do %><%= ui_icon("search") %><span>Pesquisar</span><% end %>
           <%= link_to articles_path, class: ('active' if controller_name.in?(%w[articles article_rewrites reporter_articles])) do %><%= ui_icon("file-text") %><span>Produção</span><% end %>
-          <%= link_to(publication_sites.first ? publication_path(publication_sites.first.publication_key) : root_path, class: ('active' if publication_active)) do %><%= ui_icon("send") %><span>Publicar</span><% end %>
+          <%= link_to editorial_editions_path, class: ('active' if controller_name == 'editorial_editions') do %><%= ui_icon("send") %><span><%= current_user.admin? ? "Aprovar" : "Edições" %></span><% end %>
           <%= link_to analytics_path, class: ('active' if controller_name == 'analytics') do %><%= ui_icon("chart-no-axes-column-increasing") %><span>Análises</span><% end %>
         </nav>
       </div>

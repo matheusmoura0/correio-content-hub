@@ -1,0 +1,46 @@
+<div class="page-heading">
+  <div><p class="eyebrow">Edição #<%= @edition.id %> · <%= @edition.status == "ready" ? "Aguardando aprovação" : @edition.status == "approved" ? "Aprovada" : "Descartada" %></p><h1><%= @edition.site.name %></h1></div>
+  <%= link_to "Voltar às edições", editorial_editions_path, class: "button secondary" %>
+</div>
+<%= form_with url: approve_editorial_edition_path(@edition), method: :post, class: "edition-review", data: { turbo_confirm: "Aprovar e publicar as matérias marcadas em #{@edition.site.name}?" } do %>
+  <section class="edition-items">
+    <% @items.each do |item| %>
+      <article class="edition-review-item">
+        <div class="edition-item-selection">
+          <% if @edition.status == "ready" && current_user.admin? %>
+            <%= check_box_tag "item_ids[]", item.id, true, id: "edition-item-#{item.id}", aria: { label: "Aprovar #{item.title}" } %>
+          <% else %>
+            <span class="badge"><%= item.approved? ? "Publicada" : "Não publicada" %></span>
+          <% end %>
+        </div>
+        <div class="edition-item-copy">
+          <p class="eyebrow"><%= Publishing::SiteProfile.label_for(@edition.site, item.slot_key) %></p>
+          <h2><%= item.title %></h2>
+          <% if item.article.image_url.present? %><%= image_tag item.article.image_url, alt: "", class: "edition-image", loading: "lazy" %><% end %>
+          <p><%= truncate(strip_tags(item.article.description.to_s), length: 240) %></p>
+          <small><%= item.article.feed.name %> · <%= item.article.author.presence || "Autoria não informada" %></small>
+          <%= link_to "Conferir texto completo", article_path(item.article), target: "_blank", rel: "noopener" %>
+        </div>
+        <div class="edition-item-category">
+          <% if @edition.status == "ready" && current_user.admin? %>
+            <%= label_tag "edition-category-#{item.id}", "Editoria" %>
+            <%= select_tag "categories[#{item.id}]", options_from_collection_for_select(@categories, :id, :name, item.category_id), include_blank: "Escolha a editoria", id: "edition-category-#{item.id}" %>
+          <% else %>
+            <span><%= item.category&.name || "Sem editoria" %></span>
+          <% end %>
+        </div>
+      </article>
+    <% end %>
+  </section>
+  <% if @edition.status == "ready" && current_user.admin? %>
+    <footer class="edition-approval-bar">
+      <span><%= @items.size %> sugestões · <%= l(@edition.created_at, format: :short) %></span>
+      <button type="submit"><%= ui_icon("send") %><span>Aprovar e publicar selecionadas</span></button>
+    </footer>
+  <% end %>
+<% end %>
+<% if @edition.status == "ready" && current_user.admin? %>
+  <%= button_to "Descartar proposta", reject_editorial_edition_path(@edition), method: :post, class: "secondary", form: { data: { turbo_confirm: "Descartar esta proposta sem alterar as matérias publicadas?" } } %>
+<% elsif @edition.approved_at %>
+  <p class="muted">Aprovada por <%= @edition.approved_by&.name.presence || "Administrador" %> em <%= l(@edition.approved_at, format: :short) %>.</p>
+<% end %>

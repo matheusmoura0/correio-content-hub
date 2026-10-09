@@ -6,6 +6,11 @@ Rails.application.routes.draw do
   root "dashboard#index"
 
   resources :sites, except: :show
+  resources :editorial_editions, only: %i[index show], path: "edicoes" do
+    post :prepare, on: :collection
+    post :approve, on: :member
+    post :reject, on: :member
+  end
   resources :categories, except: :show
   get "publicacoes/:publication_key", to: "publications#show", as: :publication
   post "publicacoes/:publication_key/popular", to: "publications#populate", as: :populate_publication

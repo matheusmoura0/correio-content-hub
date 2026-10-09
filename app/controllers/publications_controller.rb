@@ -1,9 +1,10 @@
 class PublicationsController < ApplicationController
   before_action :set_site
-  before_action :require_admin!, only: :clear
+  before_action :require_admin!, only: %i[clear populate assign bulk]
 
   def show
     @profile = Publishing::SiteProfile.for(@site)
+    @pending_edition = EditorialEdition.find_by(site: @site, status: "ready")
     @distributions = @site.site_articles.includes(:article, :category).where(status: "published").index_by(&:slot_key)
     @topics = Topic.order(:name)
     @articles = Publishing::EditorialPolicy.scope(@site).includes(:feed, site_articles: :site).order(created_at: :desc).limit(120)
@@ -68,15 +69,17 @@ class PublicationsController < ApplicationController
   end
 
   def clear
-    removed = @site.site_articles.where(status: "published").update_all(
-      status: "draft",
-      published_at: nil,
-      slot_key: nil,
-      placement: "latest",
-      position: 0,
-      assignment_mode: "automatic",
-      updated_at: Time.current
-    )
+    removed = @site.with_lock do
+      @site.site_articles.where(status: "published").update_all(
+        status: "draft",
+        published_at: nil,
+        slot_key: nil,
+        placement: "latest",
+        position: 0,
+        assignment_mode: "automatic",
+        updated_at: Time.current
+      )
+    end
     redirect_to publication_path(@site.publication_key), notice: "Site limpo: #{removed} matéria(s) retirada(s) da publicação. O acervo foi preservado."
   end
 
