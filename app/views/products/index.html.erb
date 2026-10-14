@@ -19,7 +19,7 @@
         <div class="product-card-body">
           <h2><%= link_to product.name, product_path(product.publication_key) %></h2>
           <small class="product-domain"><%= product.domain %></small>
-          <div class="product-card-state <%= 'pending' if edition %>"><span class="presence-dot <%= edition ? 'online' : 'offline' %>"></span><%= edition ? "#{edition.items.size} matérias para conferir" : "Sem edição pendente" %></div>
+          <div class="product-card-state <%= 'pending' if edition %>"><span class="presence-dot <%= edition ? 'online' : 'offline' %>"></span><%= edition ? "#{edition.items.count { |item| item.decision == 'pending' }} matérias para conferir" : "Sem edição pendente" %></div>
           <dl><div><dt>Rascunhos</dt><dd><%= @draft_counts.fetch(product.id, 0) %></dd></div><div><dt>No ar</dt><dd><%= @published_counts.fetch(product.id, 0) %></dd></div></dl>
           <% if @latest_approvals[product.id] %><small class="product-last-edition">Última aprovação: <%= l(@latest_approvals[product.id], format: :short) %></small><% end %>
         </div>

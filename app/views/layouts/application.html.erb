@@ -499,7 +499,7 @@
       }
       @media (max-width:420px) { .grid { grid-template-columns:1fr; } .brand-name { font-size:15px; } .brand-product { letter-spacing:.08em; } .session .logout { padding:6px 9px !important; } .nav-link,.nav-menu > summary { padding-inline:8px; } }
     </style>
-    <link rel="stylesheet" href="/content-hub.css?v=20261009-2">
+    <link rel="stylesheet" href="/content-hub.css?v=20261014-1">
   </head>
   <body class="<%= user_signed_in? ? 'hub-authenticated' : 'hub-guest' %>">
     <% if user_signed_in? %>
@@ -622,10 +622,11 @@
           const form = event.target;
           if (form.dataset.loadingStarted === "true") return;
           form.dataset.loadingStarted = "true";
-          const button = form.querySelector("button[type='submit'], input[type='submit']");
+          const button = event.detail.formSubmission.submitter || form.querySelector("button[type='submit'], input[type='submit']");
           const label = button?.dataset.loadingLabel || form.dataset.loadingLabel || "Processando solicitação";
           if (button) {
             button.dataset.originalLabel = button.tagName === "INPUT" ? button.value : button.textContent;
+            if (button.tagName !== "INPUT") button.dataset.originalMarkup = button.innerHTML;
             if (button.tagName === "INPUT") button.value = label;
             else button.textContent = label;
             button.classList.add("is-loading");
@@ -638,6 +639,8 @@
 
         document.addEventListener("submit", (event) => {
           const form = event.target;
+          // Keep the clicked decision's name/value until Turbo serializes the form.
+          if (form.classList.contains("product-edition-review")) return;
           if (form.dataset.loadingStarted === "true") return;
           form.dataset.loadingStarted = "true";
           const button = form.querySelector("button[type='submit'], input[type='submit']");
@@ -655,9 +658,10 @@
         });
 
         document.addEventListener("turbo:submit-end", (event) => {
-          const button = event.target.querySelector("button[type='submit'], input[type='submit']");
+          const button = event.target.querySelector(".is-loading");
           if (button?.dataset.originalLabel) {
             if (button.tagName === "INPUT") button.value = button.dataset.originalLabel;
+            else if (button.dataset.originalMarkup) button.innerHTML = button.dataset.originalMarkup;
             else button.textContent = button.dataset.originalLabel;
           }
           if (button) { button.classList.remove("is-loading"); button.disabled = false; }

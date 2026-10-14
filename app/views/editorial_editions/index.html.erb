@@ -5,7 +5,7 @@
   <% @editions.each do |edition| %>
     <article class="edition-queue-row">
       <div><h2><%= edition.site.name %></h2><small>Preparada em <%= l(edition.created_at, format: :short) %></small></div>
-      <span class="badge status-reviewing"><%= edition.items.size %> sugestões</span>
+      <span class="badge status-reviewing"><%= edition.items.count { |item| item.decision == 'pending' } %> sugestões</span>
       <%= link_to "Conferir edição", product_path(edition.site.publication_key), class: "button secondary" %>
     </article>
   <% end %>

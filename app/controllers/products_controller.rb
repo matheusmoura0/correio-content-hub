@@ -8,7 +8,7 @@ class ProductsController < ApplicationController
     @published_counts = SiteArticle.where(site_id: ids, status: "published").group(:site_id).count
     @draft_counts = SiteArticle.where(site_id: ids, status: "draft").group(:site_id).count
     @pending_editions = EditorialEdition.where(site_id: ids, status: "ready").includes(:items).index_by(&:site_id)
-    @latest_approvals = EditorialEdition.where(site_id: ids, status: "approved").group(:site_id).maximum(:approved_at)
+    @latest_approvals = EditorialEdition.where(site_id: ids).where.not(approved_at: nil).group(:site_id).maximum(:approved_at)
     @covers = SiteArticle.where(site_id: ids, status: "published").joins(:article)
       .where.not(articles: { image_url: [nil, ""] }).includes(:article)
       .order(published_at: :desc, id: :desc).limit(150).to_a.group_by(&:site_id)
@@ -27,12 +27,15 @@ class ProductsController < ApplicationController
       .where.not(id: @published.select(:article_id)).where.not(status: "ignored")
     @work_count = work.count
     @live_count = @published.count
-    @review_count = @edition ? @edition.items.count : 0
+    @review_count = @edition ? @edition.items.pending.count : 0
     @page = [params[:page].to_i, 1].max
-    @recent_edition = @product.editorial_editions.where(status: "approved").order(approved_at: :desc).first
+    @recent_edition = @product.editorial_editions.where.not(approved_at: nil).order(approved_at: :desc).first
 
     if @view == "review"
-      @items = @edition.items.includes(article: :feed).order(:id) if @edition
+      @items = @edition.items.pending.includes(article: :feed).order(:id) if @edition
+      @review_history = EditorialEditionItem.joins(:editorial_edition)
+        .where(editorial_editions: { site_id: @product.id }, decision: %w[approved rejected])
+        .includes(:decided_by).order(Arel.sql("decided_at DESC NULLS LAST"), id: :desc).limit(12)
     elsif @view == "work"
       work = work.where(reported_by: current_user) if params[:mine] == "1"
       work = search_articles(work)

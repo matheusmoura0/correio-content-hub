@@ -1,14 +1,15 @@
 <% editable = edition.status == "ready" && current_user.admin? %>
 <% submitted = params.key?(:categories) %>
 <% selected_ids = Array(params[:item_ids]).map(&:to_s) %>
-<%= form_with url: approve_editorial_edition_path(edition), method: :post, class: "edition-review product-edition-review", id: "edition-review-#{edition.id}", data: { turbo_confirm: "Aprovar e publicar as matérias marcadas em #{edition.site.name}?" } do %>
+<%= form_with url: approve_editorial_edition_path(edition), method: :post, class: "edition-review product-edition-review", id: "edition-review-#{edition.id}" do %>
   <%= hidden_field_tag :product_context, "1" if product_context %>
-  <% if editable %><div class="product-selection-bar"><label><input type="checkbox" data-select-edition checked> Selecionar todas</label><span data-edition-count><%= items.size %> selecionadas</span></div><% end %>
+  <%= hidden_field_tag :page_digest, edition.page_digest %>
+  <% if editable %><div class="product-selection-bar"><label><input type="checkbox" data-select-edition> Selecionar todas</label><span data-edition-count>0 selecionadas</span></div><% end %>
   <section class="edition-items">
     <% items.each do |item| %>
       <article class="edition-review-item">
         <div class="edition-item-selection">
-          <% if editable %><%= check_box_tag "item_ids[]", item.id, submitted ? selected_ids.include?(item.id.to_s) : true, id: "edition-item-#{item.id}", data: { edition_choice: true }, aria: { label: "Aprovar #{item.title}" } %><% else %><span class="badge"><%= item.approved? ? "Publicada" : "Não publicada" %></span><% end %>
+          <% if editable %><%= check_box_tag "item_ids[]", item.id, submitted && selected_ids.include?(item.id.to_s), id: "edition-item-#{item.id}", data: { edition_choice: true }, aria: { label: "Selecionar #{item.title}" } %><%= hidden_field_tag "article_digests[#{item.id}]", item.article_digest %><% else %><span class="badge"><%= { "approved" => "Publicada", "rejected" => "Recusada", "skipped" => "Substituída" }.fetch(item.decision, "Pendente") %></span><% end %>
         </div>
         <div class="edition-item-copy">
           <p class="eyebrow"><%= Publishing::SiteProfile.label_for(edition.site, item.slot_key) %></p>
@@ -24,6 +25,10 @@
             <%= label_tag "edition-category-#{item.id}", "Editoria" %>
             <% category_id = submitted ? params.dig(:categories, item.id.to_s) : item.category_id %>
             <%= select_tag "categories[#{item.id}]", options_from_collection_for_select(categories, :id, :name, category_id), include_blank: "Escolha a editoria", id: "edition-category-#{item.id}" %>
+            <div class="suggestion-decisions">
+              <button type="submit" name="item_id" value="<%= item.id %>" data-turbo-confirm="Aprovar e publicar esta matéria em <%= edition.site.name %>?" class="suggestion-approve"><%= ui_icon("send") %><span>Aprovar e publicar</span></button>
+              <button type="submit" name="item_id" value="<%= item.id %>" formaction="<%= reject_editorial_edition_path(edition) %>" formnovalidate data-turbo-confirm="Recusar esta sugestão para <%= edition.site.name %>?" class="secondary suggestion-reject"><%= ui_icon("x") %><span>Recusar</span></button>
+            </div>
           <% else %><span><%= item.category&.name || "Sem editoria" %></span><% end %>
         </div>
       </article>
@@ -31,26 +36,30 @@
   </section>
   <% if editable %>
     <footer class="edition-approval-bar product-approval-bar">
-      <span data-edition-count><%= items.size %> selecionadas</span>
-      <button type="submit"><%= ui_icon("send") %><span>Aprovar e publicar</span></button>
+      <span data-edition-count>0 selecionadas</span>
+      <div class="suggestion-bulk-actions">
+        <button type="submit" data-bulk-decision disabled data-turbo-confirm="Aprovar e publicar as sugestões selecionadas?"><%= ui_icon("send") %><span>Aprovar selecionadas</span></button>
+        <button type="submit" data-bulk-decision disabled formaction="<%= reject_editorial_edition_path(edition) %>" formnovalidate class="secondary" data-turbo-confirm="Recusar as sugestões selecionadas para este produto?"><%= ui_icon("x") %><span>Recusar</span></button>
+      </div>
     </footer>
   <% end %>
 <% end %>
 <% if editable %>
-  <%= button_to "Descartar proposta", reject_editorial_edition_path(edition), method: :post, params: { product_context: product_context ? "1" : "0" }, class: "secondary", form: { data: { turbo_confirm: "Descartar esta proposta sem alterar as matérias publicadas?" } } %>
   <script>
     (() => {
       const form = document.getElementById("edition-review-<%= edition.id %>");
       if (!form) return;
       const choices = [...form.querySelectorAll("[data-edition-choice]")];
       const all = form.querySelector("[data-select-edition]");
-      const submit = form.querySelector("button[type=submit]");
+      const buttons = form.querySelectorAll("[data-bulk-decision]");
+      const bar = form.querySelector(".product-approval-bar");
       const refresh = () => {
         const count = choices.filter(choice => choice.checked).length;
         all.checked = count > 0 && count === choices.length;
         all.indeterminate = count > 0 && count < choices.length;
         form.querySelectorAll("[data-edition-count]").forEach(label => { label.textContent = `${count} selecionadas`; });
-        submit.disabled = count === 0;
+        buttons.forEach(button => { button.disabled = count === 0; });
+        bar.style.display = count === 0 ? "none" : "flex";
       };
       all.addEventListener("change", () => { choices.forEach(choice => { choice.checked = all.checked; }); refresh(); });
       choices.forEach(choice => choice.addEventListener("change", refresh));

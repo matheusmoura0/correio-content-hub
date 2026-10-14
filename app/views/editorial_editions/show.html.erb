@@ -1,5 +1,5 @@
 <div class="product-workspace">
   <%= link_to "Voltar ao produto", product_path(@edition.site.publication_key), class: "product-back" %>
-  <header class="product-heading"><div><p class="eyebrow">Edição #<%= @edition.id %> · <%= @edition.status == "ready" ? "Para conferir" : @edition.status == "approved" ? "Aprovada" : "Descartada" %></p><h1><%= @edition.site.name %></h1></div></header>
+  <header class="product-heading"><div><p class="eyebrow">Edição #<%= @edition.id %> · <%= { "ready" => "Para conferir", "approved" => "Aprovada", "rejected" => "Recusada", "expired" => "Substituída" }.fetch(@edition.status) %></p><h1><%= @edition.site.name %></h1></div></header>
   <%= render "review", edition: @edition, items: @items, categories: @categories, product_context: true %>
 </div>

@@ -184,22 +184,16 @@ module Rss
     end
 
     def distribute(article)
-      return if @feed.site.blank?
+      return unless @feed.site&.publication_destination?
 
-      publish_now = article.publication_ready?
-      distribution = article.site_articles.find_or_initialize_by(site: @feed.site)
-      if publish_now && @feed.site.domain == "revistadegastronomia.com.br" &&
-          (distribution.new_record? || distribution.assignment_mode != "manual")
-        SiteArticle.claim_automatic_slot!(distribution)
+      # Imports may stage content, but never change an existing editorial decision.
+      @feed.site.with_lock do
+        distribution = article.site_articles.find_or_initialize_by(site: @feed.site)
+        return if distribution.persisted?
+
+        distribution.assign_attributes(category: @feed.category, status: "draft")
+        distribution.save!
       end
-      distribution.assign_attributes(
-        category: @feed.category,
-        status: publish_now ? "published" : "draft",
-        published_at: publish_now ? (distribution.published_at || Time.current) : nil
-      )
-      distribution.slot_key = nil unless publish_now
-      distribution.save!
-      article.update!(status: "published") if publish_now && article.status != "published"
     end
 
     def extract_image(entry)

@@ -20,22 +20,41 @@ module Publishing
       "negocios" => %w[negocios conferencia congresso convencao]
     }.freeze
 
+    def self.ready_candidate?(article)
+      article.status != "ignored" && article.publication_ready? &&
+        ActionController::Base.helpers.strip_tags(article.rewritten_content.presence || article.content.to_s).strip.length >= 150
+    end
+
     def self.call(site)
       site.with_lock do
         next unless site.publication_destination?
+        now = Time.current
+        cutoff = now - [ENV.fetch("EDITORIAL_MAX_AGE_DAYS", "7").to_i, 1].max.days
         pending = EditorialEdition.find_by(site:, status: "ready")
-        next pending if pending
+        if pending
+          changed = !pending.items.pending.exists? || pending.page_digest != EditorialEdition.page_digest(site) || pending.items.pending.includes(:article).any? do |item|
+            date = item.article.published_at || item.article.created_at
+            item.article_digest != EditorialEdition.article_digest(item.article) || !ready_candidate?(item.article) || !date.between?(cutoff, now)
+          end
+          next pending unless changed
+
+          pending.items.pending.update_all(decision: "skipped", updated_at: Time.current)
+          pending.update!(status: "expired")
+        end
 
         profile = SiteProfile.for(site)
         occupied = site.site_articles.where(status: "published", assignment_mode: "manual").pluck(:slot_key)
         slots = profile.automatic_order - occupied
         next if slots.empty?
         published_ids = site.site_articles.where(status: "published").select(:article_id)
+        rejected_ids = EditorialEditionItem.joins(:editorial_edition)
+          .where(editorial_editions: { site_id: site.id }, decision: "rejected").select(:article_id)
         candidates = EditorialPolicy.scope(site).where.not(id: published_ids)
+          .where.not(id: rejected_ids)
           .where.not(status: "ignored").includes(:feed, :site_articles)
-          .where("COALESCE(articles.published_at, articles.created_at) >= ?", [ENV.fetch("EDITORIAL_MAX_AGE_DAYS", "7").to_i, 1].max.days.ago)
+          .where("COALESCE(articles.published_at, articles.created_at) BETWEEN ? AND ?", cutoff, now)
           .order(published_at: :desc, created_at: :desc, id: :desc)
-        candidates = candidates.limit([slots.size * 8, 100].max).select(&:publication_ready?)
+        candidates = candidates.limit([slots.size * 8, 100].max).select { |article| ready_candidate?(article) }
         assignments = slots.filter_map do |slot|
           article = if slot.include?("aviation")
             candidates.find do |candidate|

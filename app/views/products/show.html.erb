@@ -14,21 +14,34 @@
   </nav>
 
   <% if @view == "review" %>
+    <% interval = [ENV.fetch("EDITORIAL_INTERVAL_SECONDS", "1800").to_i, 60].max %>
+    <% automation_enabled = ENV.fetch("EDITORIAL_AUTOMATION_ENABLED", "true") == "true" %>
+    <% delayed = @product.editorial_checked_at.nil? || @product.editorial_checked_at < (interval * 3).seconds.ago %>
+    <section class="suggestion-automation <%= 'attention' if !automation_enabled || delayed || @product.editorial_cycle_error.present? %>" aria-label="Estado da automação">
+      <div><%= ui_icon("activity") %><strong><%= !automation_enabled ? "Automação pausada" : @product.editorial_cycle_error.present? ? "Atenção na automação" : delayed ? "Aguardando ciclo automático" : "Automação em dia" %></strong></div>
+      <span><%= @product.editorial_checked_at ? "Último ciclo: #{l(@product.editorial_checked_at, format: :short)}" : "Nenhum ciclo registrado" %></span>
+      <%= link_to product_path(@product.publication_key), class: "product-icon-action", title: "Atualizar sugestões", aria: { label: "Atualizar sugestões" } do %><%= ui_icon("activity") %><% end %>
+    </section>
+    <% if @product.editorial_cycle_error.present? %><p class="muted"><%= @product.editorial_cycle_error %></p><% end %>
     <% if @edition %>
-      <div class="product-section-heading"><h2>Edição preparada</h2><span><%= l(@edition.created_at, format: :short) %></span></div>
+      <div class="product-section-heading"><h2>Sugestões para decidir</h2><span><%= @review_count %> aguardando aprovação</span></div>
       <%= render "editorial_editions/review", edition: @edition, items: @items, categories: @categories, product_context: true %>
     <% else %>
       <section class="product-empty">
-        <%= ui_icon("library") %><h2>Nenhuma edição para conferir</h2>
+        <%= ui_icon("library") %><h2>Nenhuma sugestão pendente</h2>
         <% if @product.editorial_keywords.blank? %>
           <p>Os assuntos deste produto ainda precisam ser configurados.</p>
           <%= link_to "Configurar assuntos", edit_site_path(@product), class: "button secondary" if current_user.admin? %>
         <% else %>
-          <p>A próxima proposta aparecerá aqui quando houver novas matérias prontas.</p>
-          <%= button_to "Preparar edição com o acervo", prepare_editorial_editions_path, params: { site_id: @product.id, product_context: "1" }, class: "secondary" %>
+          <p>O próximo ciclo trará as novas matérias prontas e relacionadas a este produto.</p>
         <% end %>
         <% if @recent_edition %><small>Última edição aprovada em <%= l(@recent_edition.approved_at, format: :short) %></small><% end %>
       </section>
+    <% end %>
+    <% if @review_history.any? %>
+      <details class="suggestion-history"><summary>Decisões recentes</summary>
+        <% @review_history.each do |item| %><div><span class="badge <%= item.decision == 'approved' ? 'status-published' : 'status-ignored' %>"><%= item.decision == "approved" ? "Publicada" : "Recusada" %></span><strong><%= item.title %></strong><small><%= item.decided_by&.name.presence || "Administrador" %><% if item.decided_at %> · <%= l(item.decided_at, format: :short) %><% end %></small></div><% end %>
+      </details>
     <% end %>
   <% else %>
     <%= form_with url: product_path(@product.publication_key), method: :get, class: "product-search" do |form| %>
