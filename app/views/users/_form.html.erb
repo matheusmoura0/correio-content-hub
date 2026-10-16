@@ -1,0 +1,10 @@
+<%= form_with model: user do |form| %>
+  <% if user.errors.any? %><div class="alert"><%= user.errors.full_messages.to_sentence %></div><% end %>
+  <%= form.label :name, "Nome" %><%= form.text_field :name, required: true %>
+  <%= form.label :email, "E-mail" %><%= form.email_field :email, required: true %>
+  <%= form.label :role, "Perfil" %><%= form.select :role, [["Usuário", "member"], ["Administrador", "admin"]] %>
+  <%= form.label :password, user.persisted? ? "Nova senha (deixe vazio para manter)" : "Senha" %>
+  <%= form.password_field :password, required: !user.persisted?, autocomplete: "new-password" %>
+  <%= form.label :password_confirmation, "Confirmar senha" %><%= form.password_field :password_confirmation, required: !user.persisted?, autocomplete: "new-password" %>
+  <%= form.submit user.persisted? ? "Salvar usuário" : "Criar usuário" %>
+<% end %>

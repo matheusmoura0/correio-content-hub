@@ -1,0 +1,13 @@
+<div class="page-heading">
+  <div><p class="eyebrow">Revisão editorial</p><h1>Edições para aprovação</h1></div>
+</div>
+<section class="edition-queue">
+  <% @editions.each do |edition| %>
+    <article class="edition-queue-row">
+      <div><h2><%= edition.site.name %></h2><small>Preparada em <%= l(edition.created_at, format: :short) %></small></div>
+      <span class="badge status-reviewing"><%= edition.items.count { |item| item.decision == 'pending' } %> sugestões</span>
+      <%= link_to "Conferir edição", product_path(edition.site.publication_key), class: "button secondary" %>
+    </article>
+  <% end %>
+  <% if @editions.empty? %><div class="empty-state"><h2>Nenhuma edição pendente</h2><p>Novas propostas aparecerão após a coleta de matérias relacionadas aos jornais.</p></div><% end %>
+</section>

@@ -1,0 +1,126 @@
+<% summary = @report.summary %>
+<% previous = @report.summary(previous: true) %>
+<% comparison = @report.comparison %>
+<% daily = @report.daily_views %>
+<% previous_daily = @report.daily_views(previous: true) %>
+<% chart_peak = [daily.map { |day| day[:views] }.max.to_i, previous_daily.map { |day| day[:views] }.max.to_i, 1].max %>
+<% views = summary[:views].to_i %>
+<% click_rate = views.positive? ? (summary[:clicks].to_f * 100 / views).round(1) : 0 %>
+<% engagement_per_view = views.positive? ? (summary[:engagement_seconds].to_f / views).round : 0 %>
+<% duration_label = ->(seconds) { seconds.to_i >= 60 ? "#{seconds.to_i / 60}min #{seconds.to_i % 60}s" : "#{seconds.to_i}s" } %>
+<% pages = [(@total / @per_page.to_f).ceil, 1].max %>
+
+<div class="insights-page">
+  <header class="insights-heading">
+    <div><p class="eyebrow">Inteligência editorial</p><h1>Audiência do conteúdo</h1><p>Transforme alcance, recorrência e interação em decisões para a redação.</p></div>
+    <details class="insights-export">
+      <summary><%= ui_icon("send") %><span>Exportar</span></summary>
+      <div><% %w[csv json pdf].each do |format| %><%= link_to format.upcase, export_analytics_path(@filter_params.merge(format: format)), data: { turbo: false } %><% end %></div>
+    </details>
+  </header>
+
+  <nav class="insights-tabs" aria-label="Dimensão da análise">
+    <% Analytics::EditorialReport::LABELS.each do |key, label| %>
+      <%= link_to analytics_path(@filter_params.merge(dimension: key, article: nil, page: nil)), class: ("active" if @report.dimension == key), aria: { current: (@report.dimension == key ? "page" : nil) } do %>
+        <%= ui_icon({ "articles" => "newspaper", "authors" => "users", "categories" => "tags" }.fetch(key)) %><span><%= label %></span>
+      <% end %>
+    <% end %>
+  </nav>
+
+  <section class="insights-filter-panel">
+    <div class="insights-periods" aria-label="Períodos rápidos">
+      <span>Período</span>
+      <% [7, 30, 90].each do |days| %><%= link_to "#{days} dias", analytics_path(@filter_params.except(:from, :to, :page).merge(days: days)), class: ("active" if (@to.to_date - @from.to_date).to_i == days) %><% end %>
+    </div>
+    <%= form_with url: analytics_path, method: :get, class: "insights-filters", data: { turbo: false } do |form| %>
+      <%= form.hidden_field :dimension, value: @report.dimension %>
+      <% if @report.filters[:article] %><%= form.hidden_field :article, value: @report.filters[:article] %><% end %>
+      <div><%= form.label :site_id, "Publicação" %><%= form.select :site_id, @sites.map { |site| [site.name, site.id] }, selected: @site.id %></div>
+      <div class="insights-date"><%= form.label :from, "De" %><%= form.date_field :from, value: @filter_params[:from], required: true, max: (Time.now.utc.to_date - 1).iso8601 %></div>
+      <div class="insights-date"><%= form.label :to, "Até" %><%= form.date_field :to, value: @filter_params[:to], required: true, max: (Time.now.utc.to_date - 1).iso8601 %></div>
+      <div><%= form.label :sort, "Priorizar" %><%= form.select :sort, [["Visualizações", "views"], ["Conteúdos acessados", "articles"], ["Cliques", "clicks"], ["Tempo registrado", "engagement_seconds"]], selected: @report.sort %></div>
+      <%= form.submit "Atualizar análise", class: "accent" %>
+      <details class="insights-advanced" <%= "open" if @report.filters.slice(:q, :author, :category).any? || @per_page != 25 %>>
+        <summary><%= ui_icon("list-filter") %><span>Filtros avançados</span><small><%= @report.filters.size %> ativos</small></summary>
+        <div>
+          <div><%= form.label :q, "Buscar" %><%= form.search_field :q, value: @report.filters[:q], placeholder: "Título, ID, jornalista ou editoria" %></div>
+          <div><%= form.label :author, "Assinatura exata" %><%= form.text_field :author, value: @report.filters[:author], placeholder: "Todas" %></div>
+          <div><%= form.label :category, "Editoria exata" %><%= form.text_field :category, value: @report.filters[:category], placeholder: "Todas" %></div>
+          <div><%= form.label :per_page, "Linhas por página" %><%= form.select :per_page, [[25, 25], [50, 50], [100, 100]], selected: @per_page %></div>
+          <%= link_to "Limpar filtros", analytics_path(site_id: @site.id, dimension: @report.dimension), class: "button secondary" %>
+        </div>
+      </details>
+    <% end %>
+  </section>
+
+  <div class="insights-context"><span><%= @site.name %></span><strong><%= @from.strftime("%d/%m/%Y") %> a <%= (@to - 1.second).strftime("%d/%m/%Y") %></strong><small>UTC · comparação com período anterior equivalente</small><% if @report.filters[:article] %><%= link_to "Remover detalhe da matéria", analytics_path(@filter_params.except(:article)) %><% end %></div>
+
+  <section class="insights-kpis" aria-label="Resumo do período">
+    <% [[:views, "Visualizações", number_with_delimiter(views), "Volume total identificado"], [:visitors, "Visitantes por dia", number_with_delimiter(summary[:visitors]), "Identificadores diários"], [:articles, "Conteúdos acessados", number_with_delimiter(summary[:articles]), "Cobertura do acervo"], [:clicks, "Interações", "#{click_rate}%", "Cliques por 100 visualizações"]].each do |key, label, value, hint| %>
+      <% delta = comparison[key] %>
+      <article><div><span><%= label %></span><strong><%= value %></strong></div><p class="insights-delta <%= delta.to_f >= 0 ? 'positive' : 'negative' %>"><%= delta.nil? ? "Sem base comparativa" : "#{delta.positive? ? '+' : ''}#{delta}%" %></p><small><%= hint %> · anterior: <%= number_with_delimiter(previous[key]) %></small></article>
+    <% end %>
+  </section>
+
+  <section class="insights-overview">
+    <article class="insights-trend">
+      <header><div><p class="eyebrow">Evolução diária</p><h2>Ritmo de audiência</h2></div><div class="insights-legend"><span><i class="current"></i>Atual</span><span><i></i>Anterior</span></div></header>
+      <% if views.positive? %>
+        <div class="insights-chart" role="img" aria-label="Comparação de visualizações diárias com o período anterior">
+          <% daily.each_with_index do |day, index| %><% prior = previous_daily[index]&.dig(:views).to_i %><div class="insights-chart-day" title="<%= day[:date] %>: <%= day[:views] %> · anterior: <%= prior %>"><i class="previous" style="height:<%= prior * 100.0 / chart_peak %>%"></i><i class="current" style="height:<%= day[:views] * 100.0 / chart_peak %>%"></i></div><% end %>
+        </div>
+        <div class="insights-chart-axis"><span><%= @from.strftime("%d/%m") %></span><span><%= (@to - 1.second).strftime("%d/%m") %></span></div>
+      <% else %><div class="insights-empty"><%= ui_icon("chart-no-axes-column-increasing") %><strong>Sem audiência neste período</strong><span>Altere os filtros ou confirme a instalação da tag.</span></div><% end %>
+      <footer><span>Média por visualização</span><strong><%= duration_label.call(engagement_per_view) %> de atividade registrada</strong></footer>
+    </article>
+
+    <aside class="insights-breakdown">
+      <section>
+        <header><div><p class="eyebrow">Plataformas</p><h2>Dispositivos</h2></div><strong><%= number_with_delimiter(@devices.values.sum) %></strong></header>
+        <% device_total = [@devices.values.sum, 1].max %>
+        <% { "mobile" => "Celular", "desktop" => "Desktop", "tablet" => "Tablet" }.each do |key, label| %><% count = @devices.fetch(key, 0) %><div class="device-row"><span><%= label %></span><div><i style="width:<%= count * 100.0 / device_total %>%"></i></div><strong><%= (count * 100.0 / device_total).round %>%</strong></div><% end %>
+      </section>
+      <section class="insights-clicks">
+        <header><div><p class="eyebrow">Ação do leitor</p><h2>Destinos mais clicados</h2></div></header>
+        <% @top_clicks.first(4).each do |url, count| %><div><span><%= truncate(url, length: 42) %></span><strong><%= number_with_delimiter(count) %></strong></div><% end %>
+        <% if @top_clicks.empty? %><p class="muted">Nenhum clique registrado.</p><% end %>
+      </section>
+    </aside>
+  </section>
+
+  <section class="insights-ranking">
+    <header><div><p class="eyebrow">Ranking editorial</p><h2><%= @report.label %></h2><p><%= number_with_delimiter(@total) %> resultados encontrados</p></div><span>Ordenado por <strong><%= { "views" => "visualizações", "articles" => "conteúdos", "clicks" => "cliques", "engagement_seconds" => "tempo" }.fetch(@report.sort) %></strong></span></header>
+    <div class="insights-table-wrap"><table>
+      <thead><tr><th>#</th><th><%= @report.dimension == "articles" ? "Conteúdo" : "Nome" %></th><th>Visualizações</th><th>Tendência</th><th>Conteúdos</th><th>Cliques</th><th>Tempo</th></tr></thead>
+      <tbody>
+        <% @rows.each_with_index do |row, index| %>
+          <% drill = { "articles" => :article, "authors" => :author, "categories" => :category }.fetch(@report.dimension) %>
+          <tr>
+            <td data-label="Posição"><span class="rank-number"><%= (@page - 1) * @per_page + index + 1 %></span></td>
+            <td data-label="Conteúdo"><div class="insights-story-cell <%= 'author-profile' if @report.dimension == 'authors' %>"><% if @report.dimension == "articles" %><span class="insights-story-image"><% if row[:image_url].present? %><%= image_tag row[:image_url], alt: "", loading: "lazy" %><% else %><%= ui_icon("newspaper") %><% end %></span><% elsif @report.dimension == "authors" %><span class="insights-author-image"><% if row[:author_image_url].present? %><%= image_tag row[:author_image_url], alt: "" %><% else %><%= row[:name].split.filter_map { |part| part.first }.first(2).join.upcase.presence || "?" %><% end %></span><% end %><div><%= link_to row[:name], analytics_path(@filter_params.merge(dimension: "articles", drill => row[:key], page: nil)) %><% if @report.dimension == "articles" %><small><%= row[:author] %> · <%= row[:category] %> · ID <%= row[:key] %></small><% elsif @report.dimension == "authors" %><small>Colunista · <%= pluralize(row[:articles], "matéria", "matérias") %> no período</small><% end %></div></div></td>
+            <td data-label="Visualizações"><strong><%= number_with_delimiter(row[:views]) %></strong><small>anterior: <%= number_with_delimiter(row[:previous_views]) %></small></td>
+            <td data-label="Tendência"><span class="trend-pill <%= row[:views_change].to_f >= 0 ? 'positive' : 'negative' %>"><%= row[:views_change].nil? ? "Sem base" : "#{row[:views_change].positive? ? '+' : ''}#{row[:views_change]}%" %></span></td>
+            <td data-label="Conteúdos"><%= row[:articles] %><small>mediana <%= row[:median_views] %></small></td><td data-label="Cliques"><%= number_with_delimiter(row[:clicks]) %></td><td data-label="Tempo"><%= duration_label.call(row[:engagement_seconds]) %></td>
+          </tr>
+        <% end %>
+        <% if @rows.empty? %><tr><td colspan="7"><div class="insights-empty"><%= ui_icon("search") %><strong>Nenhum resultado</strong><span>Revise o período ou os filtros aplicados.</span></div></td></tr><% end %>
+      </tbody>
+    </table></div>
+    <nav class="insights-pager" aria-label="Paginação"><span>Página <strong><%= @page %></strong> de <%= pages %></span><div><% if @page > 1 %><%= link_to "Anterior", analytics_path(@filter_params.merge(page: @page - 1)), class: "button secondary" %><% end %><% if @page < pages %><%= link_to "Próxima", analytics_path(@filter_params.merge(page: @page + 1)), class: "button secondary" %><% end %></div></nav>
+  </section>
+
+  <section class="insights-activity-stream">
+    <header><div><p class="eyebrow">Operação editorial</p><h2>Atividades recentes</h2><p>Acompanhe as últimas mudanças realizadas pela equipe no Hub.</p></div><%= link_to "Ver histórico", activity_logs_path if current_user.admin? %></header>
+    <div>
+      <% @recent_activities.each do |activity| %>
+        <article><span class="activity-avatar"><%= user_display_name(activity.user).first.upcase %></span><div><strong><%= activity.description %></strong><small><%= user_display_name(activity.user) %> · <%= time_ago_in_words(activity.created_at) %> atrás</small></div></article>
+      <% end %>
+      <% if @recent_activities.empty? %><div class="insights-activity-empty"><%= ui_icon("activity") %><span>As próximas ações editoriais aparecerão aqui.</span></div><% end %>
+    </div>
+  </section>
+
+  <section class="insights-footnotes">
+    <details><summary><%= ui_icon("circle-question-mark") %><span>Como interpretar os números</span></summary><ul><% @report.notes.each do |note| %><li><%= note %></li><% end %></ul><p>Cliques gerais indicam interação, mas não representam CTR de chamadas sem medição de impressões.</p></details>
+    <details><summary><%= ui_icon("settings") %><span>Instalar a tag de medição</span></summary><p>Inclua uma única tag em cada página de matéria, substituindo os metadados pelos valores do CMS. As imagens são obtidas automaticamente de <code>og:image</code> e do JSON-LD do autor, ou podem ser informadas diretamente.</p><code>&lt;script defer src="https://hub.cm.com.br/cm-analytics.js" data-site="<%= @site.publication_key %>" data-article-id="ID_DA_MATERIA" data-category="EDITORIA" data-author="AUTOR" data-image="URL_DA_IMAGEM" data-author-image="FOTO_DO_AUTOR"&gt;&lt;/script&gt;</code></details>
+  </section>
+</div>

@@ -1,0 +1,18 @@
+<div class="page-heading">
+  <div><p class="eyebrow">Equipe</p><h1>Histórico de atividades</h1><p class="muted">Últimas ações realizadas pelos usuários no Content Hub.</p></div>
+</div>
+
+<%= form_with url: activity_logs_path, method: :get, class: "activity-filter" do |form| %>
+  <%= form.label :user_id, "Filtrar por usuário" %>
+  <div><%= form.collection_select :user_id, @users, :id, :email, include_blank: "Todos os usuários", selected: params[:user_id] %><%= form.submit "Filtrar" %></div>
+<% end %>
+
+<div class="activity-list">
+  <% @activities.each do |activity| %>
+    <article class="activity-item">
+      <span class="activity-avatar"><%= (activity.user.name.presence || activity.user.email).first.upcase %></span>
+      <div><strong><%= activity.user.name.presence || activity.user.email %></strong><p><%= activity.description %></p><time><%= l(activity.created_at, format: :short) %></time></div>
+    </article>
+  <% end %>
+  <% if @activities.empty? %><div class="empty-state"><h2>Nenhuma atividade registrada</h2><p>As próximas ações relevantes da equipe aparecerão aqui.</p></div><% end %>
+</div>

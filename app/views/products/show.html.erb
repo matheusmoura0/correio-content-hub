@@ -1,0 +1,90 @@
+<div class="product-workspace">
+  <%= link_to "Todos os produtos", products_path, class: "product-back" %>
+  <header class="product-heading">
+    <div><p class="eyebrow">Produto editorial</p><h1><%= @product.name %></h1><small><%= @product.domain %></small></div>
+    <div class="product-heading-actions">
+      <%= link_to new_reporter_article_path(site_id: @product.id), class: "button" do %><%= ui_icon("pencil") %><span>Escrever matéria</span><% end %>
+      <%= link_to "https://#{@product.domain}", class: "product-icon-action", target: "_blank", rel: "noopener", title: "Abrir site", aria: { label: "Abrir site de #{@product.name}" } do %><%= ui_icon("globe") %><% end %>
+    </div>
+  </header>
+  <nav class="product-tabs" aria-label="Etapas de #{@product.name}">
+    <% [["review", "Para conferir", @review_count], ["work", "Em produção", @work_count], ["live", "No ar", @live_count]].each do |key, label, count| %>
+      <%= link_to product_path(@product.publication_key, view: key), class: ("active" if @view == key), aria: { current: ("page" if @view == key) } do %><span><%= label %></span><small><%= count %></small><% end %>
+    <% end %>
+  </nav>
+
+  <% if @view == "review" %>
+    <% interval = [ENV.fetch("EDITORIAL_INTERVAL_SECONDS", "1800").to_i, 60].max %>
+    <% automation_enabled = ENV.fetch("EDITORIAL_AUTOMATION_ENABLED", "true") == "true" %>
+    <% delayed = @product.editorial_checked_at.nil? || @product.editorial_checked_at < (interval * 3).seconds.ago %>
+    <section class="suggestion-automation <%= 'attention' if !automation_enabled || delayed || @product.editorial_cycle_error.present? %>" aria-label="Estado da automação">
+      <div><%= ui_icon("activity") %><strong><%= !automation_enabled ? "Automação pausada" : @product.editorial_cycle_error.present? ? "Atenção na automação" : delayed ? "Aguardando ciclo automático" : "Automação em dia" %></strong></div>
+      <span><%= @product.editorial_checked_at ? "Último ciclo: #{l(@product.editorial_checked_at, format: :short)}" : "Nenhum ciclo registrado" %></span>
+      <%= link_to product_path(@product.publication_key), class: "product-icon-action", title: "Atualizar sugestões", aria: { label: "Atualizar sugestões" } do %><%= ui_icon("activity") %><% end %>
+    </section>
+    <% if @product.editorial_cycle_error.present? %><p class="muted"><%= @product.editorial_cycle_error %></p><% end %>
+    <% if @edition %>
+      <div class="product-section-heading"><h2>Sugestões para decidir</h2><span><%= @review_count %> aguardando aprovação</span></div>
+      <%= render "editorial_editions/review", edition: @edition, items: @items, categories: @categories, product_context: true %>
+    <% else %>
+      <section class="product-empty">
+        <%= ui_icon("library") %><h2>Nenhuma sugestão pendente</h2>
+        <% if @product.editorial_keywords.blank? %>
+          <p>Os assuntos deste produto ainda precisam ser configurados.</p>
+          <%= link_to "Configurar assuntos", edit_site_path(@product), class: "button secondary" if current_user.admin? %>
+        <% else %>
+          <p>O próximo ciclo trará as novas matérias prontas e relacionadas a este produto.</p>
+        <% end %>
+        <% if @recent_edition %><small>Última edição aprovada em <%= l(@recent_edition.approved_at, format: :short) %></small><% end %>
+      </section>
+    <% end %>
+    <% if @review_history.any? %>
+      <details class="suggestion-history"><summary>Decisões recentes</summary>
+        <% @review_history.each do |item| %><div><span class="badge <%= item.decision == 'approved' ? 'status-published' : 'status-ignored' %>"><%= item.decision == "approved" ? "Publicada" : "Recusada" %></span><strong><%= item.title %></strong><small><%= item.decided_by&.name.presence || "Administrador" %><% if item.decided_at %> · <%= l(item.decided_at, format: :short) %><% end %></small></div><% end %>
+      </details>
+    <% end %>
+  <% else %>
+    <%= form_with url: product_path(@product.publication_key), method: :get, class: "product-search" do |form| %>
+      <%= form.hidden_field :view, value: @view %>
+      <div><%= form.label :q, "Buscar matéria" %><%= form.search_field :q, value: params[:q], placeholder: "Título ou assunto" %></div>
+      <% if @view == "live" %><div><%= form.label :category_id, "Editoria" %><%= form.select :category_id, [["Todas", ""]] + @categories.map { |category| [category.name, category.id] }, selected: params[:category_id] %></div><% else %><label class="reporter-mine"><%= form.check_box :mine, { checked: params[:mine] == "1" }, "1", "0" %> Minhas matérias</label><% end %>
+      <%= form.submit "Filtrar" %>
+    <% end %>
+    <div class="product-section-heading"><h2><%= @view == "live" ? "Matérias publicadas" : "Matérias em produção" %></h2><span><%= @total %> resultados</span></div>
+    <section class="product-stories">
+      <% records = @view == "live" ? @distributions : @articles %>
+      <% records.each do |record| %>
+        <% article = @view == "live" ? record.article : record %>
+        <% title = (@view == "live" ? record.display_title.presence : nil) || article.rewritten_title.presence || article.title %>
+        <article class="product-story">
+          <div class="product-story-image"><% if article.image_url.present? %><%= image_tag article.image_url, alt: "", loading: "lazy" %><% else %><%= ui_icon("file-text") %><% end %></div>
+          <div class="product-story-copy">
+            <h3><%= link_to title, article_path(article, product_key: @product.publication_key) %></h3>
+            <small><%= @view == "live" ? record.category&.name.presence || "Sem editoria" : article.feed.name %> · <%= article.author.presence || "Autoria não informada" %></small>
+            <div class="product-story-meta">
+              <span class="<%= @view == 'live' ? 'badge status-published' : article_status_class(article.status) %>"><%= @view == "live" ? "No ar" : article.status == "published" ? "Disponível para este produto" : article_status_label(article.status) %></span>
+              <% if @view == "live" %><span><%= record.slot_label %></span><% end %>
+              <time><%= l(@view == "live" ? record.published_at || record.updated_at : article.updated_at, format: :short) %></time>
+            </div>
+          </div>
+          <div class="product-story-actions">
+            <% if article.feed.hub_authored? && (current_user.admin? || article.reported_by_id == current_user.id) %>
+              <%= link_to edit_reporter_article_path(article), class: "product-icon-action", title: "Editar matéria", aria: { label: "Editar #{article.title}" } do %><%= ui_icon("pencil") %><% end %>
+            <% end %>
+            <%= link_to article_path(article, product_key: @product.publication_key), class: "product-icon-action", title: "Conferir matéria", aria: { label: "Conferir #{article.title}" } do %><%= ui_icon("file-text") %><% end %>
+            <% if @view == "live" && current_user.admin? %>
+              <%= button_to unpublish_product_path(@product.publication_key, record.id), class: "product-icon-action danger-action", title: "Retirar deste produto", aria: { label: "Retirar #{article.title} de #{@product.name}" }, form: { data: { turbo_confirm: "Retirar esta matéria de #{@product.name}?" } } do %><%= ui_icon("x") %><% end %>
+            <% end %>
+          </div>
+        </article>
+      <% end %>
+      <% if records.empty? %><div class="product-empty"><h2>Nenhuma matéria encontrada</h2><p><%= @view == "live" ? "As matérias aprovadas para este produto aparecerão aqui." : "Altere os filtros ou escreva uma matéria para este produto." %></p></div><% end %>
+    </section>
+    <nav class="reporter-pager" aria-label="Paginação">
+      <% if @page > 1 %><%= link_to "Anterior", product_path(@product.publication_key, view: @view, page: @page - 1, q: params[:q], mine: params[:mine], category_id: params[:category_id]), class: "button secondary" %><% end %>
+      <span>Página <%= @page %></span>
+      <% if @page * 24 < @total %><%= link_to "Próxima", product_path(@product.publication_key, view: @view, page: @page + 1, q: params[:q], mine: params[:mine], category_id: params[:category_id]), class: "button secondary" %><% end %>
+    </nav>
+  <% end %>
+  <% if current_user.admin? %><footer class="product-tools"><%= link_to "Configurações do produto", edit_site_path(@product) %><%= link_to "Posicionamento avançado", publication_path(@product.publication_key) %></footer><% end %>
+</div>
