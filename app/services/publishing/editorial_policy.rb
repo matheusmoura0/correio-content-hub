@@ -9,13 +9,10 @@ module Publishing
       "cinema_journal" => "cinema, filme, filmes, cineasta, cineastas, audiovisual, bilheteria, oscar, festival de cinema",
       "barra" => "barra da tijuca, recreio dos bandeirantes, jacarepaguá, jardim oceânico, vargem grande, vargem pequena"
     }.freeze
-    ECONOMY_TERMS = "economia, econômico, econômica, mercado financeiro, investimentos, inflação, juros, banco central, bolsa de valores, pib, emprego, empregos, negócios, empresas, indústria, comércio".freeze
     ACCENTED = "áàâãäéèêëíìîïóòôõöúùûüç".freeze
     ASCII = "aaaaaeeeeiiiiooooouuuuc".freeze
 
     def self.default_terms(site)
-      return ECONOMY_TERMS if site.publication_key == "correio-economico" || site.domain.to_s.start_with?("correioeconomico.")
-
       DEFAULT_TERMS.fetch(site.layout_profile, "")
     end
 

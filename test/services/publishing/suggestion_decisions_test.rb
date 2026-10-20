@@ -78,6 +78,13 @@ class SuggestionDecisionsTest < Minitest::Test
     assert_equal 2, @edition.items.pending.count
   end
 
+  def test_retired_product_cannot_publish_a_previously_prepared_suggestion
+    @site.update!(name: "Correio Econômico")
+    assert_raises(ArgumentError) { approve([@items.first]) }
+    assert_equal 0, @site.site_articles.where(status: "published").count
+    assert_nil Publishing::PrepareEdition.call(@site)
+  end
+
   def test_old_screen_cannot_publish_after_another_decision
     old_digest = @edition.page_digest
     approve([@items.first])

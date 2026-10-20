@@ -3,7 +3,8 @@ class EditorialEditionsController < ApplicationController
   before_action :set_edition, only: %i[show approve reject]
 
   def index
-    @editions = EditorialEdition.includes(:site, :items).where(status: "ready").order(created_at: :asc)
+    @editions = EditorialEdition.includes(:site, :items)
+      .where(status: "ready", site_id: Site.publication_destinations.select(:id)).order(created_at: :asc)
   end
 
   def show

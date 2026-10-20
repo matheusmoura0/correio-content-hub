@@ -8,17 +8,6 @@ admin.password = admin_password
 admin.password_confirmation = admin_password
 admin.save!
 
-site = Site.find_or_create_by!(domain: "correioeconomico.local") do |record|
-  record.name = "Correio Econômico"
-  record.active = true
-end
-
-Category.find_or_create_by!(site: site, slug: "economia") do |category|
-  category.name = "Economia"
-end
-
-
-
 cinema_sites = [
   {
     name: "CINEMAGAZINE",

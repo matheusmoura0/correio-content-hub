@@ -6,6 +6,7 @@ module Api
 
       def index
         site = params[:site_id].present? ? Site.find(params[:site_id]) : Site.find_by!(domain: params[:domain])
+        raise ActiveRecord::RecordNotFound, "Publicação gerenciada pelo CMS" if site.cms_managed?
         articles = site.site_articles.joins(:article).includes(:category, article: :feed)
           .where(status: "published")
           .order(Arel.sql("CASE placement WHEN 'hero' THEN 0 WHEN 'editor_pick' THEN 1 ELSE 2 END"), :position, published_at: :desc)
@@ -13,11 +14,13 @@ module Api
       end
 
       def show
-        article = Article.includes(:feed, site_articles: :category).joins(:site_articles)
+        article = Article.includes(:feed, site_articles: [:category, :site]).joins(:site_articles)
           .where(site_articles: { status: "published" }).distinct.find(params[:id])
+        distributions = article.site_articles.select { |item| item.status == "published" && !item.site.cms_managed? }
+        raise ActiveRecord::RecordNotFound, "Matéria sem publicação no Hub" if distributions.empty?
+
         gastronomy = Site.find_by(domain: "revistadegastronomia.com.br")
-        distribution = article.site_articles.find { |item| item.site_id == gastronomy&.id && item.status == "published" } ||
-          article.site_articles.find { |item| item.status == "published" }
+        distribution = distributions.find { |item| item.site_id == gastronomy&.id } || distributions.first
         render json: serialize(article, distribution)
       end
 

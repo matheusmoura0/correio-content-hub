@@ -4,6 +4,7 @@ module Publishing
       raise ArgumentError, "Somente administradores podem aprovar uma edição." unless user.admin?
 
       edition.site.with_lock do
+        raise ArgumentError, "Este produto não recebe publicações do Hub." unless edition.site.publication_destination?
         edition.lock!
         raise ArgumentError, "Esta edição já foi encerrada." unless edition.status == "ready"
         raise ArgumentError, "As sugestões mudaram. Atualize a tela para conferir a versão mais recente." if page_digest != edition.page_digest

@@ -44,4 +44,35 @@ class SiteTest < Minitest::Test
     assert site.publication_destination?
     assert_includes Site.publication_destinations, site
   end
+
+  def test_correio_economico_is_managed_by_cms_and_cannot_be_reactivated
+    site = Site.create!(name: "Correio Econômico", domain: "correioeconomico.local",
+      publication_key: "correio-economico", site_type: "editorial", content_mode: "hub",
+      layout_profile: "standard", active: true, receives_hub_content: true)
+
+    assert site.cms_managed?
+    refute site.active?
+    refute site.receives_hub_content?
+    refute site.publication_destination?
+    refute_includes Site.publication_destinations, site
+    assert_equal "external", site.content_mode
+
+    category = site.categories.create!(name: "Economia", slug: "economia")
+    site.update!(active: true, receives_hub_content: true, content_mode: "hub")
+    refute site.reload.active?
+    assert_equal category, site.categories.first
+  end
+
+  def test_cms_ownership_is_recognized_by_domain_or_key
+    by_domain = Site.new(name: "Registro antigo", domain: "https://www.correioeconomico.com.br/",
+      publication_key: "economia", active: true, receives_hub_content: true)
+    by_domain.valid?
+    assert by_domain.cms_managed?
+    refute by_domain.publication_destination?
+
+    by_key = Site.new(name: "Registro antigo", domain: "legacy.example",
+      publication_key: "correio-economico", active: true, receives_hub_content: true)
+    assert by_key.cms_managed?
+    refute by_key.publication_destination?
+  end
 end

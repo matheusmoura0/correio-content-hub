@@ -41,6 +41,16 @@ A página inicial agora lista os jornais e revistas que recebem conteúdo do Hub
 com as pendências, rascunhos e matérias publicadas em cada destino. O Correio da
 Manhã continua sendo apenas fonte de conteúdo, sem ações de publicação.
 
+O Correio Econômico é gerenciado pelo CMS e não participa do fluxo do Hub.
+A migração `20261020120000` desativa seus cadastros como destino e encerra as
+propostas pendentes como substituídas, sem apagar matérias, distribuições,
+editorias, métricas ou decisões anteriores. Não são feitas alterações no CMS.
+O cadastro histórico continua na administração como Gerenciado pelo CMS e não
+pode ser reativado como destino pelo formulário. O seed não recria o produto.
+As APIs do Hub deixam de servir sua publicação; matérias também publicadas em
+outros jornais continuam acessíveis por esses destinos. A coleta de RSS como
+fonte para outros produtos permanece inalterada.
+
 Cada produto reúne três etapas:
 
 - **Para conferir**: proposta automática com texto completo expansível,
@@ -66,7 +76,7 @@ obrigatória. A coleta usa RSS cadastrado, não busca irrestrita ou redação co
 ## VPS
 
 Não execute o aplicativo, builds ou testes localmente. A implantação exige as
-migrações `20261009120000` e `20261014120000` e a reconstrução de **web e
+migrações `20261009120000`, `20261014120000` e `20261020120000` e a reconstrução de **web e
 editorial_worker**. Faça backup do PostgreSQL antes da atualização e pare o
 worker antigo antes de iniciar as migrações:
 
