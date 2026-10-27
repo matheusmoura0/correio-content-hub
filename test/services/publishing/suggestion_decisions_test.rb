@@ -155,4 +155,34 @@ class SuggestionDecisionsTest < Minitest::Test
     replacement = Publishing::PrepareEdition.call(@site)
     assert_equal @category.id, replacement.items.find_by!(article: @articles.first).category_id
   end
+
+  def test_worker_fills_a_missing_category_when_a_reliable_match_becomes_available
+    @items.first.update!(category: nil)
+    replacement = Publishing::PrepareEdition.call(@site)
+    assert_equal "expired", @edition.reload.status
+    assert_equal @category.id, replacement.items.find_by!(article_id: @items.first.article_id).category_id
+  end
+
+  def test_retirement_migration_repairs_drafts_but_preserves_live_categories
+    require_relative "../../../db/migrate/20261027120000_retire_jornal_da_barra_and_repair_draft_categories"
+    other = @site.dup
+    other.domain = "other-#{@site.domain}"
+    other.publication_key = "other-#{@site.publication_key}"
+    other.save!
+    foreign = other.categories.create!(name: "Crítica", slug: "critica")
+    draft = @site.site_articles.create!(article: @articles.first, category: @category, status: "draft")
+    live = Publishing::PublishArticle.call(article: @articles.last, site: @site, category: @category)
+    draft.update_columns(category_id: foreign.id)
+    live.update_columns(category_id: foreign.id)
+    @items.first.update_columns(category_id: foreign.id)
+    count = Article.count
+    migration = RetireJornalDaBarraAndRepairDraftCategories.new
+    migration.suppress_messages { migration.up }
+    assert_nil draft.reload.category_id
+    assert_equal foreign.id, live.reload.category_id
+    assert_equal "published", live.status
+    assert_equal "expired", @edition.reload.status
+    assert_equal "skipped", @items.first.reload.decision
+    assert_equal count, Article.count
+  end
 end

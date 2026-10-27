@@ -25,19 +25,33 @@ module Publishing
         ActionController::Base.helpers.strip_tags(article.rewritten_content.presence || article.content.to_s).strip.length >= 150
     end
 
+    def self.category_for(article, site, categories)
+      own_category_id = article.site_articles.find { |item| item.site_id == site.id }&.category_id
+      own_category = categories.find { |category| category.id == own_category_id }
+      return own_category if own_category
+
+      text = ActiveSupport::Inflector.transliterate([article.title, article.description].join(" ")).downcase
+      categories.find do |category|
+        terms = CATEGORY_TERMS.fetch(category.slug, [ActiveSupport::Inflector.transliterate(category.name).downcase])
+        terms.any? { |term| text.match?(/\b#{Regexp.escape(term)}\b/) }
+      end || categories.find { |category| category.slug == "noticias" }
+    end
+
     def self.call(site)
       site.with_lock do
         next unless site.publication_destination?
         now = Time.current
         cutoff = now - [ENV.fetch("EDITORIAL_MAX_AGE_DAYS", "7").to_i, 1].max.days
+        categories = site.categories.order(:name).to_a
         pending = EditorialEdition.find_by(site:, status: "ready")
         if pending
-          items = pending.items.pending.includes(:article).to_a
+          items = pending.items.pending.includes(article: :site_articles).to_a
           eligible_ids = EditorialPolicy.scope(site, Article.where(id: items.map(&:article_id))).pluck(:id)
           changed = items.empty? || pending.page_digest != EditorialEdition.page_digest(site) || items.any? do |item|
             date = item.article.published_at || item.article.created_at
             !eligible_ids.include?(item.article_id) || item.article_digest != EditorialEdition.article_digest(item.article) ||
-              !ready_candidate?(item.article) || !date.between?(cutoff, now)
+              !ready_candidate?(item.article) || !date.between?(cutoff, now) ||
+              (item.category_id.nil? && category_for(item.article, site, categories).present?)
           end
           next pending unless changed
 
@@ -75,16 +89,8 @@ module Publishing
         next if assignments.empty?
 
         edition = EditorialEdition.create!(site:, page_digest: EditorialEdition.page_digest(site))
-        categories = site.categories.order(:name).to_a
         assignments.each do |article, slot|
-          own_category_id = article.site_articles.find { |item| item.site_id == site.id }&.category_id
-          own_category = categories.find { |category| category.id == own_category_id }
-          text = ActiveSupport::Inflector.transliterate([article.title, article.description].join(" ")).downcase
-          category = own_category || categories.find do |item|
-            terms = CATEGORY_TERMS.fetch(item.slug, [ActiveSupport::Inflector.transliterate(item.name).downcase])
-            terms.any? { |term| text.match?(/\b#{Regexp.escape(term)}\b/) }
-          end
-          category ||= categories.find { |item| item.slug == "noticias" }
+          category = category_for(article, site, categories)
           edition.items.create!(article:, category:, slot_key: slot,
             title: article.rewritten_title.presence || article.title,
             article_digest: EditorialEdition.article_digest(article))
