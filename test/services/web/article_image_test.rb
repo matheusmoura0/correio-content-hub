@@ -39,4 +39,10 @@ class ArticleImageTest < Minitest::Test
     extractor.define_singleton_method(:fetch) { |*| ['<meta property="og:image" content="/photo.jpg">', URI(BASE)] }
     assert_equal "https://www.correiodamanha.com.br/photo.jpg", extractor.image_url
   end
+
+  def test_external_redirect_is_not_treated_as_an_authorized_correio_photo
+    extractor = Web::ExtractArticle.new(BASE)
+    extractor.define_singleton_method(:fetch) { |*| ['<meta property="og:image" content="/photo.jpg">', URI("https://external.example/news")] }
+    assert_nil extractor.image_url
+  end
 end

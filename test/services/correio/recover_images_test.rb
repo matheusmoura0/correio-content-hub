@@ -62,4 +62,16 @@ class RecoverImagesTest < Minitest::Test
     @article.update!(image_rights_confirmed_by: editor)
     assert_equal :skipped, Correio::RecoverImages.recover(@article)
   end
+
+  def test_batch_selects_published_articles_and_does_not_reprocess_repaired_images
+    token = SecureRandom.hex(8)
+    site = Site.create!(name: "Cinema #{token}", domain: "#{token}.example", publication_key: token,
+      site_type: "editorial", content_mode: "hub", layout_profile: "cinema_journal", active: true)
+    site.site_articles.create!(article: @article, status: "published")
+    result = Web::ExtractArticle.stub(:image_url, @photo) { Correio::RecoverImages.call(limit: 10) }
+    assert_equal 1, result.examined
+    assert_equal 1, result.recovered
+    assert_equal @photo, @article.reload.image_url
+    assert_equal 0, Correio::RecoverImages.call(limit: 10).examined
+  end
 end

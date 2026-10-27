@@ -34,7 +34,8 @@ module Correio
         .where("image_url IS NULL OR image_url = '' OR image_url LIKE '%/images/logo_600x450.jpg%' OR image_url LIKE '%/imagens/bg-640x410.jpg%'")
         .where("source_enrichment_attempted_at IS NULL OR source_enrichment_attempted_at <= ?", 6.hours.ago)
         .includes(:feed)
-        .order(Arel.sql("CASE WHEN EXISTS (SELECT 1 FROM site_articles sa WHERE sa.article_id = articles.id AND sa.status = 'published' AND sa.slot_key IS NOT NULL) THEN 0 ELSE 1 END"), published_at: :desc, id: :desc)
+        .order(Arel.sql("articles.source_enrichment_attempted_at ASC NULLS FIRST"),
+          Arel.sql("CASE WHEN EXISTS (SELECT 1 FROM site_articles sa WHERE sa.article_id = articles.id AND sa.status = 'published' AND sa.slot_key IS NOT NULL) THEN 0 ELSE 1 END"), published_at: :desc, id: :desc)
     end
 
     def self.recover(article)

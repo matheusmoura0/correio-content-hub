@@ -20,6 +20,8 @@ module Web
 
     def image_url
       html, final_url = fetch(@url)
+      return if Feed.correio_url?(@url) && !Feed.correio_url?(final_url)
+
       ArticleImage.call(Nokogiri::HTML(html), base_url: final_url)
     end
 
