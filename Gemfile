@@ -25,6 +25,7 @@ group :development do
 end
 
 group :test do
+  gem "minitest", "~> 5.25"
   gem "capybara"
   gem "selenium-webdriver"
 end
