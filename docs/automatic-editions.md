@@ -95,11 +95,38 @@ Para cinema, os termos ambíguos série/séries e Oscar exigem contexto de telev
 ou cinema no título/resumo. Outras regras continuam sendo correspondências de
 palavras-chave, e a conferência humana não é dispensada.
 
-O coletor não extrai novamente páginas cujo texto já está completo. Para textos
-incompletos, as tentativas de complementação são espaçadas em seis horas. Isso
+O coletor não extrai novamente páginas com texto e foto completos. Se a imagem
+estiver ausente ou for um logotipo padrão, consulta somente a foto da página,
+sem substituir o texto. As tentativas de complementação são espaçadas em seis horas. Isso
 reduz chamadas repetidas, mas não resolve nem contorna bloqueios 403/502 na fonte.
 Avisos por entrada também passam a aparecer no estado do ciclo e na lista de
 fontes. A migração `20261027121000` adiciona os campos operacionais necessários.
+
+## Recuperação de fotos
+
+Logotipos e fundos genéricos da fonte não contam como foto editorial. A extração
+usa metadados Open Graph/Twitter, imagens de Article/NewsArticle no JSON-LD e
+imagens da matéria com título correspondente. Não usa fotos de notícias
+relacionadas nem o logotipo do editor como substituto.
+
+Depois da coleta, o worker tenta recuperar até 15 fotos de matérias publicadas
+em destinos ativos, com um orçamento de 30 segundos por ciclo. Um lock impede
+dois lotes de recuperação simultâneos. A recuperação é restrita a fontes e URLs
+originais do Correio; licenças externas e revisões de imagem feitas por usuários
+são preservadas. Somente campos de foto, direitos e horário da tentativa mudam,
+nunca textos, posições, editorias ou estado de publicação. Fotos recuperadas
+atualizam o timestamp da matéria consumido pela API. Não há nova migração.
+
+Para um lote operacional maior na VPS, após backup:
+
+```bash
+docker compose --env-file .env.production -f compose.production.yml exec -T web \
+  bundle exec rails runner 'puts Correio::RecoverImages.call(limit: 600, max_duration: 240).to_h.to_json'
+```
+
+O lote respeita a mesma espera de seis horas entre tentativas e não fabrica uma
+foto quando ela não existe na fonte. A API retorna `image_url: null` para
+logotipos genéricos; o consumidor pode usar seu layout sem foto.
 
 ## VPS
 

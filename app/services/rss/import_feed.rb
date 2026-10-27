@@ -140,14 +140,20 @@ module Rss
         published_at: entry.published || entry.last_modified,
         image_url: extract_image(entry)
       }
-      return data unless @feed.correio_source?
-      return data if existing && ActionController::Base.helpers.strip_tags(existing.content.to_s).strip.length >= 150
+      return data unless @feed.correio_source? && Feed.correio_url?(source_url)
+      complete_text = existing && ActionController::Base.helpers.strip_tags(existing.content.to_s).strip.length >= 150
+      needs_image = existing&.automatic_image_recovery?
+      return data if complete_text && !needs_image
       if existing&.source_enrichment_attempted_at && existing.source_enrichment_attempted_at > 6.hours.ago
         @warnings += 1
         return data
       end
 
       @enrichment_attempted_at = Time.current
+      if complete_text
+        image_url = Web::ExtractArticle.image_url(source_url)
+        return data.merge(image_url: image_url.presence || data[:image_url])
+      end
       extracted = Web::ExtractArticle.call(source_url)
       data.merge(
         title: extracted.title.presence || data[:title],
@@ -172,11 +178,14 @@ module Rss
       attributes[:author] = data[:author] if data[:author].present? && article.author.blank?
       attributes[:published_at] = data[:published_at] if data[:published_at].present? && article.published_at.blank?
 
-      image_url = article.image_url.presence || article.original_image_url.presence || data[:image_url]
-      if @feed.correio_source? && image_url.present?
+      image_url = [article.image_url, article.original_image_url, data[:image_url]].filter_map do |value|
+        Web::ArticleImage.normalize(value, base_url: source_url)
+      end.first
+      if @feed.correio_source? && Feed.correio_url?(source_url) && image_url.present? &&
+          article.image_rights_confirmed_by_id.nil? && article.image_license.in?([nil, "", "owned"])
         attributes.merge!(
           image_url: image_url,
-          original_image_url: article.original_image_url.presence || image_url,
+          original_image_url: Web::ArticleImage.normalize(article.original_image_url, base_url: source_url) || image_url,
           image_source_url: source_url,
           image_author: "Correio da Manhã",
           image_license: "owned",
@@ -188,7 +197,7 @@ module Rss
     end
 
     def image_rights(image_url, source_url)
-      return {} unless @feed.correio_source? && image_url.present?
+      return {} unless @feed.correio_source? && Feed.correio_url?(source_url) && image_url.present? && !Web::ArticleImage.placeholder?(image_url)
 
       {
         image_source_url: source_url,
@@ -213,16 +222,28 @@ module Rss
     end
 
     def extract_image(entry)
+      base_url = entry.url.presence || @feed.url
       enclosure = entry.respond_to?(:enclosure) ? entry.enclosure : nil
-      return enclosure.url if enclosure.respond_to?(:url) && enclosure.url.present?
+      value = enclosure.url if enclosure.respond_to?(:url)
+      value ||= enclosure["url"] || enclosure[:url] if enclosure.is_a?(Hash)
+      candidate = Web::ArticleImage.normalize(value, base_url:)
+      return candidate if candidate
 
       if entry.respond_to?(:image) && entry.image.present?
-        return entry.image if entry.image.is_a?(String)
-        return entry.image.url if entry.image.respond_to?(:url)
+        value = entry.image.is_a?(String) ? entry.image : entry.image.respond_to?(:url) ? entry.image.url : nil
+        candidate = Web::ArticleImage.normalize(value, base_url:)
+        return candidate if candidate
       end
 
       html = [entry.respond_to?(:content) && entry.content, entry.respond_to?(:summary) && entry.summary].compact.join
-      html[/<img[^>]+src=["']([^"']+)["']/i, 1]
+      fragment = Nokogiri::HTML.fragment(html)
+      fragment.css("img").each do |image|
+        [image["data-src"], image["data-lazy-src"], image["src"]].each do |value|
+          candidate = Web::ArticleImage.normalize(value, base_url:)
+          return candidate if candidate
+        end
+      end
+      nil
     end
   end
 end

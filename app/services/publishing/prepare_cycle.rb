@@ -13,6 +13,13 @@ module Publishing
             import_errors += 1
             Rails.logger.error("Coleta editorial: feed #{feed.id}: #{error.class}: #{error.message}")
           end
+          begin
+            images = Correio::RecoverImages.call
+            import_warnings += images.failed
+          rescue StandardError => error
+            import_warnings += 1
+            Rails.logger.error("Recuperação de fotos: #{error.class}: #{error.message}")
+          end
           Site.publication_destinations.find_each do |site|
             PrepareEdition.call(site)
             notices = []

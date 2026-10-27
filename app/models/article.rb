@@ -30,7 +30,7 @@ class Article < ApplicationRecord
   validates :image_license_url, presence: true, if: -> { image_rights_confirmed_at? && image_license.in?(%w[pexels unsplash cc0 cc_by]) }
 
   def licensed_image_ready?
-    image_url.present? && image_source_url.present? && image_license.present? &&
+    editorial_image_url.present? && image_source_url.present? && image_license.present? &&
       image_rights_confirmed_at.present? &&
       (image_rights_confirmed_by.present? || trusted_correio_image?)
   end
@@ -45,6 +45,15 @@ class Article < ApplicationRecord
 
   def image_optional?
     feed.correio_source? || feed.hub_authored?
+  end
+
+  def editorial_image_url
+    image_url.presence unless Web::ArticleImage.placeholder?(image_url)
+  end
+
+  def automatic_image_recovery?
+    feed.correio_source? && Feed.correio_url?(source_url) && editorial_image_url.blank? &&
+      image_rights_confirmed_by_id.nil? && image_license.in?([nil, "", "owned"])
   end
 
   private

@@ -57,7 +57,7 @@
         <% article = @view == "live" ? record.article : record %>
         <% title = (@view == "live" ? record.display_title.presence : nil) || article.rewritten_title.presence || article.title %>
         <article class="product-story">
-          <div class="product-story-image"><% if article.image_url.present? %><%= image_tag article.image_url, alt: "", loading: "lazy" %><% else %><%= ui_icon("file-text") %><% end %></div>
+          <div class="product-story-image"><% if article.editorial_image_url.present? %><%= image_tag article.editorial_image_url, alt: "", loading: "lazy" %><% else %><%= ui_icon("file-text") %><% end %></div>
           <div class="product-story-copy">
             <h3><%= link_to title, article_path(article, product_key: @product.publication_key) %></h3>
             <small><%= @view == "live" ? record.category&.name.presence || "Sem editoria" : article.feed.name %> · <%= article.author.presence || "Autoria não informada" %></small>

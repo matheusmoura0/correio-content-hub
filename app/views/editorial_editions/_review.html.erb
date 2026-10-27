@@ -14,7 +14,7 @@
         <div class="edition-item-copy">
           <p class="eyebrow"><%= Publishing::SiteProfile.label_for(edition.site, item.slot_key) %></p>
           <h2><%= item.title %></h2>
-          <% if item.article.image_url.present? %><%= image_tag item.article.image_url, alt: "", class: "edition-image", loading: "lazy" %><% end %>
+          <% if item.article.editorial_image_url.present? %><%= image_tag item.article.editorial_image_url, alt: "", class: "edition-image", loading: "lazy" %><% end %>
           <p><%= truncate(strip_tags(item.article.description.to_s), length: 240) %></p>
           <small><%= item.article.feed.name %> · <%= item.article.author.presence || "Autoria não informada" %></small>
           <details class="product-text-preview"><summary>Conferir texto completo</summary><div><%= simple_format(item.article.rewritten_content.presence || item.article.content.presence || item.article.description) %></div></details>

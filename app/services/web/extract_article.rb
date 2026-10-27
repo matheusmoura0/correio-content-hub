@@ -14,6 +14,15 @@ module Web
       new(url).call
     end
 
+    def self.image_url(url)
+      new(url).image_url
+    end
+
+    def image_url
+      html, final_url = fetch(@url)
+      ArticleImage.call(Nokogiri::HTML(html), base_url: final_url)
+    end
+
     def initialize(url)
       @url = url
     end
@@ -21,6 +30,7 @@ module Web
     def call
       html, final_url = fetch(@url)
       document = Nokogiri::HTML(html)
+      image_url = ArticleImage.call(document, base_url: final_url)
       document.css("script, style, nav, footer, header, aside, form, noscript").remove
 
       paragraphs = article_paragraphs(document)
@@ -31,7 +41,7 @@ module Web
         title: meta(document, "property", "og:title") || document.at_css("h1")&.text&.squish,
         content: content.first(30_000),
         description: meta(document, "property", "og:description") || meta(document, "name", "description"),
-        image_url: absolute_url(meta(document, "property", "og:image"), final_url),
+        image_url:,
         author: meta(document, "name", "author"),
         published_at: parse_time(meta(document, "property", "article:published_time")),
       )

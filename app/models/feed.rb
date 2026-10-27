@@ -14,7 +14,14 @@ class Feed < ApplicationRecord
   validates :url, uniqueness: true
 
   def correio_source?
-    host = URI.parse(url.to_s).host.to_s.downcase.sub(/\Awww\./, "")
+    self.class.correio_url?(url)
+  end
+
+  def self.correio_url?(value)
+    uri = URI.parse(value.to_s)
+    return false unless uri.is_a?(URI::HTTP) && uri.userinfo.nil?
+
+    host = uri.host.to_s.downcase.sub(/\Awww\./, "")
     CORREIO_DOMAINS.any? { |domain| host == domain || host.end_with?(".#{domain}") }
   rescue URI::InvalidURIError, TypeError
     false

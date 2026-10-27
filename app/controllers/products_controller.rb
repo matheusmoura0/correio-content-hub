@@ -12,7 +12,7 @@ class ProductsController < ApplicationController
     @covers = SiteArticle.where(site_id: ids, status: "published").joins(:article)
       .where.not(articles: { image_url: [nil, ""] }).includes(:article)
       .order(published_at: :desc, id: :desc).limit(150).to_a.group_by(&:site_id)
-      .transform_values { |records| records.first.article.image_url }
+      .transform_values { |records| records.filter_map { |record| record.article.editorial_image_url }.first }
   end
 
   def show

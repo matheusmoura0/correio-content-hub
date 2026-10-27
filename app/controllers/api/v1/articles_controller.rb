@@ -46,7 +46,7 @@ module Api
           title: distribution&.display_title.presence || article.rewritten_title.presence || article.title,
           description: article.description,
           content: article.rewritten_content.presence || article.content,
-          image_url: article.image_url,
+          image_url: article.editorial_image_url,
           image_optional: article.image_optional?,
           author: article.author,
           source_url: article.source_url,
