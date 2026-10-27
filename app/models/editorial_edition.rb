@@ -29,6 +29,6 @@ class EditorialEdition < ApplicationRecord
   end
 
   def self.article_digest(article)
-    Digest::SHA256.hexdigest(article.attributes.except("updated_at", "status").sort.to_json)
+    Digest::SHA256.hexdigest(article.attributes.except("updated_at", "status", "source_enrichment_attempted_at").sort.to_json)
   end
 end

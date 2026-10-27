@@ -135,4 +135,24 @@ class SuggestionDecisionsTest < Minitest::Test
     refute_includes replacement.items.pluck(:slot_key), @items.first.slot_key
     assert_equal other.id, @site.site_articles.find_by!(slot_key: @items.first.slot_key, status: "published").article_id
   end
+
+  def test_categories_cannot_cross_products_even_for_drafts_and_suggestions
+    other = @site.dup
+    other.domain = "other-#{@site.domain}"
+    other.publication_key = "other-#{@site.publication_key}"
+    other.save!
+    foreign = other.categories.create!(name: "Crítica", slug: "critica")
+    distribution = SiteArticle.new(site: @site, article: @articles.first, category: foreign, status: "draft")
+    refute distribution.valid?
+    assert distribution.errors[:category].any?
+    assert_raises(ActiveRecord::RecordInvalid) { @items.first.update!(category: foreign) }
+
+    distribution.category = @category
+    distribution.save!
+    distribution.update_columns(category_id: foreign.id)
+    @edition.items.pending.update_all(decision: "skipped")
+    @edition.update!(status: "expired")
+    replacement = Publishing::PrepareEdition.call(@site)
+    assert_equal @category.id, replacement.items.find_by!(article: @articles.first).category_id
+  end
 end

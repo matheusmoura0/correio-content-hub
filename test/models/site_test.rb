@@ -75,4 +75,20 @@ class SiteTest < Minitest::Test
     assert by_key.cms_managed?
     refute by_key.publication_destination?
   end
+
+  def test_jornal_da_barra_is_retired_without_assuming_cms_ownership
+    token = SecureRandom.hex(6)
+    site = Site.create!(name: "Jornal da Barra", domain: "#{token}.example",
+      publication_key: token, site_type: "editorial", content_mode: "hub",
+      layout_profile: "barra", active: true, receives_hub_content: true)
+    assert site.retired_from_hub?
+    refute site.cms_managed?
+    refute site.active?
+    refute site.publication_destination?
+    refute_includes Site.publication_destinations, site
+    site.update!(active: true, receives_hub_content: true)
+    refute site.reload.active?
+    by_domain = Site.new(name: "Legacy", domain: "www.jornaldabarra.com.br", publication_key: "legacy", active: true)
+    assert by_domain.retired_from_hub?
+  end
 end

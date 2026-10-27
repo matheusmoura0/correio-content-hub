@@ -45,7 +45,12 @@ class Site < ApplicationRecord
   before_validation :set_editorial_defaults, on: :create
 
   def publication_destination?
-    active? && receives_hub_content? && !cms_managed?
+    active? && receives_hub_content? && !retired_from_hub?
+  end
+
+  def retired_from_hub?
+    cms_managed? || domain.to_s.delete_prefix("www.").start_with?("jornaldabarra.") ||
+      publication_key.to_s.strip.downcase == "jornal-da-barra" || name.to_s.parameterize == "jornal-da-barra"
   end
 
   def cms_managed?
@@ -73,7 +78,7 @@ class Site < ApplicationRecord
     self.domain = domain.to_s.downcase.strip.sub(%r{\Ahttps?://}, "").sub(%r{/.*\z}, "")
     self.publication_key = publication_key.presence || name.to_s.parameterize
     self.receives_hub_content = false if correio_source?
-    if cms_managed?
+    if retired_from_hub?
       self.active = false
       self.receives_hub_content = false
       self.content_mode = "external"

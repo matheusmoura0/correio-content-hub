@@ -73,10 +73,38 @@ Ela nunca publica nem altera uma distribuição existente. Fontes sem autorizaç
 de imagem não são liberadas automaticamente; a revisão de direitos continua
 obrigatória. A coleta usa RSS cadastrado, não busca irrestrita ou redação com IA.
 
+## Remoção do Jornal da Barra e integridade editorial
+
+O Jornal da Barra saiu do fluxo do Hub. A migração `20261027120000` desativa o
+destino e encerra suas sugestões pendentes, sem apagar conteúdo ou histórico.
+O cadastro permanece na administração como Fora do Hub; o formulário não pode
+reativá-lo. A API deixa de servir esse destino, mas notícias distribuídas para
+outros produtos continuam disponíveis nesses produtos. Isso não altera o CMS ou
+o site externo do jornal, nem sua infraestrutura.
+
+A mesma migração retira categorias de outros produtos dos rascunhos e encerra
+propostas pendentes com esse problema. Não altera distribuições publicadas.
+Dados históricos publicados que ainda possuem categorias estrangeiras precisam
+de revisão editorial antes de qualquer remapeamento. Novos rascunhos e sugestões
+não aceitam categorias de outro produto.
+
+O editor precisa selecionar uma editoria antes de aprovar uma sugestão que não
+tenha uma correspondência confiável. A interface sinaliza a pendência e bloqueia
+a aprovação sem editoria, inclusive em lote; a recusa continua disponível.
+Para cinema, os termos ambíguos série/séries e Oscar exigem contexto de televisão
+ou cinema no título/resumo. Outras regras continuam sendo correspondências de
+palavras-chave, e a conferência humana não é dispensada.
+
+O coletor não extrai novamente páginas cujo texto já está completo. Para textos
+incompletos, as tentativas de complementação são espaçadas em seis horas. Isso
+reduz chamadas repetidas, mas não resolve nem contorna bloqueios 403/502 na fonte.
+Avisos por entrada também passam a aparecer no estado do ciclo e na lista de
+fontes. A migração `20261027121000` adiciona os campos operacionais necessários.
+
 ## VPS
 
 Não execute o aplicativo, builds ou testes localmente. A implantação exige as
-migrações `20261009120000`, `20261014120000` e `20261020120000` e a reconstrução de **web e
+migrações pendentes, incluindo `20261027120000` e `20261027121000`, e a reconstrução de **web e
 editorial_worker**. Faça backup do PostgreSQL antes da atualização e pare o
 worker antigo antes de iniciar as migrações:
 

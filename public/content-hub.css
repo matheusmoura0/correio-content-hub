@@ -903,6 +903,7 @@ body.hub-authenticated {
 .suggestion-automation > div { display: flex; align-items: center; gap: 8px; color: #176b46; font-size: 13px; }
 .suggestion-automation > span { flex: 1; color: var(--hub-muted); font-size: 12px; }
 .suggestion-automation.attention > div { color: #8a5b05; }
+.suggestion-category-hint { color: #8a5b05; font-size: 12px; line-height: 1.5; }
 .suggestion-decisions { display: grid; gap: 8px; margin-top: 16px; }
 .suggestion-decisions button, .suggestion-bulk-actions button { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; padding: 10px 12px; white-space: normal; font-size: 12px; }
 .suggestion-decisions .suggestion-reject { color: #535d68; }

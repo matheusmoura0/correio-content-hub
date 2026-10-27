@@ -3,10 +3,12 @@ class FeedsController < ApplicationController
   before_action :set_feed, only: %i[show edit update destroy import_feed]
 
   def index
-    @feeds = Feed.includes(:site, :category, :articles).order(:name).load.to_a
+    @feeds = Feed.includes(:site, :category).order(:name).load.to_a
+    @article_counts = Article.where(feed_id: @feeds.map(&:id)).group(:feed_id).count
   rescue StandardError => error
     Rails.logger.error("Feeds index unavailable: #{error.class}: #{error.message}")
     @feeds = []
+    @article_counts = {}
     flash.now[:alert] = "Os canais RSS estão temporariamente indisponíveis. Verifique as migrações do banco."
   end
 
@@ -42,7 +44,7 @@ class FeedsController < ApplicationController
 
   def import_feed
     result = Rss::ImportFeed.call(@feed)
-    redirect_to feeds_path, notice: "Importação concluída: #{result.imported} novas, #{result.skipped} ignoradas."
+    redirect_to feeds_path, notice: "Importação concluída: #{result.imported} novas, #{result.skipped} já existentes ou ignoradas, #{result.warnings} avisos."
   rescue StandardError => e
     redirect_to feeds_path, alert: "Falha ao importar feed: #{e.message}"
   end

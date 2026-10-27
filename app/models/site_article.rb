@@ -45,6 +45,7 @@ class SiteArticle < ApplicationRecord
   validates :image_zoom, numericality: { greater_than_or_equal_to: 1, less_than_or_equal_to: 2 }
   validates :article_id, uniqueness: { scope: :site_id }
   validate :editorial_destination, if: -> { status == "published" }
+  validate :category_matches_site, if: -> { new_record? || status == "published" || will_save_change_to_category_id? || will_save_change_to_site_id? }
   validates :slot_key,
     uniqueness: { scope: :site_id, conditions: -> { where(status: "published") } },
     if: -> { status == "published" && slot_key.present? }
@@ -89,13 +90,14 @@ class SiteArticle < ApplicationRecord
 
   private
 
+  def category_matches_site
+    errors.add(:category, "deve pertencer à publicação selecionada") if category && category.site_id != site_id
+  end
+
   def editorial_destination
     return unless site && article
 
     errors.add(:site, "não recebe matérias do Hub") unless site.publication_destination?
-    if category && category.site_id != site_id
-      errors.add(:category, "deve pertencer à publicação selecionada")
-    end
     unless Publishing::EditorialPolicy.new(site).eligible?(article)
       errors.add(:article, "não corresponde à linha editorial de #{site.name}")
     end

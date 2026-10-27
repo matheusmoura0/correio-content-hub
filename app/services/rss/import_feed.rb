@@ -13,7 +13,7 @@ module Rss
       :published, :last_modified, :enclosure, :image,
       keyword_init: true
     )
-    Result = Data.define(:imported, :skipped)
+    Result = Data.define(:imported, :skipped, :warnings)
 
     def self.call(feed)
       new(feed).call
@@ -21,9 +21,11 @@ module Rss
 
     def initialize(feed)
       @feed = feed
+      @warnings = 0
     end
 
     def call
+      @warnings = 0
       parsed = Feedjira.parse(URI.open(@feed.url, open_timeout: 5, read_timeout: 15).read)
       imported = 0
       skipped = 0
@@ -32,9 +34,11 @@ module Rss
         source_url = entry.url.presence || entry.entry_id.presence
         next if source_url.blank?
 
-        data = complete_entry(entry, source_url)
+        existing = Article.find_by(source_url: source_url)
+        @enrichment_attempted_at = nil
+        data = complete_entry(entry, source_url, existing:)
 
-        if (existing = Article.find_by(source_url: source_url))
+        if existing
           refresh_existing(existing, data, source_url)
           distribute(existing)
           skipped += 1
@@ -52,6 +56,7 @@ module Rss
           published_at: data[:published_at],
           image_url: image_url,
           original_image_url: image_url,
+          source_enrichment_attempted_at: @enrichment_attempted_at,
           **image_rights(image_url, source_url),
           status: "imported"
         )
@@ -61,12 +66,13 @@ module Rss
       rescue ActiveRecord::RecordNotUnique
         skipped += 1
       rescue StandardError => error
+        @warnings += 1
         Rails.logger.error("Falha ao importar entrada #{source_url}: #{error.class}: #{error.message}")
         skipped += 1
       end
 
-      @feed.update!(last_imported_at: Time.current)
-      Result.new(imported:, skipped:)
+      @feed.update!(last_imported_at: Time.current, last_import_warning_count: @warnings)
+      Result.new(imported:, skipped:, warnings: @warnings)
     end
 
     private
@@ -82,6 +88,7 @@ module Rss
         DiscoveredEntry.new(url:, entry_id: url)
       end
     rescue StandardError => error
+      @warnings += 1
       Rails.logger.warn("Página de Cinema não pôde complementar o RSS: #{error.class}: #{error.message}")
       rss_entries
     end
@@ -124,7 +131,7 @@ module Rss
       nil
     end
 
-    def complete_entry(entry, source_url)
+    def complete_entry(entry, source_url, existing: nil)
       data = {
         title: entry.title,
         description: entry.summary,
@@ -134,7 +141,13 @@ module Rss
         image_url: extract_image(entry)
       }
       return data unless @feed.correio_source?
+      return data if existing && ActionController::Base.helpers.strip_tags(existing.content.to_s).strip.length >= 150
+      if existing&.source_enrichment_attempted_at && existing.source_enrichment_attempted_at > 6.hours.ago
+        @warnings += 1
+        return data
+      end
 
+      @enrichment_attempted_at = Time.current
       extracted = Web::ExtractArticle.call(source_url)
       data.merge(
         title: extracted.title.presence || data[:title],
@@ -145,12 +158,14 @@ module Rss
         image_url: extracted.image_url.presence || data[:image_url]
       )
     rescue StandardError => error
+      @warnings += 1
       Rails.logger.warn("Página do Correio não pôde ser complementada #{source_url}: #{error.class}: #{error.message}")
       data
     end
 
     def refresh_existing(article, data, source_url)
       attributes = {}
+      attributes[:source_enrichment_attempted_at] = @enrichment_attempted_at if @enrichment_attempted_at
       attributes[:title] = data[:title] if data[:title].present? && article.title != data[:title]
       attributes[:description] = data[:description] if data[:description].present? && article.description.blank?
       attributes[:content] = data[:content] if data[:content].present? && article.content.to_s.length < 150
@@ -191,7 +206,8 @@ module Rss
         distribution = article.site_articles.find_or_initialize_by(site: @feed.site)
         return if distribution.persisted?
 
-        distribution.assign_attributes(category: @feed.category, status: "draft")
+        category = @feed.category if @feed.category&.site_id == @feed.site_id
+        distribution.assign_attributes(category:, status: "draft")
         distribution.save!
       end
     end

@@ -3,7 +3,7 @@ module Publishing
     CATEGORY_TERMS = {
       "aviacao" => %w[aviacao aeroporto aeroportos aerea aereas],
       "mobilidade" => %w[aviacao aeroporto aeroportos aerea aereas],
-      "hotelaria" => %w[hotel hoteis resort resorts pousada pousadas],
+      "hotelaria" => %w[hotelaria hotel hoteis resort resorts pousada pousadas],
       "hospedagem" => %w[hotel hoteis resort resorts pousada pousadas],
       "gastronomia" => %w[gastronomia restaurante restaurantes culinaria chef],
       "sabores" => %w[gastronomia restaurante restaurantes culinaria chef],
@@ -32,9 +32,12 @@ module Publishing
         cutoff = now - [ENV.fetch("EDITORIAL_MAX_AGE_DAYS", "7").to_i, 1].max.days
         pending = EditorialEdition.find_by(site:, status: "ready")
         if pending
-          changed = !pending.items.pending.exists? || pending.page_digest != EditorialEdition.page_digest(site) || pending.items.pending.includes(:article).any? do |item|
+          items = pending.items.pending.includes(:article).to_a
+          eligible_ids = EditorialPolicy.scope(site, Article.where(id: items.map(&:article_id))).pluck(:id)
+          changed = items.empty? || pending.page_digest != EditorialEdition.page_digest(site) || items.any? do |item|
             date = item.article.published_at || item.article.created_at
-            item.article_digest != EditorialEdition.article_digest(item.article) || !ready_candidate?(item.article) || !date.between?(cutoff, now)
+            !eligible_ids.include?(item.article_id) || item.article_digest != EditorialEdition.article_digest(item.article) ||
+              !ready_candidate?(item.article) || !date.between?(cutoff, now)
           end
           next pending unless changed
 
@@ -74,7 +77,8 @@ module Publishing
         edition = EditorialEdition.create!(site:, page_digest: EditorialEdition.page_digest(site))
         categories = site.categories.order(:name).to_a
         assignments.each do |article, slot|
-          own_category = article.site_articles.find { |item| item.site_id == site.id }&.category
+          own_category_id = article.site_articles.find { |item| item.site_id == site.id }&.category_id
+          own_category = categories.find { |category| category.id == own_category_id }
           text = ActiveSupport::Inflector.transliterate([article.title, article.description].join(" ")).downcase
           category = own_category || categories.find do |item|
             terms = CATEGORY_TERMS.fetch(item.slug, [ActiveSupport::Inflector.transliterate(item.name).downcase])

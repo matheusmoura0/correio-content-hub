@@ -33,7 +33,29 @@ module Publishing
         "ELSE concat_ws(' ', articles.source_url, feeds.name, categories.name, feeds.url) END FROM feeds " \
         "LEFT JOIN categories ON categories.id = feeds.category_id WHERE feeds.id = articles.feed_id))"
       normalized = "translate(lower(#{text}), '#{ACCENTED}', '#{ASCII}')"
-      relation.where("#{normalized} ~ ?", "\\m(#{terms.map { |term| Regexp.escape(term) }.join('|')})\\M")
+      specific_terms = terms
+      clauses = []
+      bindings = {}
+      if @site.layout_profile.in?(%w[cinemagazine cinema_journal])
+        specific_terms = terms - %w[serie series oscar]
+        # Bare "series" also describes crimes and sports; require screen-related evidence.
+        editorial_text = "translate(lower(concat_ws(' ', articles.title, articles.description)), '#{ACCENTED}', '#{ASCII}')"
+        if terms.intersect?(%w[serie series])
+          clauses << "(#{editorial_text} ~ :series AND #{editorial_text} ~ :screen)"
+          bindings[:series] = '\\m(serie|series)\\M'
+          bindings[:screen] = '\\m(streaming|netflix|hbo|disney|televisao|televisiva|televisivas|televisivo|episodio|episodios|temporada|temporadas|apple tv|prime video)\\M'
+        end
+        if terms.include?("oscar")
+          clauses << "(#{editorial_text} ~ :oscar AND #{editorial_text} ~ :award)"
+          bindings[:oscar] = '\\moscar\\M'
+          bindings[:award] = '\\m(cinema|filme|filmes|cineasta|hollywood|premio|premios|premiacao|indicacao|indicacoes|ator|atriz|diretor|diretora|roteiro)\\M'
+        end
+      end
+      if specific_terms.any?
+        clauses << "#{normalized} ~ :terms"
+        bindings[:terms] = "\\m(#{specific_terms.map { |term| Regexp.escape(term) }.join('|')})\\M"
+      end
+      relation.where(clauses.map { |clause| "(#{clause})" }.join(" OR "), bindings)
     end
 
     def eligible?(article)

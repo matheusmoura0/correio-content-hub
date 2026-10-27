@@ -27,6 +27,7 @@ class EditorialEditionsController < ApplicationController
       page_digest: params[:page_digest], article_digests: decision_digests)
     redirect_to product_path(@edition.site.publication_key), notice: "Matérias aprovadas e publicadas. As demais sugestões continuam aguardando sua decisão."
   rescue ArgumentError, ActiveRecord::RecordInvalid => error
+    Rails.logger.warn("Editorial approval blocked for edition #{@edition.id}: #{error.message}")
     flash.now[:alert] = error.message
     @edition.reload
     load_review

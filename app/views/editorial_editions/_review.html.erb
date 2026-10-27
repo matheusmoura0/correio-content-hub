@@ -24,9 +24,10 @@
           <% if editable %>
             <%= label_tag "edition-category-#{item.id}", "Editoria" %>
             <% category_id = submitted ? params.dig(:categories, item.id.to_s) : item.category_id %>
-            <%= select_tag "categories[#{item.id}]", options_from_collection_for_select(categories, :id, :name, category_id), include_blank: "Escolha a editoria", id: "edition-category-#{item.id}" %>
+            <%= select_tag "categories[#{item.id}]", options_from_collection_for_select(categories, :id, :name, category_id), include_blank: "Escolha a editoria", id: "edition-category-#{item.id}", data: { suggestion_category: item.id } %>
+            <p class="suggestion-category-hint" data-category-hint="<%= item.id %>" <%= 'hidden' if categories.any? { |category| category.id.to_s == category_id.to_s } %>>Escolha uma editoria para aprovar.</p>
             <div class="suggestion-decisions">
-              <button type="submit" name="item_id" value="<%= item.id %>" data-turbo-confirm="Aprovar e publicar esta matéria em <%= edition.site.name %>?" class="suggestion-approve"><%= ui_icon("send") %><span>Aprovar e publicar</span></button>
+              <button type="submit" name="item_id" value="<%= item.id %>" data-approve-item="<%= item.id %>" data-turbo-confirm="Aprovar e publicar esta matéria em <%= edition.site.name %>?" class="suggestion-approve"><%= ui_icon("send") %><span>Aprovar e publicar</span></button>
               <button type="submit" name="item_id" value="<%= item.id %>" formaction="<%= reject_editorial_edition_path(edition) %>" formnovalidate data-turbo-confirm="Recusar esta sugestão para <%= edition.site.name %>?" class="secondary suggestion-reject"><%= ui_icon("x") %><span>Recusar</span></button>
             </div>
           <% else %><span><%= item.category&.name || "Sem editoria" %></span><% end %>
@@ -38,7 +39,7 @@
     <footer class="edition-approval-bar product-approval-bar">
       <span data-edition-count>0 selecionadas</span>
       <div class="suggestion-bulk-actions">
-        <button type="submit" data-bulk-decision disabled data-turbo-confirm="Aprovar e publicar as sugestões selecionadas?"><%= ui_icon("send") %><span>Aprovar selecionadas</span></button>
+        <button type="submit" data-bulk-decision data-bulk-approve disabled data-turbo-confirm="Aprovar e publicar as sugestões selecionadas?"><%= ui_icon("send") %><span>Aprovar selecionadas</span></button>
         <button type="submit" data-bulk-decision disabled formaction="<%= reject_editorial_edition_path(edition) %>" formnovalidate class="secondary" data-turbo-confirm="Recusar as sugestões selecionadas para este produto?"><%= ui_icon("x") %><span>Recusar</span></button>
       </div>
     </footer>
@@ -53,16 +54,24 @@
       const all = form.querySelector("[data-select-edition]");
       const buttons = form.querySelectorAll("[data-bulk-decision]");
       const bar = form.querySelector(".product-approval-bar");
+      const categories = new Map([...form.querySelectorAll("[data-suggestion-category]")].map(select => [select.dataset.suggestionCategory, select]));
       const refresh = () => {
-        const count = choices.filter(choice => choice.checked).length;
+        const selected = choices.filter(choice => choice.checked);
+        const count = selected.length;
+        const missing = selected.filter(choice => !categories.get(choice.value)?.value).length;
         all.checked = count > 0 && count === choices.length;
         all.indeterminate = count > 0 && count < choices.length;
-        form.querySelectorAll("[data-edition-count]").forEach(label => { label.textContent = `${count} selecionadas`; });
-        buttons.forEach(button => { button.disabled = count === 0; });
+        form.querySelectorAll("[data-edition-count]").forEach(label => { label.textContent = `${count} selecionadas${missing ? ` · ${missing} sem editoria` : ""}`; });
+        buttons.forEach(button => { button.disabled = count === 0 || (button.hasAttribute("data-bulk-approve") && missing > 0); });
+        categories.forEach((select, id) => {
+          form.querySelector(`[data-approve-item="${id}"]`).disabled = !select.value;
+          form.querySelector(`[data-category-hint="${id}"]`).hidden = Boolean(select.value);
+        });
         bar.style.display = count === 0 ? "none" : "flex";
       };
       all.addEventListener("change", () => { choices.forEach(choice => { choice.checked = all.checked; }); refresh(); });
       choices.forEach(choice => choice.addEventListener("change", refresh));
+      categories.forEach(select => select.addEventListener("change", refresh));
       refresh();
     })();
   </script>
