@@ -18,6 +18,15 @@ module Web
       new(url).image_url
     end
 
+    def self.document(url)
+      new(url).document
+    end
+
+    def document
+      html, final_url = fetch(@url)
+      [Nokogiri::HTML(html), final_url.to_s]
+    end
+
     def image_url
       html, final_url = fetch(@url)
       return if Feed.correio_url?(@url) && !Feed.correio_url?(final_url)

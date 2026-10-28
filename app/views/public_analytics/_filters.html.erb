@@ -8,6 +8,7 @@
   <%= form_with url: analytics_dashboard_path, method: :get, class: "insights-filters audience-filter-form", data: { turbo: false } do |form| %>
     <%= form.hidden_field :dimension, value: @report.dimension %>
     <% if @report.filters[:article] %><%= form.hidden_field :article, value: @report.filters[:article] %><% end %>
+    <% if @report.filters[:columnist] %><%= form.hidden_field :columnist, value: @report.filters[:columnist] %><% end %>
     <div class="audience-search">
       <%= form.label :q, "Buscar matéria ou jornalista", class: "audience-visually-hidden" %>
       <%= form.search_field :q, value: @report.filters[:q], placeholder: "Matéria ou jornalista", enterkeyhint: "search" %>
@@ -29,9 +30,9 @@
   <% end %>
   <% if @report.filters.any? %>
     <div class="audience-active-filters" aria-label="Filtros aplicados">
-      <% { q: "Busca", author: "Assinatura", category: "Editoria", article: "Matéria" }.each do |key, label| %>
+      <% { q: "Busca", author: "Assinatura", columnist: "Colunista", category: "Editoria", article: "Matéria" }.each do |key, label| %>
         <% next unless @report.filters[key] %>
-        <%= link_to analytics_dashboard_path(@filter_params.except(key, :page)), aria: { label: "Remover filtro de #{label.downcase}" } do %><span><%= label %>: <%= @report.filters[key] == Analytics::EditorialReport::MISSING ? "Não informado" : truncate(@report.filters[key], length: 45) %></span><%= ui_icon("x") %><% end %>
+        <%= link_to analytics_dashboard_path(@filter_params.except(key, :page)), aria: { label: "Remover filtro de #{label.downcase}" } do %><span><%= label %>: <%= @report.filters[key] == Analytics::EditorialReport::MISSING ? "Não informado" : truncate(key == :columnist ? @report.columnist_name : @report.filters[key], length: 45) %></span><%= ui_icon("x") %><% end %>
       <% end %>
     </div>
   <% end %>

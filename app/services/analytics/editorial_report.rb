@@ -1,21 +1,25 @@
 module Analytics
   # Editorial aggregates use half-open periods so boundary events cannot be counted twice.
   class EditorialReport
-    DIMENSIONS = { "articles" => :content_key, "authors" => :content_author, "categories" => :content_category }.freeze
-    LABELS = { "articles" => "Matérias", "authors" => "Jornalistas", "categories" => "Editorias" }.freeze
+    DIMENSIONS = { "articles" => :content_key, "columnists" => :content_author, "authors" => :content_author, "categories" => :content_category }.freeze
+    LABELS = { "articles" => "Matérias", "columnists" => "Colunistas", "authors" => "Jornalistas", "categories" => "Editorias" }.freeze
     SORTS = %w[views articles clicks engagement_seconds].freeze
     MISSING = "__missing__".freeze
     attr_reader :site, :from, :to, :filters, :dimension, :sort
 
     def initialize(site:, from:, to:, filters: {}, dimension: "articles", sort: "views")
       @site, @from, @to = site, from, to
-      @filters = filters.to_h.symbolize_keys.slice(:author, :category, :article, :q).transform_values { |v| v.to_s.strip }.reject { |_, v| v.blank? }
+      @filters = filters.to_h.symbolize_keys.slice(:author, :columnist, :category, :article, :q).transform_values { |v| v.to_s.strip }.reject { |_, v| v.blank? }
       @dimension = DIMENSIONS.key?(dimension) ? dimension : "articles"
       @sort = SORTS.include?(sort) ? sort : "views"
     end
 
     def label
       LABELS.fetch(dimension)
+    end
+
+    def columnist_name
+      profiles_by_slug[filters[:columnist]]&.name || filters[:columnist]
     end
 
     def previous_from
@@ -56,9 +60,16 @@ module Analytics
         (sorted[(sorted.length - 1) / 2] + sorted[sorted.length / 2]) / 2.0
       end
       result.each do |row|
-        row[:previous_views] = prior.dig(row[:key], :views).to_i
+        %i[views articles clicks engagement_seconds].each do |metric|
+          row["previous_#{metric}".to_sym] = prior.dig(row[:key], metric).to_i
+        end
         row[:views_change] = change(row[:views], row[:previous_views])
         row[:median_views] = medians[row[:key]] || 0
+        profile = dimension == "columnists" ? profiles_by_slug[row[:key]] : profiles_by_alias[AuthorIdentity.normalize(row[:author])]
+        if profile
+          row[:author_image_url] = profile.image_url.presence || row[:author_image_url]
+          row[:name] = profile.name if dimension == "columnists"
+        end
       end
     end
 
@@ -88,11 +99,15 @@ module Analytics
     end
 
     def notes
-      ["Somente matérias com ID e acessos registrados; não é a quantidade total publicada no CMS.",
+      result = ["Somente matérias com ID e acessos registrados; não é a quantidade total publicada no CMS.",
        "Identificadores de visitantes mudam diariamente; a contagem não representa pessoas únicas no período.",
        "Tempo registrado pela tag legada, sem garantia de atividade contínua. Não representa leitura concluída.",
        "Autoria usa o texto recebido pela tag; assinaturas coletivas e coautorias ainda não são separadas.",
        "Comparação com período anterior de mesma duração. Sem base anterior, a variação é indefinida."]
+      if dimension == "columnists" || filters[:columnist]
+        result << "Colunistas: somente assinaturas individuais reconhecidas nos perfis oficiais. Prefixo 'Por', caixa e acentos são normalizados; coautorias e assinaturas coletivas ficam em Jornalistas, sem atribuição automática a uma pessoa."
+      end
+      result
     end
 
     private
@@ -107,19 +122,48 @@ module Analytics
     end
 
     def group_expression
+      return columnist_expression if dimension == "columnists"
+
       "COALESCE(NULLIF(#{DIMENSIONS.fetch(dimension)}, ''), '#{MISSING}')"
+    end
+
+    def profiles_by_slug
+      @profiles_by_slug ||= site.analytics_author_profiles.columnists.order(:slug).index_by(&:slug)
+    end
+
+    def profiles_by_alias
+      @profiles_by_alias ||= profiles_by_slug.values.each_with_object({}) do |profile, result|
+        profile.aliases.each { |name| result[name] = profile }
+      end
+    end
+
+    def columnist_expression
+      @columnist_expression ||= begin
+        connection = ActiveRecord::Base.connection
+        cases = profiles_by_slug.values.flat_map do |profile|
+          profile.aliases.map { |name| "WHEN #{connection.quote(name)} THEN #{connection.quote(profile.slug)}" }
+        end
+        cases.empty? ? "NULL::text" : "CASE #{AuthorIdentity.sql} #{cases.join(' ')} ELSE NULL END"
+      end
     end
 
     def scope(previous = false)
       relation = site.analytics_events.where(occurred_at: (previous ? previous_from...from : from...to))
         .where.not(content_key: [nil, ""])
+      relation = relation.where("#{columnist_expression} IS NOT NULL") if dimension == "columnists"
+      if filters[:columnist]
+        relation = relation.where("#{columnist_expression} = ?", filters[:columnist])
+      end
       { author: :content_author, category: :content_category, article: :content_key }.each do |key, column|
         next unless filters[key]
         relation = relation.where(column => (filters[key] == MISSING ? [nil, ""] : filters[key]))
       end
       if filters[:q]
         pattern = "%#{ActiveRecord::Base.sanitize_sql_like(filters[:q])}%"
-        relation = relation.where("page_title ILIKE :q OR content_key ILIKE :q OR content_author ILIKE :q OR content_category ILIKE :q", q: pattern)
+        names = profiles_by_slug.values.select do |profile|
+          ([AuthorIdentity.normalize(profile.name)] + profile.aliases).any? { |name| name.include?(AuthorIdentity.normalize(filters[:q])) }
+        end.map(&:slug)
+        relation = relation.where("page_title ILIKE :q OR content_key ILIKE :q OR content_author ILIKE :q OR content_category ILIKE :q OR #{columnist_expression} IN (:names)", q: pattern, names: names)
       end
       relation
     end

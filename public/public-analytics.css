@@ -70,6 +70,8 @@ body.public-audience { margin: 0; background: var(--hub-surface); color: var(--h
   .public-audience .insights-heading .eyebrow, .public-audience .insights-heading .insights-pdf-button { display: none; }
   .public-audience .insights-tabs { top: 0; grid-template-columns: repeat(3, minmax(0, 1fr)); margin-inline: -14px; padding-inline: 8px; }
   .public-audience .insights-tabs a { flex: 1; min-width: 0; min-height: 52px; gap: 6px; padding-inline: 6px; font-size: 13px; }
+  .public-audience .insights-tabs.with-columnists { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .public-audience .insights-tabs.with-columnists a { min-height: 60px; flex-direction: column; gap: 3px; padding-inline: 2px; font-size: 12px; }
   .public-audience .insights-context { gap: 8px; margin-block: 14px; font-size: 12px; }
   .public-audience .insights-context > span { display: none; }
   .public-audience .insights-context small { display: block; font-size: 11px; }
@@ -108,11 +110,13 @@ body.public-audience { margin: 0; background: var(--hub-surface); color: var(--h
   .public-audience .insights-story-image { width: 64px; height: 64px; aspect-ratio: 1; border-radius: 4px; }
   .public-audience .insights-story-cell.author-profile { grid-template-columns: 48px minmax(0, 1fr); }
   .public-audience .insights-author-image { width: 48px; height: 48px; }
+  .public-audience [data-dimension="columnists"] .insights-story-cell.author-profile { grid-template-columns: 64px minmax(0, 1fr); }
+  .public-audience [data-dimension="columnists"] .insights-author-image { width: 64px; height: 64px; }
   .public-audience .insights-ranking td small { margin-top: 5px; font-size: 12px; line-height: 1.45; }
   .public-audience .insights-ranking td:nth-child(3) > strong { font-size: 20px; }
   .public-audience .trend-pill { font-size: 12px; }
   .public-audience [data-dimension="articles"] .insights-ranking td:nth-child(5) { display: none; }
-  .public-audience [data-dimension="authors"] .insights-ranking td:nth-child(7), .public-audience [data-dimension="categories"] .insights-ranking td:nth-child(7) { grid-column: 1 / -1; }
+  .public-audience [data-dimension="authors"] .insights-ranking td:nth-child(7), .public-audience [data-dimension="columnists"] .insights-ranking td:nth-child(7), .public-audience [data-dimension="categories"] .insights-ranking td:nth-child(7) { grid-column: 1 / -1; }
   .public-audience .insights-pager { gap: 12px; padding: 18px 0; font-size: 13px; }
   .public-audience .insights-pager .button { min-height: 48px; font-size: 13px; }
   .public-audience .insights-footnotes summary { min-height: 48px; font-size: 13px; }

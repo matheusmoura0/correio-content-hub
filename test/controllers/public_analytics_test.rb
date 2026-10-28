@@ -242,4 +242,34 @@ class PublicAnalyticsTest < Minitest::Test
     assert_nil document.at_css("input[name=page]")
     assert_equal 1, document.css("button[aria-label='Buscar matéria ou jornalista']").size
   end
+
+  def test_columnist_ranking_uses_official_portraits_and_individual_drilldown
+    profile = @site.analytics_author_profiles.create!(slug: "ana", name: "Ana Repórter",
+      source_url: "https://www.correiodamanha.com.br/colunistas/ana",
+      image_url: "https://www.correiodamanha.com.br/images/cm/colunistas/ana.jpg")
+    event(@site, "Matéria compartilhada", "Ana Repórter e Bia")
+    request(:get, path, dimension: "columnists", from: @from, to: @to)
+    assert_equal 200, @session.response.status
+    document = Nokogiri::HTML(@session.response.body)
+    assert_equal 1, document.css(".insights-ranking tbody tr").size
+    assert_equal profile.image_url, document.at_css(".insights-author-image img")["src"]
+    assert_includes @session.response.body, "Assinatura individual"
+    link = document.at_css(".insights-story-cell a")["href"]
+    query = Rack::Utils.parse_nested_query(URI.parse(link).query)
+    assert_equal profile.slug, query["columnist"]
+    assert_equal "articles", query["dimension"]
+    request(:get, link)
+    assert_equal 200, @session.response.status
+    assert_includes @session.response.body, "Matéria do Correio"
+    refute_includes @session.response.body, "Matéria compartilhada"
+    document = Nokogiri::HTML(@session.response.body)
+    assert_equal profile.slug, document.at_css("input[name=columnist]")["value"]
+    assert_includes document.at_css(".audience-active-filters").text, profile.name
+    request(:get, "#{path}/exportar.pdf", dimension: "columnists", from: @from, to: @to)
+    assert_equal 200, @session.response.status
+    text = IO.popen(["pdftotext", "-", "-"], "r+") { |io| io.write(@session.response.body); io.close_write; io.read }
+    assert_includes text, "Colunistas"
+    assert_includes text, profile.name
+    refute_includes text, "Ana Repórter e Bia"
+  end
 end

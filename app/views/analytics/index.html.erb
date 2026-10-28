@@ -27,10 +27,11 @@
     <%= render "analytics/sharing" %>
   <% end %>
 
-  <nav class="insights-tabs" aria-label="Dimensão da análise">
+  <nav class="insights-tabs <%= 'with-columnists' if @site.correio_source? %>" aria-label="Dimensão da análise">
     <% Analytics::EditorialReport::LABELS.each do |key, label| %>
+      <% next if key == "columnists" && !@site.correio_source? %>
       <%= link_to analytics_dashboard_path(@filter_params.merge(dimension: key, article: nil, page: nil)), class: ("active" if @report.dimension == key), aria: { current: (@report.dimension == key ? "page" : nil) } do %>
-        <%= ui_icon({ "articles" => "newspaper", "authors" => "users", "categories" => "tags" }.fetch(key)) %><span><%= label %></span>
+        <%= ui_icon({ "articles" => "newspaper", "columnists" => "users", "authors" => "pencil", "categories" => "tags" }.fetch(key)) %><span><%= label %></span>
       <% end %>
     <% end %>
   </nav>
@@ -46,6 +47,7 @@
     <%= form_with url: analytics_dashboard_path, method: :get, class: "insights-filters", data: { turbo: false } do |form| %>
       <%= form.hidden_field :dimension, value: @report.dimension %>
       <% if @report.filters[:article] %><%= form.hidden_field :article, value: @report.filters[:article] %><% end %>
+      <% if @report.filters[:columnist] %><%= form.hidden_field :columnist, value: @report.filters[:columnist] %><% end %>
       <% unless @public_dashboard %><div><%= form.label :site_id, "Publicação" %><%= form.select :site_id, @sites.map { |site| [site.name, site.id] }, selected: @site.id %></div><% end %>
       <div class="insights-date"><%= form.label :from, "De" %><%= form.date_field :from, value: @filter_params[:from], required: true, max: (Time.now.utc.to_date - 1).iso8601 %></div>
       <div class="insights-date"><%= form.label :to, "Até" %><%= form.date_field :to, value: @filter_params[:to], required: true, max: (Time.now.utc.to_date - 1).iso8601 %></div>
@@ -106,10 +108,10 @@
       <thead><tr><th>#</th><th><%= @report.dimension == "articles" ? "Conteúdo" : "Nome" %></th><th>Visualizações</th><th>Tendência</th><th>Conteúdos</th><th>Cliques</th><th>Tempo</th></tr></thead>
       <tbody>
         <% @rows.each_with_index do |row, index| %>
-          <% drill = { "articles" => :article, "authors" => :author, "categories" => :category }.fetch(@report.dimension) %>
+          <% drill = { "articles" => :article, "columnists" => :columnist, "authors" => :author, "categories" => :category }.fetch(@report.dimension) %>
           <tr>
             <td data-label="Posição"><span class="rank-number"><%= (@page - 1) * @per_page + index + 1 %></span></td>
-            <td data-label="Conteúdo"><div class="insights-story-cell <%= 'author-profile' if @report.dimension == 'authors' %>"><% if @report.dimension == "articles" %><span class="insights-story-image"><% if row[:image_url].present? %><%= image_tag row[:image_url], alt: "", loading: "lazy" %><% else %><%= ui_icon("newspaper") %><% end %></span><% elsif @report.dimension == "authors" %><span class="insights-author-image"><% if row[:author_image_url].present? %><%= image_tag row[:author_image_url], alt: "" %><% else %><%= row[:name].split.filter_map { |part| part.first }.first(2).join.upcase.presence || "?" %><% end %></span><% end %><div><%= link_to row[:name], analytics_dashboard_path(@filter_params.merge(dimension: "articles", drill => row[:key], page: nil)) %><% if @report.dimension == "articles" %><small><%= row[:author] %> · <%= row[:category] %> · ID <%= row[:key] %></small><% elsif @report.dimension == "authors" %><small>Colunista · <%= pluralize(row[:articles], "matéria", "matérias") %> no período</small><% end %></div></div></td>
+            <td data-label="Conteúdo"><%= render "analytics/rank_identity", row: row, drill: drill %></td>
             <td data-label="Visualizações"><strong><%= number_with_delimiter(row[:views]) %></strong><small>anterior: <%= number_with_delimiter(row[:previous_views]) %></small></td>
             <td data-label="Tendência"><span class="trend-pill <%= row[:views_change].to_f >= 0 ? 'positive' : 'negative' %>"><%= row[:views_change].nil? ? "Sem base" : "#{row[:views_change].positive? ? '+' : ''}#{row[:views_change]}%" %></span></td>
             <td data-label="Conteúdos"><%= row[:articles] %><small>mediana <%= row[:median_views] %></small></td><td data-label="Cliques"><%= number_with_delimiter(row[:clicks]) %></td><td data-label="Tempo"><%= duration_label.call(row[:engagement_seconds]) %></td>
@@ -143,3 +145,4 @@
     <%= link_to public_analytics_pdf_path, class: "audience-mobile-pdf", data: { turbo: false }, aria: { label: "Exportar PDF das métricas selecionadas" } do %><%= ui_icon("file-text") %><span>Exportar PDF</span><% end %>
   </nav>
 <% end %>
+<script src="/analytics-images.js?v=20261028-1" defer></script>

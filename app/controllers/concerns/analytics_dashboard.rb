@@ -23,7 +23,7 @@ module AnalyticsDashboard
     end
     @from = Time.utc(start_date.year, start_date.month, start_date.day)
     @to = Time.utc(end_date.year, end_date.month, end_date.day) + 1.day
-    filters = params.permit(:author, :category, :article, :q).to_h
+    filters = params.permit(:author, :columnist, :category, :article, :q).to_h
     @report = Analytics::EditorialReport.new(site: @site, from: @from, to: @to, filters: filters,
       dimension: params[:dimension], sort: params[:sort])
     @filter_params = @report.filters.merge(site_id: @site.id, from: start_date.iso8601, to: end_date.iso8601,

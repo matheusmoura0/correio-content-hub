@@ -3,7 +3,8 @@
 The authenticated `/metricas` dashboard adds article, byline and category analyses.
 Click a row to drill down. Date, publication, exact author/category, text search,
 sort and article filters persist in navigation and CSV/JSON/PDF exports.
-Screen results are paginated in groups of 50; exports contain all filtered groups.
+Screen results are paginated in groups of 50; CSV/JSON contain all filtered groups.
+PDF reports highlight the top 10 filtered groups, ordered by the selected metric.
 
 ## Measurement contract
 
@@ -16,6 +17,14 @@ Screen results are paginated in groups of 50; exports contain all filtered group
   visitor identifiers, not unique people across the entire reporting period.
 - Authors are reported using the received byline. Collective and multiple-author
   bylines remain a single group until a stable author-ID schema is integrated.
+- The separate `columnists` dimension uses active individual profiles from the
+  official Correio directory. It matches only complete individual bylines after
+  case/accent/whitespace normalization and removal of a leading "Por". It does not
+  attribute a column's other reporters, blank bylines or shared signatures to its
+  owner. Legacy events are not rewritten. Filtering by `columnist` applies that
+  exact identity consistently to article drill-downs, summaries, comparisons and
+  all exports. An accessed article contributes once to the identity's article
+  count regardless of the number of recorded visits.
 - Median views per accessed article complements volume; this is not a score of
   journalistic quality. Articles without visits are not included in the median.
 - Engagement is summed recorded seconds from the legacy tracker, not validated
@@ -29,6 +38,16 @@ Rebuild and recreate the web service using the existing production Compose
 configuration; its entrypoint runs migrations. The PDF release adds the Prawn gem
 and DejaVu fonts in the Docker image. No new migration, environment variable or
 tracker change is required for PDF export. Do not modify the ERP.
+
+The columnist release adds migration `20261028150000_create_analytics_author_profiles`.
+The existing VPS worker refreshes the official profile catalog at most daily,
+outside request handling, under an advisory lock and a time budget. Run
+`Correio::SyncColumnists.call(force: true, max_duration: 120)` in a production Rails
+runner after deployment for initial population. Only official profile-avatar
+elements supply portraits; article images and arbitrary OG images are not used.
+Failures preserve existing portraits and known identities. Collective columns
+are excluded from the individual ranking. The tracker no longer selects the
+first unrelated JSON-LD author photo when the received byline has no match.
 
 ## Shared Reporter Dashboard
 
@@ -57,9 +76,12 @@ bylines, category/article drill-downs, comparison, search and pagination. Reques
 are scoped to the link's site, ignoring `site_id` overrides, with at most 90 full
 UTC days per query. It exposes no visitor/session identifiers, click target URLs,
 team activity, raw CSV/JSON exports, CMS configuration or editing actions. Its PDF
-button downloads a branded report of all filtered rows, with a KPI overview,
-daily comparison chart, ranking, repeated headings, page numbers and measurement
-notes. It preserves the same share scope and revocation checks. PDF generation
+button downloads a concise branded top-10 report, with a KPI overview of all
+filtered results, daily comparison chart, ranking, repeated headings, page numbers
+and measurement notes. The ranking shows the selected metric, its previous-period
+value and change, not always views. It lists the total number of eligible results;
+the full ranking remains available in the dashboard. Long titles are abbreviated
+at 180 characters. It preserves the same share scope and revocation checks. PDF generation
 uses Prawn and embedded DejaVu fonts provided by the Docker image; it fetches no
 external images and never embeds the bearer link. Internal metrics and
 share creation/replacement/revocation still require Hub authentication; share

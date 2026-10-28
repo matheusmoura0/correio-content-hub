@@ -7,6 +7,7 @@ module Analytics
     MUTED = "68707C".freeze
     LINE = "E2E5E9".freeze
     FONT_ROOT = "/usr/share/fonts/truetype/dejavu".freeze
+    RANKING_LIMIT = 10
     SORT_LABELS = { "views" => "visualizações", "articles" => "conteúdos acessados",
       "clicks" => "cliques", "engagement_seconds" => "tempo registrado" }.freeze
 
@@ -15,7 +16,8 @@ module Analytics
     end
 
     def call
-      @rows = @report.rows(limit: nil)
+      @total = @report.total_rows
+      @rows = @report.rows(limit: RANKING_LIMIT)
       @pdf = Prawn::Document.new(page_size: "A4", margin: [94, 42, 52, 42],
         info: { Title: "#{@report.site.name} - Relatório de audiência", Author: "Correio da Manhã",
           Subject: "#{@report.label}: #{period}", Creator: "CM Content Hub" })
@@ -25,8 +27,8 @@ module Analytics
       @pdf.font "EditorialSans", size: 9
       @pdf.fill_color INK
       overview
-      ranking
       measurement_notes
+      ranking
       chrome
       @pdf.render
     end
@@ -34,21 +36,19 @@ module Analytics
     private
 
     def overview
-      @pdf.fill_color RED
-      @pdf.text "INTELIGÊNCIA EDITORIAL", size: 9, style: :bold
-      @pdf.move_down 9
       @pdf.fill_color INK
-      @pdf.font("EditorialSerif") { @pdf.text "Relatório de audiência", size: 26, style: :bold }
+      @pdf.font("EditorialSerif") { @pdf.text "Destaques de audiência", size: 24, style: :bold }
       @pdf.move_down 8
-      @pdf.text safe(@report.site.name), size: 12, style: :bold
       @pdf.text "#{period} · dias completos em UTC", color: MUTED, size: 9
       @pdf.move_down 6
       @pdf.text "Comparação: #{date(@report.previous_from)} a #{date(@report.from - 1.second)}", color: MUTED, size: 8
       @pdf.move_down 14
       @pdf.text "#{@report.label} · ordenação por #{SORT_LABELS.fetch(@report.sort)}", size: 10, style: :bold
-      filter_labels = { q: "Busca", author: "Assinatura", category: "Editoria", article: "Matéria" }
+      @pdf.move_down 4
+      @pdf.text "Top #{@rows.length} de #{number(@total)} resultados. O resumo considera todos os resultados filtrados.", size: 8, color: MUTED
+      filter_labels = { q: "Busca", author: "Assinatura", columnist: "Colunista", category: "Editoria", article: "Matéria" }
       @report.filters.each do |key, value|
-        label = value == Analytics::EditorialReport::MISSING ? "Não informado" : safe(value, 200)
+        label = value == Analytics::EditorialReport::MISSING ? "Não informado" : safe(key == :columnist ? @report.columnist_name : value, 100)
         @pdf.text "#{filter_labels.fetch(key)}: #{label}", size: 8, color: MUTED
       end
       @pdf.move_down 16
@@ -72,9 +72,7 @@ module Analytics
       @pdf.move_cursor_to start_y - 174
       daily_chart
       @pdf.move_down 12
-      @pdf.text "#{number(@rows.length)} resultados no ranking completo. Tempo registrado: #{duration(summary[:engagement_seconds])}.", size: 8, color: MUTED
-      @pdf.move_down 8
-      @pdf.text "A contagem de visitantes soma identificadores diários; não representa pessoas únicas no período.", size: 8, color: MUTED
+      @pdf.text "Tempo registrado em todos os resultados filtrados: #{duration(summary[:engagement_seconds])}.", size: 8, color: MUTED
     end
 
     def daily_chart
@@ -85,13 +83,15 @@ module Analytics
       daily = @report.daily_views
       prior = @report.daily_views(previous: true)
       peak = [daily.map { |day| day[:views] }.max.to_i, prior.map { |day| day[:views] }.max.to_i, 1].max
+      @pdf.text "Escala: 0 a #{number(peak)} visualizações/dia", size: 7, color: MUTED
       width = @pdf.bounds.width
-      @pdf.bounding_box([0, @pdf.cursor], width: width, height: 142) do
+      @pdf.fill_color INK
+      @pdf.bounding_box([0, @pdf.cursor], width: width, height: 120) do
         step = width / [daily.length, 1].max
         daily.each_with_index do |day, index|
           [[prior[index]&.dig(:views).to_i, "C9CED4", 0.08], [day[:views], RED, 0.52]].each do |count, color, offset|
             next if count.zero?
-            height = count * 112.0 / peak
+            height = count * 90.0 / peak
             @pdf.fill_color color
             @pdf.fill_rectangle [index * step + step * offset, 18 + height], step * 0.38, height
           end
@@ -114,14 +114,17 @@ module Analytics
         return
       end
       @rows.each_with_index do |row, index|
-        name = safe(row[:name], 600)
+        name = safe(row[:name], 180)
         detail = if @report.dimension == "articles"
           "#{safe(row[:author], 160)} · #{safe(row[:category], 100)}"
         else
           "#{number(row[:articles])} matérias · mediana #{row[:median_views]} · #{duration(row[:engagement_seconds])}"
         end
-        cells = [number(index + 1), "#{name}\n#{detail}", number(row[:views]),
-          number(row[:previous_views]), change(row[:views_change]), number(row[:clicks])]
+        metric = @report.sort.to_sym
+        previous = row["previous_#{metric}".to_sym].to_i
+        cells = [number(index + 1), "#{name}\n#{detail}", metric_value(row, metric),
+          metric == :engagement_seconds ? duration(previous) : number(previous),
+          change(@report.change(row[metric], previous)), metric_value(row, supporting_metric)]
         height = [cells.each_with_index.map { |text, i| @pdf.height_of(text, width: widths[i] - 12, size: 8, leading: 2) }.max + 20, 44].max
         if @pdf.cursor < height + 8
           @pdf.start_new_page
@@ -142,16 +145,17 @@ module Analytics
     end
 
     def ranking_heading
-      @pdf.text "Ranking · #{@report.label}", size: 17, style: :bold
+      @pdf.text "Top #{@rows.length} · #{@report.label}", size: 17, style: :bold
       @pdf.move_down 5
-      @pdf.text "#{number(@rows.length)} resultados · #{period} · ordem por #{SORT_LABELS.fetch(@report.sort)}", size: 8, color: MUTED
+      @pdf.text "#{number(@rows.length)} de #{number(@total)} resultados · #{period} · ordem por #{SORT_LABELS.fetch(@report.sort)}", size: 8, color: MUTED
       @pdf.move_down 14
       top = @pdf.cursor
       @pdf.fill_color INK
       @pdf.fill_rectangle [0, top], @pdf.bounds.width, 30
       @pdf.fill_color "FFFFFF"
       x = 0
-      ["#", @report.dimension == "articles" ? "Matéria / assinatura" : "Nome / conteúdos", "Visualizações", "Anterior", "Variação", "Cliques"].each_with_index do |text, i|
+      metric_labels = { "views" => "Visualizações", "articles" => "Conteúdos", "clicks" => "Cliques", "engagement_seconds" => "Tempo" }
+      ["#", @report.dimension == "articles" ? "Matéria / assinatura" : "Nome / conteúdos", metric_labels.fetch(@report.sort), "Anterior", "Variação", metric_labels.fetch(supporting_metric.to_s)].each_with_index do |text, i|
         @pdf.text_box text, at: [x + 6, top - 10], width: widths[i] - 12, height: 18,
           size: 7, align: i > 1 ? :right : :left
         x += widths[i]
@@ -161,14 +165,14 @@ module Analytics
     end
 
     def measurement_notes
-      @pdf.start_new_page if @pdf.cursor < 220
-      @pdf.move_down 20
-      @pdf.text "Notas de medição", size: 12, style: :bold
-      @pdf.move_down 10
-      @report.notes.each { |note| @pdf.text safe(note), size: 8, color: MUTED, leading: 3; @pdf.move_down 6 }
-      @pdf.text "Títulos acima de 600 caracteres são abreviados neste documento. O ranking inclui todos os resultados filtrados, independentemente da paginação do painel.", size: 8, color: MUTED
+      @pdf.move_down 12
+      @pdf.fill_color INK
+      @pdf.text "Notas de medição", size: 10, style: :bold
       @pdf.move_down 6
-      @pdf.text "Fonte: tag de audiência do #{@report.site.name}. Emitido em #{Time.current.strftime('%d/%m/%Y às %H:%M')} (Brasília).", size: 8, color: MUTED
+      @report.notes.each { |note| @pdf.text safe(note), size: 7, color: MUTED, leading: 1; @pdf.move_down 3 }
+      @pdf.text "O relatório destaca até #{RANKING_LIMIT} posições pela métrica selecionada. Títulos acima de 180 caracteres são abreviados. O ranking completo permanece no painel.", size: 7, color: MUTED
+      @pdf.move_down 5
+      @pdf.text "Fonte: tag de audiência do #{@report.site.name}. Emitido em #{Time.current.strftime('%d/%m/%Y às %H:%M')} (Brasília).", size: 7, color: MUTED
     end
 
     def chrome
@@ -196,6 +200,14 @@ module Analytics
 
     def widths
       @widths ||= [0.065, 0.415, 0.14, 0.13, 0.12, 0.13].map { |part| @pdf.bounds.width * part }
+    end
+
+    def supporting_metric
+      @report.sort == "clicks" ? :views : :clicks
+    end
+
+    def metric_value(row, metric)
+      metric == :engagement_seconds ? duration(row[metric]) : number(row[metric])
     end
 
     def safe(value, length = 1000)

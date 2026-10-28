@@ -23,9 +23,10 @@
         }
       } catch (_) {}
     });
-    const normalized = authorName.toLocaleLowerCase("pt-BR");
-    const match = candidates.find((author) => typeof author === "object" && author.name?.toLocaleLowerCase("pt-BR") === normalized) ||
-      candidates.find((author) => typeof author === "object" && imageValue(author.image));
+    const normalize = (value) => typeof value === "string" ? value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().replace(/^por\s+/i, "").replace(/\s+/g, " ").toLocaleLowerCase("pt-BR") : "";
+    const normalized = normalize(authorName);
+    if (!normalized) return "";
+    const match = candidates.find((author) => author && typeof author === "object" && normalize(author.name) === normalized);
     return imageValue(match?.image);
   };
 
