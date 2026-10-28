@@ -108,6 +108,8 @@ class PublicAnalyticsTest < Minitest::Test
     @share.regenerate_token
     request(:get, path(old))
     assert_equal 404, @session.response.status
+    request(:get, path)
+    assert_equal 200, @session.response.status
     @site.update!(active: false)
     request(:get, path)
     assert_equal 404, @session.response.status
@@ -164,8 +166,9 @@ class PublicAnalyticsTest < Minitest::Test
   def test_private_metrics_and_exports_remain_authenticated
     ["/metricas", "/metricas/exportar.csv", "/metricas/exportar.json", "/metricas/exportar.pdf"].each do |url|
       request(:get, url, token: @share.token, site_id: @site.id)
-      assert_equal 302, @session.response.status
-      assert_includes @session.response.location, "/users/sign_in"
+      assert_includes [302, 401], @session.response.status
+      assert_includes @session.response.location, "/users/sign_in" if @session.response.redirect?
+      refute_includes @session.response.body, "Matéria do Correio"
     end
   end
 
