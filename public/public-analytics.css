@@ -25,6 +25,7 @@ body.public-audience { margin: 0; background: var(--hub-surface); color: var(--h
 .public-audience .insights-breakdown { display: block; }
 .public-audience .insights-footnotes { grid-template-columns: 1fr; }
 .public-audience .insights-story-cell a { overflow-wrap: anywhere; }
+.public-audience [data-dimension="categories"] .insights-story-cell { grid-template-columns: minmax(0, 1fr); }
 .public-audience .insights-kpis article strong { font-family: Arial, Helvetica, sans-serif; }
 .public-audience .alert { margin-bottom: 20px; padding: 14px; border-left: 4px solid var(--hub-red); background: #fff; }
 .audience-footer { padding: 20px 24px; border-top: 1px solid var(--hub-line); color: var(--hub-muted); font-size: 11px; text-align: center; }
@@ -98,6 +99,8 @@ body.public-audience { margin: 0; background: var(--hub-surface); color: var(--h
   .public-audience .hub-main .insights-ranking table td:first-child { top: 14px; right: 12px; left: auto; padding: 0; }
   .public-audience .hub-main .insights-ranking table td:nth-child(2) { padding: 0 30px 14px 0; }
   .public-audience .hub-main .insights-ranking table td:nth-child(2)::before { display: none; }
+  .public-audience .hub-main .insights-ranking table td[colspan] { position: static; grid-column: 1 / -1; padding: 24px 12px; }
+  .public-audience .hub-main .insights-ranking table td[colspan]::before { display: none; }
   .public-audience .insights-story-cell { grid-template-columns: 64px minmax(0, 1fr); gap: 10px; align-items: start; }
   .public-audience .insights-story-cell > div > a { font-size: 15px; line-height: 1.4; }
   .public-audience .insights-story-image { width: 64px; height: 64px; aspect-ratio: 1; border-radius: 4px; }
