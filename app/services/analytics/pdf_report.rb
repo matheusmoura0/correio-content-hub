@@ -199,8 +199,8 @@ module Analytics
               at: [x, top - 91], width: name_width, height: 14, size: 8, style: :bold
             if (url = article_url(row))
               @pdf.fill_color RED
-              @pdf.text_box "Ler matéria", at: [38, top - 86], width: image_width, height: 15, size: 8
-              @pdf.link_annotation([38, top - 101, 38 + image_width, top - 84], Border: [0, 0, 0], A: { S: :URI, URI: url })
+              @pdf.formatted_text_box [{ text: "Ler matéria", link: url }], at: [38, top - 86],
+                width: image_width, height: 15, size: 8
             end
           end
           @pdf.move_cursor_to top - height
