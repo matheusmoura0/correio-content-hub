@@ -1,0 +1,55 @@
+* { box-sizing: border-box; }
+body.public-audience { margin: 0; background: var(--hub-surface); color: var(--hub-ink); font: 14px/1.5 Arial, Helvetica, sans-serif; }
+.public-audience a { color: var(--hub-red); text-decoration: none; }
+.public-audience a:hover { text-decoration: underline; }
+.public-audience h1, .public-audience h2 { font-family: Georgia, "Times New Roman", serif; line-height: 1.15; }
+.public-audience input, .public-audience select { width: 100%; padding: 11px 12px; border: 1px solid var(--hub-line); background: #fff; color: var(--hub-ink); font: inherit; }
+.public-audience label { display: block; }
+.public-audience input[type="submit"], .public-audience .button { display: inline-flex; align-items: center; justify-content: center; width: auto; padding: 10px 15px; border: 0; color: #fff; cursor: pointer; font: 700 13px Arial, sans-serif; text-decoration: none; }
+.public-audience :focus-visible { outline: 3px solid var(--hub-blue); outline-offset: 3px; }
+.public-audience .eyebrow { color: var(--hub-red); font-weight: 700; }
+.public-audience .muted { color: var(--hub-muted); }
+.public-audience table { width: 100%; border-collapse: collapse; }
+.public-audience th, .public-audience td { text-align: left; }
+.public-audience td small { display: block; }
+.audience-masthead { display: flex; align-items: center; justify-content: space-between; gap: 20px; min-height: 82px; padding: 16px max(24px, calc((100% - 1240px) / 2)); border-top: 4px solid var(--hub-red); border-bottom: 1px solid var(--hub-line); background: #fff; }
+.audience-brand { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.audience-brand strong { font: 700 23px/1.15 Georgia, "Times New Roman", serif; }
+.audience-label { display: flex; align-items: center; gap: 8px; color: var(--hub-muted); font-size: 12px; }
+.public-audience .audience-main { width: 100%; max-width: 1288px; margin: 0 auto; padding: 28px 24px 40px; }
+.public-audience .insights-heading h1 { font-size: 34px; letter-spacing: 0; overflow-wrap: anywhere; }
+.public-audience .insights-page .eyebrow { letter-spacing: 0; }
+.public-audience .insights-filters { grid-template-columns: repeat(3, minmax(0, 1fr)) auto; }
+.public-audience .insights-advanced { grid-column: 1 / -1; }
+.public-audience .insights-overview { grid-template-columns: minmax(0, 3fr) minmax(240px, 1fr); }
+.public-audience .insights-breakdown { display: block; }
+.public-audience .insights-footnotes { grid-template-columns: 1fr; }
+.public-audience .insights-story-cell a { overflow-wrap: anywhere; }
+.public-audience .insights-kpis article strong { font-family: Arial, Helvetica, sans-serif; }
+.public-audience .alert { margin-bottom: 20px; padding: 14px; border-left: 4px solid var(--hub-red); background: #fff; }
+.audience-footer { padding: 20px 24px; border-top: 1px solid var(--hub-line); color: var(--hub-muted); font-size: 11px; text-align: center; }
+.audience-unavailable { max-width: 540px; margin: 70px auto; }
+.audience-unavailable h1 { font-size: 30px; }
+.audience-unavailable p { color: var(--hub-muted); }
+.audience-skip { position: absolute; top: -100px; left: 16px; z-index: 100; padding: 12px; background: #fff; }
+.audience-skip:focus { top: 8px; }
+@media (max-width: 760px) {
+  .audience-masthead { min-height: 76px; padding: 12px 16px; }
+  .audience-brand strong { max-width: 160px; font-size: 20px; }
+  .audience-label { font-size: 11px; }
+  .audience-label .ui-icon { display: none; }
+  .public-audience .audience-main { padding: 22px 14px 32px; }
+  .public-audience .insights-heading h1 { font-size: 28px; }
+  .public-audience .insights-filters { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .public-audience .insights-filters > div:first-of-type { grid-column: auto; }
+  .public-audience .insights-filters > div:nth-of-type(3) { grid-column: 1 / -1; }
+  .public-audience .insights-overview { grid-template-columns: minmax(0, 1fr); }
+  .public-audience .insights-ranking td, .public-audience .insights-tabs a { font-size: 12px; }
+  .public-audience .insights-ranking td small, .public-audience .insights-kpis article > small { font-size: 11px; }
+  .public-audience .insights-context { font-size: 11px; }
+}
+@media (max-width: 380px) {
+  .audience-label { display: none; }
+  .public-audience .insights-filters { grid-template-columns: minmax(0, 1fr); }
+  .public-audience .insights-filters > * { grid-column: 1; }
+}

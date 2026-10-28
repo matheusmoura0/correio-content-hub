@@ -24,9 +24,29 @@ Screen results are paginated in groups of 50; exports contain all filtered group
 
 ## Deployment
 
-No migration, environment variable, new application dependency or tracker change
-is required. Rebuild and recreate the web service using the existing production
-Compose configuration. Do not restart or modify the ERP.
+The public dashboard adds migration `20261028120000_create_analytics_shares`.
+Rebuild and recreate the web service using the existing production Compose
+configuration; its entrypoint runs migrations. No new environment variable,
+application dependency or tracker change is required. Do not modify the ERP.
+
+## Shared Reporter Dashboard
+
+Only the active Correio da Manha source can currently be shared. On `/metricas`,
+select that publication as an administrator and open "Compartilhar com a redacao".
+Create a link, then distribute its full URL to reporters. It works without login,
+including on mobile. A replacement invalidates the previous link immediately;
+disabling sharing invalidates all links for that share. Links are bearer access:
+anyone who receives one can read the publication's aggregated audience.
+
+The `/audiencia/:token` dashboard shares the existing report calculations, images,
+bylines, category/article drill-downs, comparison, search and pagination. Requests
+are scoped to the link's site, ignoring `site_id` overrides, with at most 90 full
+UTC days per query. It exposes no visitor/session identifiers, click target URLs,
+team activity, exports, CMS configuration or editing actions. Internal metrics and
+share creation/replacement/revocation still require Hub authentication; share
+management requires an administrator and CSRF protection. Responses are no-store,
+no-referrer, noindex and cannot be framed. Treat URLs as confidential; proxy access
+logs can still contain paths even though Rails filters the token parameter.
 
 ## Verification
 

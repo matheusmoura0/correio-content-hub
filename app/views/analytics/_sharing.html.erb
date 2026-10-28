@@ -1,0 +1,18 @@
+<details class="analytics-sharing">
+  <summary><%= ui_icon("users") %><span>Compartilhar com a redação</span></summary>
+  <% if (share = @site.analytics_share) %>
+    <div class="analytics-share-link">
+      <label for="analytics-share-url">Link de consulta · Correio da Manhã</label>
+      <input id="analytics-share-url" type="url" readonly value="<%= public_analytics_url(token: share.token) %>" aria-describedby="analytics-share-hint">
+      <%= link_to public_analytics_path(token: share.token), class: "button secondary", target: "_blank", rel: "noopener noreferrer" do %><%= ui_icon("globe") %><span>Abrir painel</span><% end %>
+    </div>
+    <p id="analytics-share-hint">Quem receber este link poderá consultar a audiência, sem entrar no Hub. Não inclui atividades internas nem permissões de edição.</p>
+    <div class="analytics-share-actions">
+      <%= button_to analytics_share_path(site_id: @site.id), method: :patch, class: "secondary" do %><%= ui_icon("settings") %><span>Substituir link</span><% end %>
+      <%= button_to analytics_share_path(site_id: @site.id), method: :delete, class: "secondary" do %><%= ui_icon("x") %><span>Desativar link</span><% end %>
+    </div>
+  <% else %>
+    <p>Gere um link de consulta sem login para os repórteres do Correio da Manhã.</p>
+    <%= button_to analytics_share_path(site_id: @site.id), method: :post do %><%= ui_icon("plus") %><span>Criar link de consulta</span><% end %>
+  <% end %>
+</details>

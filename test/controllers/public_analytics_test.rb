@@ -1,0 +1,183 @@
+ENV["RAILS_ENV"] = "test"
+require_relative "../../config/environment"
+require "minitest/autorun"
+require "action_dispatch/testing/integration"
+require "warden/test/helpers"
+
+class PublicAnalyticsTest < Minitest::Test
+  include Warden::Test::Helpers
+
+  def setup
+    ActiveRecord::Base.connection.begin_transaction(joinable: false)
+    @forgery_protection = ActionController::Base.allow_forgery_protection
+    ActionController::Base.allow_forgery_protection = false
+    Warden.test_mode!
+    @site = Site.create!(name: "Correio da Manhã", domain: "correiodamanha.com.br",
+      publication_key: "correio-da-manha", active: true)
+    @other = Site.create!(name: "Outra publicação", domain: "other.example", publication_key: "other", active: true)
+    @share = @site.create_analytics_share!
+    @session = ActionDispatch::Integration::Session.new(Rails.application)
+    @session.host! "www.example.com"
+    @from = (Time.now.utc.to_date - 7).iso8601
+    @to = (Time.now.utc.to_date - 1).iso8601
+    event(@site, "Matéria do Correio", "Ana Repórter")
+    event(@other, "Matéria confidencial de outro jornal", "Outro Autor")
+  end
+
+  def teardown
+    Warden.test_reset!
+    ActionController::Base.allow_forgery_protection = @forgery_protection
+    ActiveRecord::Base.connection.rollback_transaction
+  end
+
+  def event(site, title, author)
+    site.analytics_events.create!(content_key: "article-1", content_author: author, content_category: "Cultura",
+      event_type: "page_view", occurred_at: 2.days.ago, page_title: title, path: "/materia",
+      visitor_hash: "private-visitor", session_hash: "private-session", device_type: "mobile", value: 0,
+      image_url: "https://cdn.example/news.jpg", author_image_url: "https://cdn.example/author.jpg")
+  end
+
+  def path(token = @share.token)
+    "/audiencia/#{token}"
+  end
+
+  def request(method, url, params = {})
+    @session.public_send(method, url, params: params, env: { "action_dispatch.show_exceptions" => :all })
+  end
+
+  def sign_in(role)
+    @user ||= User.create!(email: "#{role}@example.com", password: "strong-password-123", role: role, name: "Editor")
+    login_as @user, scope: :user
+  end
+
+  def test_without_login_shows_only_linked_publication_and_no_internal_data
+    request(:get, path, site_id: @other.id, from: @from, to: @to)
+    assert_equal 200, @session.response.status
+    body = @session.response.body
+    assert_includes body, "Matéria do Correio"
+    assert_includes body, "Ana Repórter"
+    assert_includes body, "https://cdn.example/news.jpg"
+    ["Matéria confidencial", "Outro Autor", "private-visitor", "private-session", "Atividades recentes",
+      "Compartilhar com a redação", "Instalar a tag", "Exportar", "Destinos mais clicados", "hub-sidebar"].each do |private_text|
+      refute_includes body, private_text
+    end
+    assert_equal "no-referrer", @session.response.headers["Referrer-Policy"]
+    assert_includes @session.response.headers["Cache-Control"], "no-store"
+    assert_includes @session.response.headers["X-Robots-Tag"], "noindex"
+    assert_equal "DENY", @session.response.headers["X-Frame-Options"]
+    assert_equal 0, ActivityLog.count
+  end
+
+  def test_dimensions_drilldown_and_navigation_remain_public
+    %w[articles authors categories].each do |dimension|
+      request(:get, path, dimension: dimension, from: @from, to: @to)
+      assert_equal 200, @session.response.status
+      document = Nokogiri::HTML(@session.response.body)
+      document.css(".insights-page a[href]").each do |link|
+        assert link["href"].start_with?(path), "Internal navigation leaked: #{link['href']}"
+      end
+      assert_equal path, document.at_css(".insights-filters")["action"]
+      refute document.at_css("select[name=site_id]")
+    end
+    request(:get, path, author: "Ana Repórter", article: "article-1", from: @from, to: @to)
+    assert_includes @session.response.body, "Matéria do Correio"
+    request(:get, path, author: "Outro Autor", from: @from, to: @to)
+    assert_includes @session.response.body, "Nenhum resultado"
+  end
+
+  def test_pagination_and_limits
+    26.times do |i|
+      event(@site, "Conteúdo #{i}", "Ana Repórter")
+      @site.analytics_events.order(:id).last.update!(content_key: "extra-#{i}")
+    end
+    request(:get, path, page: 2, per_page: 25, from: @from, to: @to)
+    assert_equal 200, @session.response.status
+    assert_equal 2, Nokogiri::HTML(@session.response.body).css(".insights-ranking tbody tr").size
+    request(:get, path, from: (Time.now.utc.to_date - 365).iso8601, to: @to)
+    assert_equal 200, @session.response.status
+    assert_includes @session.response.body, "até 90 dias completos"
+    request(:get, path, from: "invalid", to: "invalid", dimension: "sql", sort: "sql", per_page: 999)
+    assert_equal 200, @session.response.status
+  end
+
+  def test_invalid_revoked_and_inactive_links_are_not_available
+    request(:get, path("a" * 32))
+    assert_equal 404, @session.response.status
+    assert_includes @session.response.body, "Link indisponível"
+    old = @share.token
+    @share.regenerate_token
+    request(:get, path(old))
+    assert_equal 404, @session.response.status
+    @site.update!(active: false)
+    request(:get, path)
+    assert_equal 404, @session.response.status
+    @share.destroy!
+    request(:get, path)
+    assert_equal 404, @session.response.status
+  end
+
+  def test_cannot_share_other_publications_even_with_existing_token
+    refute @other.build_analytics_share.valid?
+    @share.update_column(:site_id, @other.id)
+    request(:get, path)
+    assert_equal 404, @session.response.status
+  end
+
+  def test_management_requires_authentication_and_admin
+    request(:post, "/metricas/compartilhamento", site_id: @site.id)
+    assert_equal 302, @session.response.status
+    assert_includes @session.response.location, "/users/sign_in"
+    sign_in("member")
+    old = @share.token
+    request(:patch, "/metricas/compartilhamento", site_id: @site.id)
+    assert_equal 302, @session.response.status
+    assert_equal old, @share.reload.token
+    request(:delete, "/metricas/compartilhamento", site_id: @site.id)
+    assert AnalyticsShare.exists?(@share.id)
+    request(:get, "/metricas", site_id: @site.id)
+    assert_equal 200, @session.response.status
+    refute_includes @session.response.body, @share.token
+  end
+
+  def test_admin_can_create_replace_and_revoke_but_not_share_other_sites
+    sign_in("admin")
+    request(:get, "/metricas", site_id: @site.id)
+    assert_equal 200, @session.response.status
+    assert_includes @session.response.body, path
+    old = @share.token
+    request(:post, "/metricas/compartilhamento", site_id: @site.id)
+    assert_equal 1, AnalyticsShare.where(site: @site).count
+    assert_equal old, @share.reload.token
+    request(:patch, "/metricas/compartilhamento", site_id: @site.id)
+    refute_equal old, @share.reload.token
+    request(:get, path(old))
+    assert_equal 404, @session.response.status
+    request(:post, "/metricas/compartilhamento", site_id: @other.id)
+    assert_equal 404, @session.response.status
+    request(:delete, "/metricas/compartilhamento", site_id: @site.id)
+    refute AnalyticsShare.exists?(@share.id)
+    request(:post, "/metricas/compartilhamento", site_id: @site.id)
+    assert_equal 1, AnalyticsShare.where(site: @site).count
+    assert_equal 32, @site.reload.analytics_share.token.length
+  end
+
+  def test_private_metrics_and_exports_remain_authenticated
+    ["/metricas", "/metricas/exportar.csv", "/metricas/exportar.json", "/metricas/exportar.pdf"].each do |url|
+      request(:get, url, token: @share.token, site_id: @site.id)
+      assert_equal 302, @session.response.status
+      assert_includes @session.response.location, "/users/sign_in"
+    end
+  end
+
+  def test_link_cannot_change_state_and_post_still_requires_csrf
+    old = @share.token
+    request(:post, path, site_id: @site.id)
+    assert_equal 404, @session.response.status
+    assert_equal old, @share.reload.token
+    sign_in("admin")
+    ActionController::Base.allow_forgery_protection = true
+    request(:delete, "/metricas/compartilhamento", site_id: @site.id)
+    assert_equal 422, @session.response.status
+    assert AnalyticsShare.exists?(@share.id)
+  end
+end

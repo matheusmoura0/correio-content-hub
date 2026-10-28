@@ -28,6 +28,7 @@ class Site < ApplicationRecord
   has_many :feeds, dependent: :nullify
   has_many :site_articles, dependent: :destroy
   has_many :analytics_events, dependent: :destroy
+  has_one :analytics_share, dependent: :destroy
   has_many :articles, through: :site_articles
 
   scope :publication_destinations, -> {

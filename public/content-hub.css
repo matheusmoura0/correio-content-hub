@@ -1480,6 +1480,16 @@ body.hub-authenticated {
 }
 
 /* Editorial insights */
+.analytics-sharing { margin-bottom: 20px; padding: 14px 0; border-block: 1px solid var(--hub-line); }
+.analytics-sharing > summary { display: flex; align-items: center; gap: 8px; min-height: 36px; cursor: pointer; font-size: 13px; font-weight: 700; color: var(--hub-blue); }
+.analytics-sharing p { max-width: 760px; color: var(--hub-muted); font-size: 12px; }
+.analytics-share-link { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 14px; }
+.analytics-share-link label { flex-basis: 100%; font-size: 12px; }
+.analytics-share-link input { flex: 1; min-width: 160px; width: auto; margin: 0; font-size: 12px; }
+.analytics-sharing .button, .analytics-sharing button { display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
+.analytics-share-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.analytics-share-actions form { margin: 0; }
+
 .insights-page {
   width: min(100%, 1500px);
   margin: 0 auto;
