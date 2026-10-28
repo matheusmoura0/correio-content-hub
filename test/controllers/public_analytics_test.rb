@@ -196,7 +196,7 @@ class PublicAnalyticsTest < Minitest::Test
     text = IO.popen(["pdftotext", "-", "-"], "r+") { |io| io.write(@session.response.body); io.close_write; io.read }
     assert_includes text, "Matéria do Correio"
     assert_includes text, "Ana Repórter"
-    assert_includes text, "Relatório de audiência"
+    assert_includes text, "Destaques de audiência"
     ["Matéria confidencial", "Outro Autor", "private-visitor", "private-session", @share.token].each { |value| refute_includes text, value }
     old = @share.token
     @share.regenerate_token

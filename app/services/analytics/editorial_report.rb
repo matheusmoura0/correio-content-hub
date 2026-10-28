@@ -163,7 +163,7 @@ module Analytics
         names = profiles_by_slug.values.select do |profile|
           ([AuthorIdentity.normalize(profile.name)] + profile.aliases).any? { |name| name.include?(AuthorIdentity.normalize(filters[:q])) }
         end.map(&:slug)
-        relation = relation.where("page_title ILIKE :q OR content_key ILIKE :q OR content_author ILIKE :q OR content_category ILIKE :q OR #{columnist_expression} IN (:names)", q: pattern, names: names)
+        relation = relation.where("page_title ILIKE ? OR content_key ILIKE ? OR content_author ILIKE ? OR content_category ILIKE ? OR #{columnist_expression} IN (?)", pattern, pattern, pattern, pattern, names)
       end
       relation
     end

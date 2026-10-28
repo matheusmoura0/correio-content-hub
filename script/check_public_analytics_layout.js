@@ -53,6 +53,27 @@ async function noOverflow(page) {
         assert(await page.locator(".insights-pdf-button").isVisible());
       }
       if (width === 390) {
+        await page.goto(`${url}?dimension=columnists`, { waitUntil: "domcontentloaded" });
+        await page.locator('.audience-mobile-tools a[href="#analytics-ranking"]').click();
+        await noOverflow(page);
+        assert.equal(await page.locator(".insights-tabs a").count(), 4);
+        const portraits = page.locator(".insights-author-image img");
+        assert(await portraits.count() > 0, "Columnists must have official portraits");
+        await portraits.first().scrollIntoViewIfNeeded();
+        await page.waitForFunction(() => {
+          const image = document.querySelector(".insights-author-image img");
+          return image && image.complete && image.naturalWidth > 0;
+        });
+        await page.screenshot({ path: "/review/columnists-390.png", animations: "disabled" });
+        await portraits.first().evaluate((image) => image.dispatchEvent(new Event("error")));
+        assert(await portraits.first().isHidden(), "Failed portraits must reveal the initials fallback");
+        const articleLink = await page.locator(".insights-story-cell a").first().getAttribute("href");
+        const columnist = new URL(articleLink, url).searchParams.get("columnist");
+        assert(columnist, "Drill-down must use the exact individual identity");
+        await page.goto(new URL(articleLink, url).href, { waitUntil: "domcontentloaded" });
+        assert.equal(await page.locator("input[name=columnist]").inputValue(), columnist);
+        const filteredPdf = await page.locator(".audience-mobile-pdf").getAttribute("href");
+        assert.equal(new URL(filteredPdf, url).searchParams.get("columnist"), columnist);
         await page.goto(`${url}?dimension=authors`, { waitUntil: "domcontentloaded" });
         await page.locator('.audience-mobile-tools a[href="#analytics-ranking"]').click();
         await noOverflow(page);

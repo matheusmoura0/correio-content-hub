@@ -73,7 +73,7 @@ class AnalyticsPdfReportTest < Minitest::Test
     _, text = generate(filters: { q: "Notícia" })
     assert_includes text, "<b>Notícia & análise</b>"
     assert_includes text, "Notas de medição"
-    assert_includes text, "ranking completo permanece no painel"
+    assert_includes text.gsub(/\s+/, " "), "ranking completo permanece no painel"
     assert_includes text, "180 caracteres"
   end
 
