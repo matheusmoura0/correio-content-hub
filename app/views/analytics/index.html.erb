@@ -13,7 +13,9 @@
 <div class="insights-page">
   <header class="insights-heading">
     <div><p class="eyebrow"><%= @public_dashboard ? @site.name : "Inteligência editorial" %></p><h1>Audiência do conteúdo</h1><p>Alcance e desempenho das matérias da redação.</p></div>
-    <% unless @public_dashboard %>
+    <% if @public_dashboard %>
+      <%= link_to export_public_analytics_path(@filter_params.except(:site_id, :page, :per_page).merge(token: @share.token)), class: "insights-pdf-button", data: { turbo: false } do %><%= ui_icon("file-text") %><span>Exportar PDF</span><% end %>
+    <% else %>
     <details class="insights-export">
       <summary><%= ui_icon("send") %><span>Exportar</span></summary>
       <div><% %w[csv json pdf].each do |format| %><%= link_to format.upcase, export_analytics_path(@filter_params.merge(format: format)), data: { turbo: false } %><% end %></div>

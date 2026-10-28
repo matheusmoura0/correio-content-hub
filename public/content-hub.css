@@ -1520,6 +1520,9 @@ body.hub-authenticated {
 }
 
 .insights-export { position: relative; flex: none; }
+.insights-pdf-button { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; padding: 10px 14px; border: 1px solid var(--hub-red); border-radius: 4px; background: #fff; color: var(--hub-red); font-size: 12px; font-weight: 700; white-space: nowrap; }
+.insights-pdf-button:hover { background: var(--hub-red-soft); text-decoration: none !important; }
+.insights-pdf-button .ui-icon { width: 18px; height: 18px; }
 
 .insights-export > summary {
   display: flex;

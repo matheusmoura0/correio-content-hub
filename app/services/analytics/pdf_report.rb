@@ -1,89 +1,218 @@
+require "prawn"
+
 module Analytics
   class PdfReport
-    PAGE_SIZE = 44
+    RED = "AD1119".freeze
+    INK = "20242A".freeze
+    MUTED = "68707C".freeze
+    LINE = "E2E5E9".freeze
+    FONT_ROOT = "/usr/share/fonts/truetype/dejavu".freeze
+    SORT_LABELS = { "views" => "visualizações", "articles" => "conteúdos acessados",
+      "clicks" => "cliques", "engagement_seconds" => "tempo registrado" }.freeze
 
     def initialize(report)
       @report = report
     end
 
     def call
-      pages = lines.each_slice(PAGE_SIZE).to_a
-      objects = [nil, "<< /Type /Catalog /Pages 2 0 R >>", nil, "<< /Type /Font /Subtype /Type1 /BaseFont /Courier >>"]
-      page_ids = []
-
-      pages.each_with_index do |page_lines, index|
-        page_id = 4 + (index * 2)
-        stream_id = page_id + 1
-        page_ids << page_id
-        stream = content_stream(page_lines)
-        objects[page_id] = "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 3 0 R >> >> /Contents #{stream_id} 0 R >>"
-        objects[stream_id] = "<< /Length #{stream.bytesize} >>\nstream\n#{stream}\nendstream"
-      end
-      objects[2] = "<< /Type /Pages /Kids [#{page_ids.map { |id| "#{id} 0 R" }.join(" ")}] /Count #{page_ids.size} >>"
-      build_pdf(objects)
+      @rows = @report.rows(limit: nil)
+      @pdf = Prawn::Document.new(page_size: "A4", margin: [94, 42, 52, 42],
+        info: { Title: "#{@report.site.name} - Relatório de audiência", Author: "Correio da Manhã",
+          Subject: "#{@report.label}: #{period}", Creator: "CM Content Hub" })
+      @pdf.font_families.update("EditorialSans" => {
+        normal: "#{FONT_ROOT}/DejaVuSans.ttf", bold: "#{FONT_ROOT}/DejaVuSans-Bold.ttf"
+      }, "EditorialSerif" => { normal: "#{FONT_ROOT}/DejaVuSerif.ttf", bold: "#{FONT_ROOT}/DejaVuSerif-Bold.ttf" })
+      @pdf.font "EditorialSans", size: 9
+      @pdf.fill_color INK
+      overview
+      ranking
+      measurement_notes
+      chrome
+      @pdf.render
     end
 
     private
 
-    def lines
+    def overview
+      @pdf.fill_color RED
+      @pdf.text "INTELIGÊNCIA EDITORIAL", size: 9, style: :bold
+      @pdf.move_down 9
+      @pdf.font("EditorialSerif") { @pdf.text "Relatório de audiência", size: 26, style: :bold }
+      @pdf.move_down 8
+      @pdf.text safe(@report.site.name), size: 12, style: :bold
+      @pdf.text "#{period} · dias completos em UTC", color: MUTED, size: 9
+      @pdf.move_down 6
+      @pdf.text "Comparação: #{date(@report.previous_from)} a #{date(@report.from - 1.second)}", color: MUTED, size: 8
+      @pdf.move_down 14
+      @pdf.text "#{@report.label} · ordenação por #{SORT_LABELS.fetch(@report.sort)}", size: 10, style: :bold
+      filter_labels = { q: "Busca", author: "Assinatura", category: "Editoria", article: "Matéria" }
+      @report.filters.each do |key, value|
+        label = value == Analytics::EditorialReport::MISSING ? "Não informado" : safe(value, 200)
+        @pdf.text "#{filter_labels.fetch(key)}: #{label}", size: 8, color: MUTED
+      end
+      @pdf.move_down 16
       summary = @report.summary
       previous = @report.summary(previous: true)
-      result = ["CM HUB - INTELIGENCIA EDITORIAL", @report.site.name.to_s,
-        "Analise: #{@report.label}",
-        "Periodo UTC: #{@report.from.to_date} a #{(@report.to - 1).to_date}",
-        "Anterior UTC: #{@report.previous_from.to_date} a #{(@report.from - 1).to_date}",
-        "Filtros: #{@report.filters.to_json}", "",
-        "Visualizacoes: #{summary[:views]} | Anterior: #{previous[:views]}",
-        "Materias com acessos: #{summary[:articles]} | Cliques: #{summary[:clicks]}",
-        "Identificadores de visitantes/dia: #{summary[:visitors]}",
-        "Tempo registrado: #{summary[:engagement_seconds]} segundos", ""]
-      @report.rows(limit: nil).each_with_index do |row, index|
-        result << "#{index + 1}. #{row[:name]}"
-        if @report.dimension == "articles"
-          result << "ID: #{row[:key]} | #{row[:author]} | #{row[:category]}"
+      start_y = @pdf.cursor
+      cell_width = (@pdf.bounds.width - 12) / 2
+      [[:views, "Visualizações"], [:visitors, "Identificadores de visitantes/dia"],
+        [:articles, "Conteúdos acessados"], [:clicks, "Cliques registrados"]].each_with_index do |(key, label), index|
+        @pdf.bounding_box([(index % 2) * (cell_width + 12), start_y - (index / 2) * 86], width: cell_width, height: 74) do
+          @pdf.fill_color "F4F5F6"
+          @pdf.fill_rectangle [0, 74], cell_width, 74
+          @pdf.fill_color INK
+          @pdf.text_box label, at: [12, 63], width: cell_width - 24, size: 8
+          @pdf.text_box number(summary[key]), at: [12, 46], width: cell_width - 24, size: 22, style: :bold
+          @pdf.text_box "Anterior: #{number(previous[key])} · #{change(@report.comparison[key])}",
+            at: [12, 16], width: cell_width - 24, size: 7, color: MUTED
         end
-        result << "Views: #{row[:views]} | Anterior: #{row[:previous_views]} | Variacao: #{row[:views_change].nil? ? 'Sem base' : "#{row[:views_change]}%"}"
-        result << "Materias: #{row[:articles]} | Mediana: #{row[:median_views]} | Cliques: #{row[:clicks]}"
-        result << "Tempo registrado: #{row[:engagement_seconds]}s | Identificadores/dia: #{row[:visitors]}"
-        result << ""
       end
-      result << "NOTAS DE MEDICAO"
-      result.concat(@report.notes)
-      # Fixed-width wrapping protects the printable area even for long titles/URLs.
-      result.flat_map { |line| I18n.transliterate(line.to_s).scan(/.{1,75}(?:\s+|\z)|.{1,75}/).map(&:strip).presence || [""] }
+      @pdf.move_cursor_to start_y - 174
+      daily_chart
+      @pdf.move_down 12
+      @pdf.text "#{number(@rows.length)} resultados no ranking completo. Tempo registrado: #{duration(summary[:engagement_seconds])}.", size: 8, color: MUTED
+      @pdf.move_down 8
+      @pdf.text "A contagem de visitantes soma identificadores diários; não representa pessoas únicas no período.", size: 8, color: MUTED
     end
 
-    def content_stream(page_lines)
-      commands = ["BT", "/F1 10 Tf", "50 795 Td"]
-      page_lines.each_with_index do |line, index|
-        commands << "(#{escape(line)}) Tj"
-        commands << "0 -17 Td"
+    def daily_chart
+      @pdf.text "Evolução diária de visualizações", size: 11, style: :bold
+      @pdf.move_down 5
+      @pdf.text "Vermelho: período atual · Cinza: período anterior equivalente", size: 7, color: MUTED
+      @pdf.move_down 10
+      daily = @report.daily_views
+      prior = @report.daily_views(previous: true)
+      peak = [daily.map { |day| day[:views] }.max.to_i, prior.map { |day| day[:views] }.max.to_i, 1].max
+      width = @pdf.bounds.width
+      @pdf.bounding_box([0, @pdf.cursor], width: width, height: 142) do
+        step = width / [daily.length, 1].max
+        daily.each_with_index do |day, index|
+          [[prior[index]&.dig(:views).to_i, "C9CED4", 0.08], [day[:views], RED, 0.52]].each do |count, color, offset|
+            next if count.zero?
+            height = count * 112.0 / peak
+            @pdf.fill_color color
+            @pdf.fill_rectangle [index * step + step * offset, 18 + height], step * 0.38, height
+          end
+        end
+        @pdf.stroke_color LINE
+        @pdf.stroke_horizontal_line 0, width, at: 18
+        @pdf.fill_color MUTED
+        @pdf.text_box date(@report.from), at: [0, 10], size: 7
+        @pdf.text_box date(@report.to - 1.second), at: [width - 100, 10], width: 100, align: :right, size: 7
+        @pdf.fill_color INK
       end
-      commands << "ET"
-      commands.join("\n")
     end
 
-    def build_pdf(objects)
-      pdf = +"%PDF-1.4\n"
-      offsets = [0]
-      (1...objects.length).each do |id|
-        offsets[id] = pdf.bytesize
-        pdf << "#{id} 0 obj\n#{objects[id]}\nendobj\n"
+    def ranking
+      @pdf.start_new_page
+      ranking_heading
+      if @rows.empty?
+        @pdf.move_down 20
+        @pdf.text "Nenhum resultado para o período e os filtros selecionados.", color: MUTED
+        return
       end
-      xref = pdf.bytesize
-      pdf << "xref\n0 #{objects.length}\n0000000000 65535 f \n"
-      offsets.drop(1).each { |offset| pdf << format("%010d 00000 n \n", offset) }
-      pdf << "trailer\n<< /Size #{objects.length} /Root 1 0 R >>\nstartxref\n#{xref}\n%%EOF\n"
-      pdf
+      @rows.each_with_index do |row, index|
+        name = safe(row[:name], 600)
+        detail = if @report.dimension == "articles"
+          "#{safe(row[:author], 160)} · #{safe(row[:category], 100)}"
+        else
+          "#{number(row[:articles])} matérias · mediana #{row[:median_views]} · #{duration(row[:engagement_seconds])}"
+        end
+        cells = [number(index + 1), "#{name}\n#{detail}", number(row[:views]),
+          number(row[:previous_views]), change(row[:views_change]), number(row[:clicks])]
+        height = [cells.each_with_index.map { |text, i| @pdf.height_of(text, width: widths[i] - 12, size: 8, leading: 2) }.max + 20, 44].max
+        if @pdf.cursor < height + 8
+          @pdf.start_new_page
+          ranking_heading
+        end
+        top = @pdf.cursor
+        @pdf.fill_color index.even? ? "F5F6F7" : "FFFFFF"
+        @pdf.fill_rectangle [0, top], @pdf.bounds.width, height
+        @pdf.fill_color INK
+        x = 0
+        cells.each_with_index do |text, i|
+          @pdf.text_box text, at: [x + 6, top - 10], width: widths[i] - 12, height: height - 16,
+            size: 8, leading: 2, align: i > 1 ? :right : :left
+          x += widths[i]
+        end
+        @pdf.move_cursor_to top - height
+      end
     end
 
-    def escape(value)
-      I18n.transliterate(value.to_s).encode("ASCII", invalid: :replace, undef: :replace, replace: "?")
-        .gsub(/[\\()]/) { |character| "\\#{character}" }
+    def ranking_heading
+      @pdf.text "Ranking · #{@report.label}", size: 17, style: :bold
+      @pdf.move_down 5
+      @pdf.text "#{number(@rows.length)} resultados · #{period} · ordem por #{SORT_LABELS.fetch(@report.sort)}", size: 8, color: MUTED
+      @pdf.move_down 14
+      top = @pdf.cursor
+      @pdf.fill_color INK
+      @pdf.fill_rectangle [0, top], @pdf.bounds.width, 30
+      x = 0
+      ["#", @report.dimension == "articles" ? "Matéria / assinatura" : "Nome / conteúdos", "Visualizações", "Anterior", "Variação", "Cliques"].each_with_index do |text, i|
+        @pdf.text_box text, at: [x + 6, top - 10], width: widths[i] - 12, height: 18,
+          color: "FFFFFF", size: 7, align: i > 1 ? :right : :left
+        x += widths[i]
+      end
+      @pdf.fill_color INK
+      @pdf.move_cursor_to top - 30
     end
 
-    def truncate(value, length)
-      value.to_s.length > length ? "#{value.to_s.first(length - 3)}..." : value.to_s
+    def measurement_notes
+      @pdf.start_new_page if @pdf.cursor < 220
+      @pdf.move_down 20
+      @pdf.text "Notas de medição", size: 12, style: :bold
+      @pdf.move_down 10
+      @report.notes.each { |note| @pdf.text safe(note), size: 8, color: MUTED, leading: 3; @pdf.move_down 6 }
+      @pdf.text "Títulos acima de 600 caracteres são abreviados neste documento. O ranking inclui todos os resultados filtrados, independentemente da paginação do painel.", size: 8, color: MUTED
+      @pdf.move_down 6
+      @pdf.text "Fonte: tag de audiência do #{@report.site.name}. Emitido em #{Time.current.strftime('%d/%m/%Y às %H:%M')} (Brasília).", size: 8, color: MUTED
+    end
+
+    def chrome
+      @pdf.repeat(:all) do
+        @pdf.bounding_box([0, @pdf.bounds.top + 58], width: @pdf.bounds.width, height: 44) do
+          @pdf.fill_color RED
+          @pdf.fill_rectangle [0, 44], 36, 36
+          @pdf.font("EditorialSerif") do
+            @pdf.text_box "CM", at: [2, 35], width: 32, align: :center, size: 15, style: :bold, color: "FFFFFF"
+            @pdf.text_box safe(@report.site.name, 80), at: [48, 43], width: @pdf.bounds.width - 48, size: 18, style: :bold, color: INK
+          end
+          @pdf.text_box "RELATÓRIO DE AUDIÊNCIA · #{@report.label.upcase}", at: [48, 17], size: 7, color: MUTED
+        end
+        @pdf.stroke_color LINE
+        @pdf.stroke_horizontal_line 0, @pdf.bounds.width, at: -12
+      end
+      @pdf.number_pages "Correio da Manhã · Audiência editorial                                      Página <page> de <total>",
+        at: [0, -24], width: @pdf.bounds.width, size: 7, color: MUTED
+    end
+
+    def widths
+      @widths ||= [0.045, 0.435, 0.14, 0.13, 0.12, 0.13].map { |part| @pdf.bounds.width * part }
+    end
+
+    def safe(value, length = 1000)
+      value.to_s.encode("UTF-8", invalid: :replace, undef: :replace).gsub(/[\u0000-\u001f\u007f]/, " ").truncate(length)
+    end
+
+    def number(value)
+      ActiveSupport::NumberHelper.number_to_delimited(value.to_i, delimiter: ".")
+    end
+
+    def date(value)
+      value.strftime("%d/%m/%Y")
+    end
+
+    def period
+      "#{date(@report.from)} a #{date(@report.to - 1.second)}"
+    end
+
+    def change(value)
+      value.nil? ? "Sem base" : "#{value.positive? ? '+' : ''}#{value}%"
+    end
+
+    def duration(value)
+      seconds = value.to_i
+      "#{seconds / 3600}h #{seconds % 3600 / 60}min #{seconds % 60}s"
     end
   end
 end

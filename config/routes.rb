@@ -40,6 +40,8 @@ Rails.application.routes.draw do
   resource :analytics_share, only: %i[create update destroy], path: "metricas/compartilhamento"
   get "audiencia/:token", to: "public_analytics#show", as: :public_analytics,
     constraints: { token: /[A-Za-z0-9]{32}/ }, defaults: { format: :html }
+  get "audiencia/:token/exportar.pdf", to: "public_analytics#export", as: :export_public_analytics,
+    constraints: { token: /[A-Za-z0-9]{32}/ }, defaults: { format: :pdf }
   get "metricas/exportar.:format", to: "analytics#export", as: :export_analytics,
     constraints: { format: /csv|json|pdf/ }
   post "presenca", to: "presence#update", as: :presence

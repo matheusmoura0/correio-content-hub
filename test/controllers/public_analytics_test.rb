@@ -59,7 +59,7 @@ class PublicAnalyticsTest < Minitest::Test
     assert_includes body, "Ana Repórter"
     assert_includes body, "https://cdn.example/news.jpg"
     ["Matéria confidencial", "Outro Autor", "private-visitor", "private-session", "Atividades recentes",
-      "Compartilhar com a redação", "Instalar a tag", "Exportar", "Destinos mais clicados", "hub-sidebar"].each do |private_text|
+      "Compartilhar com a redação", "Instalar a tag", "insights-export", "Destinos mais clicados", "hub-sidebar"].each do |private_text|
       refute_includes body, private_text
     end
     assert_equal "no-referrer", @session.response.headers["Referrer-Policy"]
@@ -67,6 +67,7 @@ class PublicAnalyticsTest < Minitest::Test
     assert_includes @session.response.headers["X-Robots-Tag"], "noindex"
     assert_equal "DENY", @session.response.headers["X-Frame-Options"]
     assert_equal 0, ActivityLog.count
+    assert_includes body, "Exportar PDF"
   end
 
   def test_dimensions_drilldown_and_navigation_remain_public
@@ -183,5 +184,26 @@ class PublicAnalyticsTest < Minitest::Test
     request(:delete, "/metricas/compartilhamento", site_id: @site.id)
     assert_equal 422, @session.response.status
     assert AnalyticsShare.exists?(@share.id)
+  end
+
+  def test_public_pdf_is_filtered_and_scoped_to_the_shared_site
+    request(:get, "#{path}/exportar.pdf", site_id: @other.id, author: "Ana Repórter", from: @from, to: @to, page: 999)
+    assert_equal 200, @session.response.status
+    assert_equal "application/pdf", @session.response.media_type
+    assert_includes @session.response.headers["Content-Disposition"], "attachment"
+    assert_includes @session.response.headers["Cache-Control"], "no-store"
+    assert @session.response.body.start_with?("%PDF-")
+    text = IO.popen(["pdftotext", "-", "-"], "r+") { |io| io.write(@session.response.body); io.close_write; io.read }
+    assert_includes text, "Matéria do Correio"
+    assert_includes text, "Ana Repórter"
+    assert_includes text, "Relatório de audiência"
+    ["Matéria confidencial", "Outro Autor", "private-visitor", "private-session", @share.token].each { |value| refute_includes text, value }
+    old = @share.token
+    @share.regenerate_token
+    request(:get, "#{path(old)}/exportar.pdf")
+    assert_equal 404, @session.response.status
+    @site.update!(active: false)
+    request(:get, "#{path}/exportar.pdf")
+    assert_equal 404, @session.response.status
   end
 end

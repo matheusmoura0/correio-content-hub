@@ -26,8 +26,9 @@ Screen results are paginated in groups of 50; exports contain all filtered group
 
 The public dashboard adds migration `20261028120000_create_analytics_shares`.
 Rebuild and recreate the web service using the existing production Compose
-configuration; its entrypoint runs migrations. No new environment variable,
-application dependency or tracker change is required. Do not modify the ERP.
+configuration; its entrypoint runs migrations. The PDF release adds the Prawn gem
+and DejaVu fonts in the Docker image. No new migration, environment variable or
+tracker change is required for PDF export. Do not modify the ERP.
 
 ## Shared Reporter Dashboard
 
@@ -42,7 +43,12 @@ The `/audiencia/:token` dashboard shares the existing report calculations, image
 bylines, category/article drill-downs, comparison, search and pagination. Requests
 are scoped to the link's site, ignoring `site_id` overrides, with at most 90 full
 UTC days per query. It exposes no visitor/session identifiers, click target URLs,
-team activity, exports, CMS configuration or editing actions. Internal metrics and
+team activity, raw CSV/JSON exports, CMS configuration or editing actions. Its PDF
+button downloads a branded report of all filtered rows, with a KPI overview,
+daily comparison chart, ranking, repeated headings, page numbers and measurement
+notes. It preserves the same share scope and revocation checks. PDF generation
+uses Prawn and embedded DejaVu fonts provided by the Docker image; it fetches no
+external images and never embeds the bearer link. Internal metrics and
 share creation/replacement/revocation still require Hub authentication; share
 management requires an administrator and CSRF protection. Responses are no-store,
 no-referrer, noindex and cannot be framed. Treat URLs as confidential; proxy access
