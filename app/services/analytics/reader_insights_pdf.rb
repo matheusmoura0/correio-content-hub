@@ -9,7 +9,7 @@ module Analytics
       reader_page_heading("Público · alcance e horários")
       @pdf.text "#{number(coverage[:known])} de #{number(coverage[:total])} visualizações com metadados (#{coverage[:percent]}%).", size: 9
       @pdf.move_down 4
-      @pdf.text "#{number(coverage[:clicks])} cliques com metadados · somente tráfego da coleta recente.", size: 8, color: PdfReport::MUTED
+      @pdf.text "Cliques com metadados: #{number(coverage[:clicks])} · somente tráfego da coleta recente.", size: 8, color: PdfReport::MUTED
       @pdf.move_down 12
       values = [["Leitura ativa mediana", reading[:active_seconds] && "#{reading[:active_seconds]}s"],
         ["Rolagem até 75%", reading[:scroll_75_percent] && "#{reading[:scroll_75_percent]}%"],
@@ -37,7 +37,7 @@ module Analytics
       reader_group_pair(["Dispositivos", groups[:devices]], ["Navegadores", groups[:browsers]])
       reader_group_pair(["Sistemas operacionais", groups[:systems]], ["Onde acontecem os cliques", groups[:placements]], right_unit: "Cliques")
       @pdf.fill_color PdfReport::INK
-      @pdf.text "Dados por hora · Brasília", size: 10, style: :bold
+      @pdf.text "Dados por hora · Brasília · amostra com metadados", size: 10, style: :bold
       @pdf.move_down 6
       top = @pdf.cursor
       insights.hourly.each_slice(6).with_index do |hours, column|
@@ -63,7 +63,7 @@ module Analytics
 
     def reader_hour_chart(rows)
       @pdf.fill_color PdfReport::INK
-      @pdf.text "Horários · vermelho: visualizações · verde: cliques", size: 8, style: :bold
+      @pdf.text "Horários em Brasília · vermelho: visualizações · verde: cliques", size: 8, style: :bold
       @pdf.move_down 6
       top, width = @pdf.cursor, @pdf.bounds.width
       peak = [rows.flat_map { |row| [row[:views].to_i, row[:clicks].to_i] }.max.to_i, 1].max
@@ -77,7 +77,10 @@ module Analytics
         end
       end
       @pdf.fill_color PdfReport::MUTED
-      @pdf.text_box "00h                 06h                 12h                 18h                 23h · Brasília", at: [0, top - 77], width: width, height: 12, size: 7
+      [0, 6, 12, 18, 23].each do |hour|
+        x = [[(hour + 0.5) * step - 12, 0].max, width - 24].min
+        @pdf.text_box "#{'%02d' % hour}h", at: [x, top - 77], width: 24, height: 12, size: 7, align: :center
+      end
       @pdf.move_cursor_to top - 98
     end
 

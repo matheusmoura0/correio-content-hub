@@ -3,7 +3,7 @@
 <% breakdowns = @reader_insights.breakdowns %>
 <section id="analytics-summary" class="reader-summary">
   <header><div><p class="eyebrow">Público</p><h2>Quem chega às matérias</h2></div><span><%= @report.partial? ? "Dia em andamento" : "Período fechado" %></span></header>
-  <div class="reader-coverage"><strong><%= number_with_delimiter(coverage[:known]) %> de <%= number_with_delimiter(coverage[:total]) %> visualizações com metadados</strong><span><%= coverage[:percent] %>% de cobertura · <%= number_with_delimiter(coverage[:clicks]) %> cliques com metadados</span></div>
+  <div class="reader-coverage"><strong><%= number_with_delimiter(coverage[:known]) %> de <%= number_with_delimiter(coverage[:total]) %> visualizações com metadados</strong><span><%= coverage[:percent] %>% de cobertura · Cliques com metadados: <%= number_with_delimiter(coverage[:clicks]) %></span></div>
   <% if coverage[:known].zero? %><p class="reader-notice">Ainda sem dados de público neste período. A coleta começou em 28/10/2026; os dados anteriores não são preenchidos retroativamente.</p><% end %>
   <div class="reader-metrics">
     <article><span>Leitura ativa mediana</span><strong><%= reading[:active_seconds].nil? ? "—" : "#{reading[:active_seconds]}s" %></strong><small>Visualizações com atividade registrada</small></article>
@@ -14,7 +14,7 @@
 
 <section id="analytics-audience" class="reader-audience">
   <section class="reader-hours">
-    <header><h2>Horários de acesso e clique</h2><span>Brasília · recebimento no servidor</span></header>
+    <header><h2>Horários de acesso e clique</h2><span>Amostra com metadados · Brasília</span></header>
     <% peak = [@reader_insights.hourly.flat_map { |row| [row[:views].to_i, row[:clicks].to_i] }.max.to_i, 1].max %>
     <div class="reader-hour-chart" role="img" aria-label="Visualizações em vermelho e cliques em verde por hora, no fuso de Brasília">
       <% @reader_insights.hourly.each do |row| %>
