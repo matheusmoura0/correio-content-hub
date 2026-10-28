@@ -16,6 +16,7 @@ gem "devise-i18n"
 gem "rails-i18n"
 gem "feedjira"
 gem "prawn", "~> 2.5"
+gem "ruby-vips", "~> 2.3"
 
 group :development, :test do
   gem "debug", platforms: %i[mri windows], require: "debug/prelude"

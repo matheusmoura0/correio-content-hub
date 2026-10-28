@@ -10,7 +10,7 @@ class PublicAnalyticsController < ActionController::Base
   end
 
   def export
-    filename = "audiencia-#{@site.publication_key}-#{@report.dimension}-#{@from.to_date}-#{(@to - 1.second).to_date}.pdf"
+    filename = "audiencia-#{@site.publication_key}-destaques-#{@from.to_date}-#{(@to - 1.second).to_date}.pdf"
     send_data Analytics::PdfReport.new(@report).call, filename: filename,
       type: "application/pdf", disposition: "attachment"
   end

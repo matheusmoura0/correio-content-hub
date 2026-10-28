@@ -7,7 +7,7 @@ ENV RAILS_ENV="production" \
     BUNDLE_WITHOUT="development:test"
 
 RUN apt-get update -qq && \
-    apt-get install --no-install-recommends -y build-essential libpq-dev fonts-dejavu-core && \
+    apt-get install --no-install-recommends -y build-essential libpq-dev fonts-dejavu-core libvips42 && \
     rm -rf /var/lib/apt/lists/*
 
 COPY Gemfile ./

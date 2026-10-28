@@ -4,7 +4,10 @@ The authenticated `/metricas` dashboard adds article, byline and category analys
 Click a row to drill down. Date, publication, exact author/category, text search,
 sort and article filters persist in navigation and CSV/JSON/PDF exports.
 Screen results are paginated in groups of 50; CSV/JSON contain all filtered groups.
-PDF reports highlight the top 10 filtered groups, ordered by the selected metric.
+The Correio PDF combines the top 10 individual columnists and top 10 most-viewed
+articles, independent of the open tab and selected sort. Dates and explicit content
+filters apply to both rankings and the overview. Other publications retain their
+single-dimension top-10 PDF.
 
 ## Measurement contract
 
@@ -76,14 +79,19 @@ bylines, category/article drill-downs, comparison, search and pagination. Reques
 are scoped to the link's site, ignoring `site_id` overrides, with at most 90 full
 UTC days per query. It exposes no visitor/session identifiers, click target URLs,
 team activity, raw CSV/JSON exports, CMS configuration or editing actions. Its PDF
-button downloads a concise branded top-10 report, with a KPI overview of all
-filtered results, daily comparison chart, ranking, repeated headings, page numbers
-and measurement notes. The ranking shows the selected metric, its previous-period
-value and change, not always views. It lists the total number of eligible results;
+button downloads a combined branded report: an overview of all filtered articles,
+daily comparison chart, top individual columnists with embedded portraits, then
+the most-viewed stories with embedded thumbnails and clickable official story
+links. It shows views, previous-period views and change. It lists eligible totals;
 the full ranking remains available in the dashboard. Long titles are abbreviated
 at 180 characters. It preserves the same share scope and revocation checks. PDF generation
-uses Prawn and embedded DejaVu fonts provided by the Docker image; it fetches no
-external images and never embeds the bearer link. Internal metrics and
+uses Prawn, embedded DejaVu fonts and libvips thumbnails provided by the Docker
+image. Image requests accept only official Correio HTTPS hosts, validate and pin
+public DNS addresses on every redirect, stream at most 3MB per image, and share a
+15-second fetch budget. Raster-only thumbnails are compressed to JPEG and cached
+in bounded process memory for an hour. Missing or invalid images use initials/CM;
+they do not prevent export. Story links drop query strings and fragments, and the
+PDF never embeds the bearer link. No new migration is required. Internal metrics and
 share creation/replacement/revocation still require Hub authentication; share
 management requires an administrator and CSRF protection. Responses are no-store,
 no-referrer, noindex and cannot be framed. Treat URLs as confidential; proxy access

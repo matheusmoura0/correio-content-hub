@@ -270,6 +270,7 @@ class PublicAnalyticsTest < Minitest::Test
     text = IO.popen(["pdftotext", "-", "-"], "r+") { |io| io.write(@session.response.body); io.close_write; io.read }
     assert_includes text, "Colunistas"
     assert_includes text, profile.name
-    refute_includes text, "Ana Repórter e Bia"
+    assert_includes text, "Notícias mais vistas"
+    refute_includes text.split("Notícias mais vistas").first, "Ana Repórter e Bia"
   end
 end

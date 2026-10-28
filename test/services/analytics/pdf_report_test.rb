@@ -1,6 +1,7 @@
 ENV["RAILS_ENV"] = "test"
 require_relative "../../../config/environment"
 require "minitest/autorun"
+require "minitest/mock"
 
 class AnalyticsPdfReportTest < Minitest::Test
   def setup
@@ -42,11 +43,11 @@ class AnalyticsPdfReportTest < Minitest::Test
   def test_only_top_ten_are_exported_with_complete_summary_and_repeated_branding
     30.times { |i| (i + 1).times { event(i) } }
     generator, text = generate
-    assert_operator generator.instance_variable_get(:@pdf).page_count, :<=, 3
+    assert_operator generator.instance_variable_get(:@pdf).page_count, :<=, 4
     assert_equal (20...30).to_a.reverse.map(&:to_s), generator.instance_variable_get(:@rows).map { |row| row[:key] }
     (20...30).each { |i| assert_includes text, "Matéria #{i}:" }
     refute_includes text, "Matéria 19:"
-    assert_includes text, "Top 10 de 30 resultados"
+    assert_includes text, "Top 10 de 30"
     assert_includes text, "465"
     assert_includes text, "Destaques de audiência"
     assert_equal generator.instance_variable_get(:@pdf).page_count, text.scan("RELATÓRIO DE AUDIÊNCIA").length
@@ -60,11 +61,12 @@ class AnalyticsPdfReportTest < Minitest::Test
     event(1)
     event(2, author: "Outra pessoa")
     _, authors = generate(dimension: "authors", filters: { author: "João Repórter" })
-    assert_includes authors, "Jornalistas"
+    assert_includes authors, "Colunistas em destaque"
+    assert_includes authors, "Notícias mais vistas"
     assert_includes authors, "Assinatura: João Repórter"
     refute_includes authors, "Outra pessoa"
     _, categories = generate(dimension: "categories")
-    assert_includes categories, "Editorias"
+    assert_includes categories, "Notícias mais vistas"
     assert_includes categories, "Educação"
   end
 
@@ -78,6 +80,7 @@ class AnalyticsPdfReportTest < Minitest::Test
   end
 
   def test_selected_metric_controls_order_values_and_previous_period_comparison
+    @site.update!(name: "Outro jornal", domain: "outro.example", publication_key: "outro")
     event(1, author: "Ana")
     3.times { event(2, author: "Bia") }
     4.times { event(1, author: "Ana", type: "click") }
@@ -102,5 +105,26 @@ class AnalyticsPdfReportTest < Minitest::Test
     articles, text = generate(dimension: "authors", sort: "articles")
     assert_equal 1, articles.instance_variable_get(:@rows).first[:articles]
     assert_includes text, "ordem por conteúdos acessados"
+  end
+
+  def test_combined_report_is_tab_independent_and_embeds_images_and_safe_story_links
+    @site.analytics_author_profiles.create!(slug: "joao", name: "João Repórter",
+      source_url: "https://www.correiodamanha.com.br/colunistas/joao",
+      image_url: "https://www.correiodamanha.com.br/joao.jpg")
+    event(1).update!(image_url: "https://www.correiodamanha.com.br/news.jpg", path: "/noticia.html?private=secret")
+    3.times { event(2, author: "Redação") }
+    image = Vips::Image.black(20, 20).jpegsave_buffer
+    report = Analytics::EditorialReport.new(site: @site, from: @from, to: @to, dimension: "columnists", sort: "clicks")
+    generator = Analytics::PdfReport.new(report, images: ->(url) { image if url.present? })
+    bytes = generator.call
+    assert_equal ["2", "1"], generator.instance_variable_get(:@rows).map { |row| row[:key] }
+    assert_equal ["joao"], generator.instance_variable_get(:@columnists).map { |row| row[:key] }
+    assert_includes bytes, "/Subtype /Image"
+    assert_includes bytes, "https://www.correiodamanha.com.br/noticia.html"
+    refute_includes bytes, "private=secret"
+    assert_equal 3, generator.instance_variable_get(:@pdf).page_count
+    row = generator.instance_variable_get(:@rows).last
+    generator.instance_variable_get(:@article_paths)[row[:key]] = "//evil.example/secret"
+    assert_nil generator.send(:article_url, row)
   end
 end

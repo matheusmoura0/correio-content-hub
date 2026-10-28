@@ -1,4 +1,5 @@
 require "prawn"
+require "stringio"
 
 module Analytics
   class PdfReport
@@ -11,16 +12,26 @@ module Analytics
     SORT_LABELS = { "views" => "visualizações", "articles" => "conteúdos acessados",
       "clicks" => "cliques", "engagement_seconds" => "tempo registrado" }.freeze
 
-    def initialize(report)
-      @report = report
+    def initialize(report, images: PdfImages.new)
+      @combined = report.site.correio_source?
+      @images = images
+      @report = @combined ? EditorialReport.new(site: report.site, from: report.from, to: report.to,
+        filters: report.filters, dimension: "articles", sort: "views") : report
     end
 
     def call
       @total = @report.total_rows
       @rows = @report.rows(limit: RANKING_LIMIT)
+      if @combined
+        @columnist_report = EditorialReport.new(site: @report.site, from: @report.from, to: @report.to,
+          filters: @report.filters, dimension: "columnists", sort: "views")
+        @columnists = @columnist_report.rows(limit: RANKING_LIMIT)
+        @article_paths = @report.site.analytics_events.where(content_key: @rows.map { |row| row[:key] },
+          event_type: "page_view", occurred_at: @report.from...@report.to).group(:content_key).maximum(:path)
+      end
       @pdf = Prawn::Document.new(page_size: "A4", margin: [94, 42, 52, 42],
         info: { Title: "#{@report.site.name} - Relatório de audiência", Author: "Correio da Manhã",
-          Subject: "#{@report.label}: #{period}", Creator: "CM Content Hub" })
+          Subject: "#{report_label}: #{period}", Creator: "CM Content Hub" })
       @pdf.font_families.update("EditorialSans" => {
         normal: "#{FONT_ROOT}/DejaVuSans.ttf", bold: "#{FONT_ROOT}/DejaVuSans-Bold.ttf"
       }, "EditorialSerif" => { normal: "#{FONT_ROOT}/DejaVuSerif.ttf", bold: "#{FONT_ROOT}/DejaVuSerif-Bold.ttf" })
@@ -28,7 +39,12 @@ module Analytics
       @pdf.fill_color INK
       overview
       measurement_notes
-      ranking
+      if @combined
+        illustrated_ranking(@columnist_report, @columnists, people: true)
+        illustrated_ranking(@report, @rows, people: false)
+      else
+        ranking
+      end
       chrome
       @pdf.render
     end
@@ -43,9 +59,9 @@ module Analytics
       @pdf.move_down 6
       @pdf.text "Comparação: #{date(@report.previous_from)} a #{date(@report.from - 1.second)}", color: MUTED, size: 8
       @pdf.move_down 14
-      @pdf.text "#{@report.label} · ordenação por #{SORT_LABELS.fetch(@report.sort)}", size: 10, style: :bold
+      @pdf.text "#{report_label} · ordenação por #{SORT_LABELS.fetch(@report.sort)}", size: 10, style: :bold
       @pdf.move_down 4
-      @pdf.text "Top #{@rows.length} de #{number(@total)} resultados. O resumo considera todos os resultados filtrados.", size: 8, color: MUTED
+      @pdf.text "#{@combined ? 'Até 10 posições em cada ranking.' : "Top #{@rows.length} de #{number(@total)} resultados."} O resumo considera todos os resultados filtrados.", size: 8, color: MUTED
       filter_labels = { q: "Busca", author: "Assinatura", columnist: "Colunista", category: "Editoria", article: "Matéria" }
       @report.filters.each do |key, value|
         label = value == Analytics::EditorialReport::MISSING ? "Não informado" : safe(key == :columnist ? @report.columnist_name : value, 100)
@@ -144,6 +160,99 @@ module Analytics
       end
     end
 
+    def illustrated_ranking(report, rows, people:)
+      total = report.total_rows
+      rows.each_slice(people ? 10 : 5).with_index do |page_rows, page_index|
+        @pdf.start_new_page
+        illustrated_heading(report, rows.length, total, people)
+        page_rows.each_with_index do |row, local_index|
+          index = page_index * (people ? 10 : 5) + local_index
+          top = @pdf.cursor
+          height = people ? 60 : 112
+          @pdf.fill_color local_index.even? ? "F4F5F6" : "FFFFFF"
+          @pdf.fill_rectangle [0, top], @pdf.bounds.width, height
+          @pdf.fill_color RED
+          @pdf.text_box number(index + 1), at: [8, top - 12], width: 23, size: 11, style: :bold
+          image_width = people ? 42 : 94
+          image_height = people ? 42 : 70
+          portrait(row, people, at: [38, top - 9], width: image_width, height: image_height)
+          x = 38 + image_width + 12
+          name_width = @pdf.bounds.width - x - (people ? 116 : 14)
+          @pdf.fill_color INK
+          @pdf.text_box safe(row[:name], people ? 80 : 180), at: [x, top - 10], width: name_width,
+            height: people ? 27 : 53, size: people ? 11 : 10, leading: 2, style: :bold
+          @pdf.fill_color MUTED
+          if people
+            @pdf.text_box "#{number(row[:articles])} matérias com assinatura individual", at: [x, top - 40],
+              width: name_width, height: 14, size: 8
+            @pdf.fill_color INK
+            @pdf.text_box number(row[:views]), at: [@pdf.bounds.width - 110, top - 10], width: 100,
+              height: 20, size: 16, style: :bold, align: :right
+            @pdf.fill_color MUTED
+            @pdf.text_box "visualizações\nAnterior: #{number(row[:previous_views])} · #{change(row[:views_change])}",
+              at: [@pdf.bounds.width - 120, top - 31], width: 110, height: 24, size: 7, align: :right
+          else
+            @pdf.text_box "#{safe(row[:author], 75)} · #{safe(row[:category], 55)}", at: [x, top - 64],
+              width: name_width, height: 23, size: 8
+            @pdf.fill_color INK
+            @pdf.text_box "#{number(row[:views])} visualizações · Anterior: #{number(row[:previous_views])} · #{change(row[:views_change])}",
+              at: [x, top - 91], width: name_width, height: 14, size: 8, style: :bold
+            if (url = article_url(row))
+              @pdf.fill_color RED
+              @pdf.text_box "Ler matéria", at: [38, top - 86], width: image_width, height: 15, size: 8
+              @pdf.link_annotation([38, top - 101, 38 + image_width, top - 84], Border: [0, 0, 0], A: { S: :URI, URI: url })
+            end
+          end
+          @pdf.move_cursor_to top - height
+        end
+      end
+      if rows.empty?
+        @pdf.start_new_page
+        illustrated_heading(report, 0, total, people)
+        @pdf.text "Nenhum resultado para o período e os filtros selecionados.", color: MUTED
+      end
+    end
+
+    def illustrated_heading(report, count, total, people)
+      @pdf.fill_color INK
+      @pdf.text "#{people ? 'Colunistas em destaque' : 'Notícias mais vistas'}", size: 19, style: :bold
+      @pdf.move_down 7
+      @pdf.text "Top #{count} de #{number(total)} · #{period} · ordem por visualizações", size: 8, color: MUTED
+      @pdf.move_down 8
+      @pdf.text people ? "Somente matérias assinadas individualmente por cada colunista." : "Manchetes, autoria e acessos registrados no período selecionado.", size: 8, color: MUTED
+      @pdf.move_down 18
+    end
+
+    def portrait(row, people, at:, width:, height:)
+      bytes = @images.call(people ? row[:author_image_url] : row[:image_url])
+      if bytes
+        @pdf.image StringIO.new(bytes), at: at, fit: [width, height], position: :center
+      else
+        @pdf.fill_color "E2E5E9"
+        @pdf.fill_rectangle at, width, height
+        @pdf.fill_color MUTED
+        label = people ? row[:name].split.map(&:first).first(2).join.upcase : "CM"
+        @pdf.text_box safe(label, 3), at: [at[0], at[1] - height / 2 + 8], width: width, height: 18, size: 12, align: :center
+      end
+    rescue Prawn::Errors::UnsupportedImageType, Prawn::Errors::ImageMissing
+      nil
+    end
+
+    def article_url(row)
+      path = @article_paths[row[:key]].to_s
+      return unless path.start_with?("/") && !path.start_with?("//")
+      uri = URI.join("https://www.correiodamanha.com.br", path)
+      return unless PdfImages.new.allowed?(uri.to_s)
+      uri.query = uri.fragment = nil
+      uri.to_s
+    rescue URI::InvalidURIError
+      nil
+    end
+
+    def report_label
+      @combined ? "Colunistas e notícias mais vistas" : @report.label
+    end
+
     def ranking_heading
       @pdf.text "Top #{@rows.length} · #{@report.label}", size: 17, style: :bold
       @pdf.move_down 5
@@ -169,8 +278,9 @@ module Analytics
       @pdf.fill_color INK
       @pdf.text "Notas de medição", size: 10, style: :bold
       @pdf.move_down 6
-      @report.notes.each { |note| @pdf.text safe(note), size: 7, color: MUTED, leading: 1; @pdf.move_down 3 }
-      @pdf.text "O relatório destaca até #{RANKING_LIMIT} posições pela métrica selecionada. Títulos acima de 180 caracteres são abreviados. O ranking completo permanece no painel.", size: 7, color: MUTED
+      notes = @combined ? @columnist_report.notes : @report.notes
+      notes.each { |note| @pdf.text safe(note), size: 7, color: MUTED, leading: 1; @pdf.move_down 3 }
+      @pdf.text "O relatório destaca até #{RANKING_LIMIT} posições #{@combined ? 'em cada ranking, por visualizações' : 'pela métrica selecionada'}. Títulos acima de 180 caracteres são abreviados. O ranking completo permanece no painel.", size: 7, color: MUTED
       @pdf.move_down 5
       @pdf.text "Fonte: tag de audiência do #{@report.site.name}. Emitido em #{Time.current.strftime('%d/%m/%Y às %H:%M')} (Brasília).", size: 7, color: MUTED
     end
@@ -190,7 +300,7 @@ module Analytics
               @pdf.text_box safe(@report.site.name, 80), at: [48, 43], width: @pdf.bounds.width - 48, size: 18, style: :bold
             end
             @pdf.fill_color MUTED
-            @pdf.text_box "RELATÓRIO DE AUDIÊNCIA · #{@report.label.upcase}", at: [48, 17], size: 7
+            @pdf.text_box "RELATÓRIO DE AUDIÊNCIA · #{report_label.upcase}", at: [48, 17], size: 7
           end
           @pdf.stroke_color LINE
           @pdf.stroke_horizontal_line 42, 42 + width, at: 40
