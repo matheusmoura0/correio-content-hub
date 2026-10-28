@@ -54,6 +54,7 @@ class PublicAnalyticsTest < Minitest::Test
     request(:get, path, site_id: @other.id, from: @from, to: @to)
     assert_equal 200, @session.response.status
     body = @session.response.body
+    assert_equal "utf-8", Nokogiri::HTML(body).at_css("meta[charset]")["charset"]
     assert_includes body, "Matéria do Correio"
     assert_includes body, "Ana Repórter"
     assert_includes body, "https://cdn.example/news.jpg"
