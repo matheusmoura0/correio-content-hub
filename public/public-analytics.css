@@ -82,6 +82,8 @@ body.public-audience { margin: 0; background: var(--hub-surface); color: var(--h
   .public-audience .insights-delta { font-size: 12px; }
   .public-audience .insights-overview { grid-template-columns: minmax(0, 1fr); }
   .public-audience .insights-trend { padding: 16px 0; border: 0; border-radius: 0; background: transparent; }
+  .public-audience .insights-chart { gap: 1px; }
+  .public-audience .insights-chart-day { min-width: 0; gap: 0; }
   .public-audience .insights-legend { gap: 8px; font-size: 11px; }
   .public-audience .insights-trend > footer { font-size: 12px; }
   .public-audience .insights-breakdown { border: 0; border-radius: 0; background: transparent; }

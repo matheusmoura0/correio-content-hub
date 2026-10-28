@@ -10,7 +10,7 @@
     <% if @report.filters[:article] %><%= form.hidden_field :article, value: @report.filters[:article] %><% end %>
     <div class="audience-search">
       <%= form.label :q, "Buscar matéria ou jornalista", class: "audience-visually-hidden" %>
-      <%= form.search_field :q, value: @report.filters[:q], placeholder: "Buscar matéria ou jornalista", enterkeyhint: "search" %>
+      <%= form.search_field :q, value: @report.filters[:q], placeholder: "Matéria ou jornalista", enterkeyhint: "search" %>
       <%= button_tag type: "submit", title: "Buscar", aria: { label: "Buscar matéria ou jornalista" } do %><%= ui_icon("search") %><% end %>
     </div>
     <details class="audience-filter-options">

@@ -63,6 +63,10 @@ async function noOverflow(page) {
         assert(name.width > 220, "Category names need the full row width");
         await noOverflow(page);
         await page.screenshot({ path: "/review/categories-390.png", animations: "disabled" });
+        await page.goto(`${url}?days=90`, { waitUntil: "domcontentloaded" });
+        const chart = await page.locator(".insights-chart").evaluate((element) => ({ width: element.clientWidth, content: element.scrollWidth }));
+        assert(chart.content <= chart.width + 1, "All 90 days must fit the mobile chart");
+        await noOverflow(page);
         await page.goto(url, { waitUntil: "domcontentloaded" });
         await page.locator("input[name=q]").fill("__hub_mobile_no_results__");
         await page.getByRole("button", { name: "Buscar matéria ou jornalista", exact: true }).click();
