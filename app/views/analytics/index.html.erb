@@ -7,14 +7,14 @@
 <% views = summary[:views].to_i %>
 <% click_rate = views.positive? ? (summary[:clicks].to_f * 100 / views).round(1) : 0 %>
 <% engagement_per_view = views.positive? ? (summary[:engagement_seconds].to_f / views).round : 0 %>
-<% duration_label = ->(seconds) { seconds.to_i >= 60 ? "#{seconds.to_i / 60}min #{seconds.to_i % 60}s" : "#{seconds.to_i}s" } %>
+<% duration_label = ->(seconds) { seconds.to_i >= 3600 ? "#{seconds.to_i / 3600}h #{seconds.to_i % 3600 / 60}min" : (seconds.to_i >= 60 ? "#{seconds.to_i / 60}min #{seconds.to_i % 60}s" : "#{seconds.to_i}s") } %>
 <% pages = [(@total / @per_page.to_f).ceil, 1].max %>
 
-<div class="insights-page">
+<div class="insights-page" data-dimension="<%= @report.dimension %>">
   <header class="insights-heading">
-    <div><p class="eyebrow"><%= @public_dashboard ? @site.name : "Inteligência editorial" %></p><h1>Audiência do conteúdo</h1><p>Alcance e desempenho das matérias da redação.</p></div>
+    <div><p class="eyebrow"><%= @public_dashboard ? @site.name : "Inteligência editorial" %></p><h1><%= @public_dashboard ? "Audiência da redação" : "Audiência do conteúdo" %></h1><p>Alcance e desempenho das matérias da redação.</p></div>
     <% if @public_dashboard %>
-      <%= link_to export_public_analytics_path(@filter_params.except(:site_id, :page, :per_page).merge(token: @share.token)), class: "insights-pdf-button", data: { turbo: false } do %><%= ui_icon("file-text") %><span>Exportar PDF</span><% end %>
+      <%= link_to public_analytics_pdf_path, class: "insights-pdf-button", data: { turbo: false } do %><%= ui_icon("file-text") %><span>Exportar PDF</span><% end %>
     <% else %>
     <details class="insights-export">
       <summary><%= ui_icon("send") %><span>Exportar</span></summary>
@@ -35,6 +35,9 @@
     <% end %>
   </nav>
 
+  <% if @public_dashboard %>
+    <%= render "public_analytics/filters" %>
+  <% else %>
   <section class="insights-filter-panel">
     <div class="insights-periods" aria-label="Períodos rápidos">
       <span>Período</span>
@@ -60,10 +63,11 @@
       </details>
     <% end %>
   </section>
+  <% end %>
 
   <div class="insights-context"><span><%= @site.name %></span><strong><%= @from.strftime("%d/%m/%Y") %> a <%= (@to - 1.second).strftime("%d/%m/%Y") %></strong><small>UTC · comparação com período anterior equivalente</small><% if @report.filters[:article] %><%= link_to "Remover detalhe da matéria", analytics_dashboard_path(@filter_params.except(:article)) %><% end %></div>
 
-  <section class="insights-kpis" aria-label="Resumo do período">
+  <section id="analytics-summary" class="insights-kpis" aria-label="Resumo do período">
     <% [[:views, "Visualizações", number_with_delimiter(views), "Volume total identificado"], [:visitors, "Visitantes por dia", number_with_delimiter(summary[:visitors]), "Identificadores diários"], [:articles, "Conteúdos acessados", number_with_delimiter(summary[:articles]), "Cobertura do acervo"], [:clicks, "Interações", "#{click_rate}%", "Cliques por 100 visualizações"]].each do |key, label, value, hint| %>
       <% delta = comparison[key] %>
       <article><div><span><%= label %></span><strong><%= value %></strong></div><p class="insights-delta <%= delta.to_f >= 0 ? 'positive' : 'negative' %>"><%= delta.nil? ? "Sem base comparativa" : "#{delta.positive? ? '+' : ''}#{delta}%" %></p><small><%= hint %> · anterior: <%= number_with_delimiter(previous[key]) %></small></article>
@@ -96,7 +100,7 @@
     </aside>
   </section>
 
-  <section class="insights-ranking">
+  <section id="analytics-ranking" class="insights-ranking">
     <header><div><p class="eyebrow">Ranking editorial</p><h2><%= @report.label %></h2><p><%= number_with_delimiter(@total) %> resultados encontrados</p></div><span>Ordenado por <strong><%= { "views" => "visualizações", "articles" => "conteúdos", "clicks" => "cliques", "engagement_seconds" => "tempo" }.fetch(@report.sort) %></strong></span></header>
     <div class="insights-table-wrap"><table>
       <thead><tr><th>#</th><th><%= @report.dimension == "articles" ? "Conteúdo" : "Nome" %></th><th>Visualizações</th><th>Tendência</th><th>Conteúdos</th><th>Cliques</th><th>Tempo</th></tr></thead>
@@ -132,3 +136,10 @@
     <% unless @public_dashboard %><details><summary><%= ui_icon("settings") %><span>Instalar a tag de medição</span></summary><p>Inclua uma única tag em cada página de matéria, substituindo os metadados pelos valores do CMS. As imagens são obtidas automaticamente de <code>og:image</code> e do JSON-LD do autor, ou podem ser informadas diretamente.</p><code>&lt;script defer src="https://hub.cm.com.br/cm-analytics.js" data-site="<%= @site.publication_key %>" data-article-id="ID_DA_MATERIA" data-category="EDITORIA" data-author="AUTOR" data-image="URL_DA_IMAGEM" data-author-image="FOTO_DO_AUTOR"&gt;&lt;/script&gt;</code></details><% end %>
   </section>
 </div>
+<% if @public_dashboard %>
+  <nav class="audience-mobile-tools" aria-label="Acesso rápido à audiência">
+    <%= link_to "#analytics-summary" do %><%= ui_icon("chart-no-axes-column-increasing") %><span>Resumo</span><% end %>
+    <%= link_to "#analytics-ranking" do %><%= ui_icon("list-filter") %><span>Ranking</span><% end %>
+    <%= link_to public_analytics_pdf_path, class: "audience-mobile-pdf", data: { turbo: false }, aria: { label: "Exportar PDF das métricas selecionadas" } do %><%= ui_icon("file-text") %><span>Exportar PDF</span><% end %>
+  </nav>
+<% end %>

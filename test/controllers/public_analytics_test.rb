@@ -206,4 +206,40 @@ class PublicAnalyticsTest < Minitest::Test
     request(:get, "#{path}/exportar.pdf")
     assert_equal 404, @session.response.status
   end
+
+  def test_mobile_controls_preserve_filters_and_offer_matching_pdf_download
+    request(:get, path, dimension: "authors", author: "Ana Repórter", q: "Ana", from: @from, to: @to, sort: "clicks")
+    assert_equal 200, @session.response.status
+    document = Nokogiri::HTML(@session.response.body)
+    form = document.at_css(".audience-filter-form")
+    assert_equal path, form["action"]
+    assert_equal "authors", form.at_css("input[name=dimension]")["value"]
+    assert_equal "Ana", form.at_css("input[name=q]")["value"]
+    assert_equal "Ana Repórter", form.at_css("input[name=author]")["value"]
+    assert_equal @from, form.at_css("input[name=from]")["value"]
+    assert_equal @to, form.at_css("input[name=to]")["value"]
+    assert_nil document.at_css(".audience-filter-options")["open"]
+    assert document.at_css(".audience-active-filters a[aria-label='Remover filtro de assinatura']")
+    links = document.css(".audience-mobile-tools a")
+    assert_equal ["#analytics-summary", "#analytics-ranking"], links.first(2).map { |link| link["href"] }
+    assert_equal document.at_css(".insights-pdf-button")["href"], links.last["href"]
+    query = Rack::Utils.parse_nested_query(URI.parse(links.last["href"]).query)
+    assert_equal "Ana Repórter", query["author"]
+    assert_equal "authors", query["dimension"]
+    assert_equal "clicks", query["sort"]
+    assert_nil query["site_id"]
+    assert document.at_css("#analytics-summary")
+    assert document.at_css("#analytics-ranking")
+  end
+
+  def test_public_search_submits_all_filters_without_changing_publication
+    request(:get, path, q: "Ana", dimension: "articles", site_id: @other.id, from: @from, to: @to)
+    assert_equal 200, @session.response.status
+    assert_includes @session.response.body, "Matéria do Correio"
+    refute_includes @session.response.body, "Matéria confidencial"
+    document = Nokogiri::HTML(@session.response.body)
+    assert_equal 1, document.css("input[name=q]").size
+    assert_nil document.at_css("input[name=page]")
+    assert_equal 1, document.css("button[aria-label='Buscar matéria ou jornalista']").size
+  end
 end

@@ -1,0 +1,38 @@
+<section class="audience-controls" aria-label="Filtros de audiência">
+  <nav class="insights-periods" aria-label="Períodos rápidos">
+    <% [7, 30, 90].each do |days| %>
+      <% selected = @to.to_date == Time.now.utc.to_date && (@to.to_date - @from.to_date).to_i == days %>
+      <%= link_to "#{days} dias", analytics_dashboard_path(@filter_params.except(:from, :to, :page).merge(days: days)), class: ("active" if selected), aria: { current: ("true" if selected) } %>
+    <% end %>
+  </nav>
+  <%= form_with url: analytics_dashboard_path, method: :get, class: "insights-filters audience-filter-form", data: { turbo: false } do |form| %>
+    <%= form.hidden_field :dimension, value: @report.dimension %>
+    <% if @report.filters[:article] %><%= form.hidden_field :article, value: @report.filters[:article] %><% end %>
+    <div class="audience-search">
+      <%= form.label :q, "Buscar matéria ou jornalista", class: "audience-visually-hidden" %>
+      <%= form.search_field :q, value: @report.filters[:q], placeholder: "Buscar matéria ou jornalista", enterkeyhint: "search" %>
+      <%= button_tag type: "submit", title: "Buscar", aria: { label: "Buscar matéria ou jornalista" } do %><%= ui_icon("search") %><% end %>
+    </div>
+    <details class="audience-filter-options">
+      <summary><%= ui_icon("list-filter") %><span>Período e filtros</span><small><%= @from.strftime("%d/%m") %> a <%= (@to - 1.second).strftime("%d/%m") %></small></summary>
+      <div class="audience-filter-fields">
+        <div><%= form.label :from, "De (UTC)" %><%= form.date_field :from, value: @filter_params[:from], required: true, max: (Time.now.utc.to_date - 1).iso8601 %></div>
+        <div><%= form.label :to, "Até (UTC)" %><%= form.date_field :to, value: @filter_params[:to], required: true, max: (Time.now.utc.to_date - 1).iso8601 %></div>
+        <div><%= form.label :author, "Assinatura exata" %><%= form.text_field :author, value: @report.filters[:author], placeholder: "Todas as assinaturas" %></div>
+        <div><%= form.label :category, "Editoria exata" %><%= form.text_field :category, value: @report.filters[:category], placeholder: "Todas as editorias" %></div>
+        <div><%= form.label :sort, "Ordenar por" %><%= form.select :sort, [["Visualizações", "views"], ["Conteúdos acessados", "articles"], ["Cliques", "clicks"], ["Tempo registrado", "engagement_seconds"]], selected: @report.sort %></div>
+        <div><%= form.label :per_page, "Resultados por página" %><%= form.select :per_page, [[25, 25], [50, 50], [100, 100]], selected: @per_page %></div>
+        <%= form.submit "Aplicar filtros" %>
+        <%= link_to "Limpar filtros", analytics_dashboard_path(dimension: @report.dimension), class: "button secondary" %>
+      </div>
+    </details>
+  <% end %>
+  <% if @report.filters.any? %>
+    <div class="audience-active-filters" aria-label="Filtros aplicados">
+      <% { q: "Busca", author: "Assinatura", category: "Editoria", article: "Matéria" }.each do |key, label| %>
+        <% next unless @report.filters[key] %>
+        <%= link_to analytics_dashboard_path(@filter_params.except(key, :page)), aria: { label: "Remover filtro de #{label.downcase}" } do %><span><%= label %>: <%= @report.filters[key] == Analytics::EditorialReport::MISSING ? "Não informado" : truncate(@report.filters[key], length: 45) %></span><%= ui_icon("x") %><% end %>
+      <% end %>
+    </div>
+  <% end %>
+</section>

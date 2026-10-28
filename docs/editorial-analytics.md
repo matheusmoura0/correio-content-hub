@@ -39,6 +39,13 @@ including on mobile. A replacement invalidates the previous link immediately;
 disabling sharing invalidates all links for that share. Links are bearer access:
 anyone who receives one can read the publication's aggregated audience.
 
+The shared dashboard is phone-first: 7/30/90-day shortcuts and a single search are
+always visible; exact filters and custom UTC dates expand on demand. Mobile tabs
+stick to the viewport top. A safe-area-aware bottom bar links to the summary,
+ranking and the same filtered PDF export. Rankings become two-column metric lists
+with readable story/author images; the desktop table remains intact. Measurement
+definitions and publication isolation are unchanged.
+
 The `/audiencia/:token` dashboard shares the existing report calculations, images,
 bylines, category/article drill-downs, comparison, search and pagination. Requests
 are scoped to the link's site, ignoring `site_id` overrides, with at most 90 full
