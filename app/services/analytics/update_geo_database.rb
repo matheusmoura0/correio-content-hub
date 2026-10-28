@@ -5,7 +5,7 @@ require "zlib"
 
 module Analytics
   class UpdateGeoDatabase
-    def self.call
+    def self.call(force: false)
       path = GeoLocation.path
       FileUtils.mkdir_p(path.dirname)
       File.open(path.dirname.join("update.lock"), "w") do |lock|
@@ -14,9 +14,10 @@ module Analytics
         version = path.dirname.join("version")
         return false if path.file? && version.file? && version.read.strip == month
         attempt = path.dirname.join("last_attempt")
-        return false if attempt.file? && attempt.mtime > 6.hours.ago
+        return false if !force && attempt.file? && attempt.mtime > 6.hours.ago
         FileUtils.touch(attempt)
         Tempfile.create(["geoip", ".gz"], path.dirname) do |compressed|
+          compressed.binmode
           Timeout.timeout(180) do
             uri = URI("https://download.db-ip.com/free/dbip-city-lite-#{month}.mmdb.gz")
             size = 0
@@ -32,6 +33,7 @@ module Analytics
             end
             compressed.flush
             Tempfile.create(["geoip", ".mmdb"], path.dirname) do |database|
+              database.binmode
               expanded = 0
               Zlib::GzipReader.open(compressed.path) do |gzip|
                 until gzip.eof?

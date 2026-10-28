@@ -22,7 +22,7 @@ module Analytics
         end
         data = @reader.get(ip.to_s) || {}
         country = data.dig("country", "iso_code")
-        return {} unless country.to_s.match?(/\A[A-Z]{2}\z/)
+        return {} unless country.to_s.match?(/\A[A-Z]{2}\z/) && !%w[XX ZZ].include?(country)
         { country_code: country, region: data.dig("subdivisions", 0, "names", "en")&.first(80),
           city: data.dig("city", "names", "en")&.first(80), geo_source: "dbip_city_lite" }.compact
       end

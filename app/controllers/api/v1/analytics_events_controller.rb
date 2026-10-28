@@ -7,7 +7,7 @@ module Api
       MAX_LENGTH = 500
 
       def create
-        return head :payload_too_large if request.content_length.to_i > 16_384
+        return head :content_too_large if request.content_length.to_i > 16_384
         return head :no_content if request.headers["Sec-GPC"] == "1" || request.headers["DNT"] == "1"
         site = find_site!
         return head :forbidden unless allowed_origin?(site)

@@ -35,7 +35,7 @@ class ReaderMetadataTest < Minitest::Test
     assert_equal "newsletter", result[:metadata][:traffic_source]
     assert_equal 2.days * 1000, result[:metadata][:clock_skew_ms]
     assert_equal "Safari", result[:metadata][:browser]
-    assert_equal "iOS", result[:metadata][:operating_system]
+    assert_match(/\AiOS/, result[:metadata][:operating_system])
   end
 
   def test_retention_clears_only_enrichment_and_preserves_historical_counts

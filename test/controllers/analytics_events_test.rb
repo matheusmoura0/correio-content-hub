@@ -58,8 +58,8 @@ class AnalyticsEventsTest < Minitest::Test
   def test_duplicate_event_uuid_is_idempotent_per_publication
     2.times { request; assert_equal 204, @session.response.status }
     assert_equal 1, @site.analytics_events.count
-    other = Site.create!(name: "Other", domain: "publication.example", publication_key: "reader-other", active: true)
-    request(@params.merge(site: other.publication_key))
+    other = Site.create!(name: "Other", domain: "otherpublication.example", publication_key: "reader-other", active: true)
+    request(@params.merge(site: other.publication_key), { "Origin" => "https://otherpublication.example" })
     assert_equal 204, @session.response.status
     assert_equal 1, other.analytics_events.count
   end
