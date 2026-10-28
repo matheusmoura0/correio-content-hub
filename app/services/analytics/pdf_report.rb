@@ -176,23 +176,27 @@ module Analytics
     end
 
     def chrome
-      @pdf.repeat(:all, dynamic: true) do
-        @pdf.bounding_box([0, @pdf.bounds.top + 58], width: @pdf.bounds.width, height: 44) do
-          @pdf.fill_color RED
-          @pdf.fill_rectangle [0, 44], 36, 36
-          @pdf.font("EditorialSerif") do
-            @pdf.fill_color "FFFFFF"
-            @pdf.text_box "CM", at: [2, 35], width: 32, align: :center, size: 15, style: :bold
-            @pdf.fill_color INK
-            @pdf.text_box safe(@report.site.name, 80), at: [48, 43], width: @pdf.bounds.width - 48, size: 18, style: :bold
+      width = @pdf.bounds.width
+      (1..@pdf.page_count).each do |page_number|
+        @pdf.go_to_page(page_number)
+        @pdf.canvas do
+          @pdf.bounding_box([42, @pdf.page.dimensions[3] - 36], width: width, height: 44) do
+            @pdf.fill_color RED
+            @pdf.fill_rectangle [0, 44], 36, 36
+            @pdf.font("EditorialSerif") do
+              @pdf.fill_color "FFFFFF"
+              @pdf.text_box "CM", at: [2, 35], width: 32, align: :center, size: 15, style: :bold
+              @pdf.fill_color INK
+              @pdf.text_box safe(@report.site.name, 80), at: [48, 43], width: @pdf.bounds.width - 48, size: 18, style: :bold
+            end
+            @pdf.fill_color MUTED
+            @pdf.text_box "RELATÓRIO DE AUDIÊNCIA · #{@report.label.upcase}", at: [48, 17], size: 7
           end
+          @pdf.stroke_color LINE
+          @pdf.stroke_horizontal_line 42, 42 + width, at: 40
           @pdf.fill_color MUTED
-          @pdf.text_box "RELATÓRIO DE AUDIÊNCIA · #{@report.label.upcase}", at: [48, 17], size: 7
+          @pdf.text_box "Correio da Manhã · Audiência editorial", at: [42, 28], width: 300, height: 12, size: 7
         end
-        @pdf.stroke_color LINE
-        @pdf.stroke_horizontal_line 0, @pdf.bounds.width, at: -12
-        @pdf.fill_color MUTED
-        @pdf.text_box "Correio da Manhã · Audiência editorial", at: [0, -24], width: 300, height: 12, size: 7
       end
       @pdf.number_pages "Página <page> de <total>",
         at: [@pdf.bounds.width - 140, -24], width: 140, align: :right, size: 7, color: MUTED
