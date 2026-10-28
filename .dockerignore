@@ -7,3 +7,5 @@ log/*
 tmp/*
 storage/*
 vendor/bundle
+backups/
+db:migrate
