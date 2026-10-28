@@ -45,6 +45,8 @@ class AnalyticsPdfReportTest < Minitest::Test
     assert_operator generator.instance_variable_get(:@pdf).page_count, :>, 2
     30.times { |i| assert_includes text, "Matéria #{i}:" }
     assert_operator text.scan("Ranking").length, :>=, 2
+    assert_equal generator.instance_variable_get(:@pdf).page_count, text.scan("RELATÓRIO DE AUDIÊNCIA").length
+    assert_includes text, "CM"
     assert_includes text, "João Repórter"
     refute_includes text, "private-visitor"
     refute_includes text, "private-session"

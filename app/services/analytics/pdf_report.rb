@@ -37,6 +37,7 @@ module Analytics
       @pdf.fill_color RED
       @pdf.text "INTELIGÊNCIA EDITORIAL", size: 9, style: :bold
       @pdf.move_down 9
+      @pdf.fill_color INK
       @pdf.font("EditorialSerif") { @pdf.text "Relatório de audiência", size: 26, style: :bold }
       @pdf.move_down 8
       @pdf.text safe(@report.site.name), size: 12, style: :bold
@@ -63,8 +64,9 @@ module Analytics
           @pdf.fill_color INK
           @pdf.text_box label, at: [12, 63], width: cell_width - 24, size: 8
           @pdf.text_box number(summary[key]), at: [12, 46], width: cell_width - 24, size: 22, style: :bold
+          @pdf.fill_color MUTED
           @pdf.text_box "Anterior: #{number(previous[key])} · #{change(@report.comparison[key])}",
-            at: [12, 16], width: cell_width - 24, size: 7, color: MUTED
+            at: [12, 16], width: cell_width - 24, size: 7
         end
       end
       @pdf.move_cursor_to start_y - 174
@@ -147,10 +149,11 @@ module Analytics
       top = @pdf.cursor
       @pdf.fill_color INK
       @pdf.fill_rectangle [0, top], @pdf.bounds.width, 30
+      @pdf.fill_color "FFFFFF"
       x = 0
       ["#", @report.dimension == "articles" ? "Matéria / assinatura" : "Nome / conteúdos", "Visualizações", "Anterior", "Variação", "Cliques"].each_with_index do |text, i|
         @pdf.text_box text, at: [x + 6, top - 10], width: widths[i] - 12, height: 18,
-          color: "FFFFFF", size: 7, align: i > 1 ? :right : :left
+          size: 7, align: i > 1 ? :right : :left
         x += widths[i]
       end
       @pdf.fill_color INK
@@ -169,25 +172,30 @@ module Analytics
     end
 
     def chrome
-      @pdf.repeat(:all) do
+      @pdf.repeat(:all, dynamic: true) do
         @pdf.bounding_box([0, @pdf.bounds.top + 58], width: @pdf.bounds.width, height: 44) do
           @pdf.fill_color RED
           @pdf.fill_rectangle [0, 44], 36, 36
           @pdf.font("EditorialSerif") do
-            @pdf.text_box "CM", at: [2, 35], width: 32, align: :center, size: 15, style: :bold, color: "FFFFFF"
-            @pdf.text_box safe(@report.site.name, 80), at: [48, 43], width: @pdf.bounds.width - 48, size: 18, style: :bold, color: INK
+            @pdf.fill_color "FFFFFF"
+            @pdf.text_box "CM", at: [2, 35], width: 32, align: :center, size: 15, style: :bold
+            @pdf.fill_color INK
+            @pdf.text_box safe(@report.site.name, 80), at: [48, 43], width: @pdf.bounds.width - 48, size: 18, style: :bold
           end
-          @pdf.text_box "RELATÓRIO DE AUDIÊNCIA · #{@report.label.upcase}", at: [48, 17], size: 7, color: MUTED
+          @pdf.fill_color MUTED
+          @pdf.text_box "RELATÓRIO DE AUDIÊNCIA · #{@report.label.upcase}", at: [48, 17], size: 7
         end
         @pdf.stroke_color LINE
         @pdf.stroke_horizontal_line 0, @pdf.bounds.width, at: -12
+        @pdf.fill_color MUTED
+        @pdf.text_box "Correio da Manhã · Audiência editorial", at: [0, -24], width: 300, height: 12, size: 7
       end
-      @pdf.number_pages "Correio da Manhã · Audiência editorial                                      Página <page> de <total>",
-        at: [0, -24], width: @pdf.bounds.width, size: 7, color: MUTED
+      @pdf.number_pages "Página <page> de <total>",
+        at: [@pdf.bounds.width - 140, -24], width: 140, align: :right, size: 7, color: MUTED
     end
 
     def widths
-      @widths ||= [0.045, 0.435, 0.14, 0.13, 0.12, 0.13].map { |part| @pdf.bounds.width * part }
+      @widths ||= [0.065, 0.415, 0.14, 0.13, 0.12, 0.13].map { |part| @pdf.bounds.width * part }
     end
 
     def safe(value, length = 1000)
