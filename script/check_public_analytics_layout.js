@@ -65,7 +65,8 @@ async function noOverflow(page) {
           return image && image.complete && image.naturalWidth > 0;
         });
         await page.screenshot({ path: "/review/columnists-390.png", animations: "disabled" });
-        await portraits.first().evaluate((image) => image.dispatchEvent(new Event("error")));
+        await portraits.first().evaluate((image) => { image.src = "data:image/png;base64,AA=="; });
+        await page.waitForFunction(() => document.querySelector(".insights-author-image img")?.hidden);
         assert(await portraits.first().isHidden(), "Failed portraits must reveal the initials fallback");
         const articleLink = await page.locator(".insights-story-cell a").first().getAttribute("href");
         const columnist = new URL(articleLink, url).searchParams.get("columnist");
