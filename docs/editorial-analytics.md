@@ -45,6 +45,12 @@ stick to the viewport top. A safe-area-aware bottom bar links to the summary,
 ranking and the same filtered PDF export. Rankings become two-column metric lists
 with readable story/author images; the desktop table remains intact. Measurement
 definitions and publication isolation are unchanged.
+`script/check_public_analytics_layout.js` provides VPS-only Chromium checks at
+320, 390, 430, 768 and 1280px, including expanded filters, ranking navigation,
+author/category layouts, empty results and PDF filter persistence. Run it in a
+disposable official Playwright container with the matching Playwright npm version,
+`HUB_PUBLIC_ANALYTICS_URL` set to the share URL, and a writable `/review` directory
+for screenshots. This is a verification dependency, not part of the Ruby app.
 
 The `/audiencia/:token` dashboard shares the existing report calculations, images,
 bylines, category/article drill-downs, comparison, search and pagination. Requests
