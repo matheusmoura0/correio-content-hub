@@ -119,9 +119,11 @@ class AnalyticsPdfReportTest < Minitest::Test
     bytes = generator.call
     assert_equal ["2", "1"], generator.instance_variable_get(:@rows).map { |row| row[:key] }
     assert_equal ["joao"], generator.instance_variable_get(:@columnists).map { |row| row[:key] }
-    assert_includes bytes, "/Subtype /Image"
-    assert_includes bytes, "https://www.correiodamanha.com.br/noticia.html"
-    refute_includes bytes, "private=secret"
+    assert bytes.include?("/Subtype /Image"), "Missing embedded image"
+    links = IO.popen(["pdfinfo", "-url", "-"], "r+") { |io| io.write(bytes); io.close_write; io.read }
+    assert $?.success?, "Invalid PDF link annotations"
+    assert_includes links, "https://www.correiodamanha.com.br/noticia.html"
+    refute_includes links, "private=secret"
     assert_equal 3, generator.instance_variable_get(:@pdf).page_count
     row = generator.instance_variable_get(:@rows).last
     generator.instance_variable_get(:@article_paths)[row[:key]] = "//evil.example/secret"
