@@ -101,6 +101,24 @@ async function noOverflow(page) {
         await noOverflow(page);
         await page.screenshot({ path: "/review/empty-390.png", animations: "disabled" });
       }
+      await page.goto(`${url}?view=audience`, { waitUntil: "domcontentloaded" });
+      assert(await page.locator(".reader-summary").isVisible());
+      await noOverflow(page);
+      assert.equal(await page.locator(".reader-hour-chart > div").count(), 24);
+      assert.equal(await page.locator("input[name=view]").inputValue(), "audience");
+      const audiencePdf = await page.locator(".insights-pdf-button").getAttribute("href");
+      assert.equal(new URL(audiencePdf, url).searchParams.get("view"), "audience");
+      await page.screenshot({ path: `/review/audience-${width}.png`, animations: "disabled" });
+      await page.locator(".reader-hours summary").click();
+      await noOverflow(page);
+      assert.equal(await page.locator(".reader-hour-data > div").count(), 24);
+      await page.locator(".reader-breakdowns").scrollIntoViewIfNeeded();
+      await page.screenshot({ path: `/review/audience-details-${width}.png`, animations: "disabled" });
+      if (width < 768) {
+        await page.locator('.audience-mobile-tools a[href="#analytics-audience"]').click();
+        const tabs = await page.locator(".insights-views").boundingBox();
+        assert(tabs.y >= -1 && tabs.y < 2, "Audience view selector must remain sticky");
+      }
       console.log(JSON.stringify({ width, height, passed: true }));
       await context.close();
     }

@@ -2761,3 +2761,52 @@ body.hub-guest {
   .insights-pager .button { width: 100%; }
   .insights-pager .button { text-align: center; }
 }
+.insights-views { display: flex; gap: 24px; border-bottom: 1px solid var(--hub-line); margin: 0 0 18px; }
+.insights-views a { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 48px; padding: 6px 4px; border-bottom: 3px solid transparent; color: var(--hub-muted); font-weight: 700; text-decoration: none; }
+.insights-views a.active { border-color: var(--hub-red); color: var(--hub-red); }
+.reader-summary, .reader-audience { min-width: 0; }
+.reader-summary > header, .reader-hours > header { display: flex; justify-content: space-between; align-items: baseline; gap: 16px; flex-wrap: wrap; }
+.reader-summary h2, .reader-hours h2 { margin: 0 0 8px; font-size: 23px; }
+.reader-summary > header > span, .reader-hours > header > span { color: var(--hub-muted); font-size: 12px; }
+.reader-coverage { display: flex; flex-wrap: wrap; gap: 6px 20px; padding: 14px 0; border-bottom: 1px solid var(--hub-line); }
+.reader-coverage span { color: var(--hub-muted); }
+.reader-notice { padding: 14px 0; color: var(--hub-muted); }
+.reader-metrics { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; padding: 24px 0; }
+.reader-metrics article { min-width: 0; border-left: 3px solid #16816b; padding-left: 14px; }
+.reader-metrics span, .reader-metrics small { display: block; color: var(--hub-muted); font-size: 12px; }
+.reader-metrics strong { display: block; min-height: 45px; padding: 6px 0; font: 700 28px/1.2 Arial, sans-serif; }
+.reader-hours { padding: 24px 0; border-block: 1px solid var(--hub-line); }
+.reader-hour-chart { display: grid; grid-template-columns: repeat(24, minmax(0, 1fr)); gap: 4px; height: 190px; margin-top: 22px; border-bottom: 1px solid var(--hub-line); }
+.reader-hour-chart > div { display: flex; align-items: flex-end; justify-content: center; gap: 1px; min-width: 0; height: 100%; }
+.reader-hour-chart i { display: block; width: 40%; background: var(--hub-red); min-width: 0; }
+.reader-hour-chart i.clicks { background: #16816b; }
+.reader-hour-axis { display: flex; justify-content: space-between; padding: 6px 0 14px; color: var(--hub-muted); font-size: 11px; }
+.reader-hours summary { min-height: 44px; padding: 12px 0; cursor: pointer; font-weight: 700; }
+.reader-hour-data { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0 20px; }
+.reader-hour-data > div { padding: 10px 0; border-top: 1px solid var(--hub-line); font-size: 12px; }
+.reader-hour-data span { display: block; color: var(--hub-muted); }
+.reader-breakdowns { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 36px; }
+.reader-breakdowns > section { min-width: 0; padding: 24px 0; border-bottom: 1px solid var(--hub-line); }
+.reader-breakdowns header { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 10px; }
+.reader-breakdowns h3, .reader-measurement h3 { font-size: 17px; margin: 0; }
+.reader-breakdowns header small { color: var(--hub-muted); font-size: 11px; white-space: nowrap; }
+.reader-breakdown-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 14px; padding: 10px 0; border-top: 1px solid var(--hub-line); font-size: 13px; }
+.reader-breakdown-row span { overflow-wrap: anywhere; }
+.reader-empty { padding: 12px 0; color: var(--hub-muted); font-size: 13px; }
+.reader-measurement { padding: 24px 0; color: var(--hub-muted); font-size: 12px; }
+.reader-measurement li { margin-bottom: 8px; }
+.reader-measurement ul { padding-left: 18px; }
+@media (max-width: 760px) {
+  .insights-views { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0; }
+  [data-view="audience"] .insights-views { position: sticky; top: 0; z-index: 40; background: var(--hub-surface); }
+  .reader-summary h2, .reader-hours h2 { font-size: 21px; }
+  .reader-metrics { gap: 12px; grid-template-columns: minmax(0, 1fr); }
+  .reader-metrics article { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: baseline; gap: 0 14px; }
+  .reader-metrics small { grid-column: 1 / -1; }
+  .reader-metrics strong { font-size: 25px; min-height: 38px; }
+  .reader-hour-chart { gap: 1px; height: 150px; }
+  .reader-hour-data { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .reader-breakdowns { grid-template-columns: minmax(0, 1fr); }
+  .reader-breakdowns h3 { font-size: 16px; }
+  #analytics-audience { scroll-margin-top: 64px; }
+}

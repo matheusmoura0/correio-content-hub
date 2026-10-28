@@ -273,4 +273,56 @@ class PublicAnalyticsTest < Minitest::Test
     assert_includes text, "Notícias mais vistas"
     refute_includes text.split("Notícias mais vistas").first, "Ana Repórter e Bia"
   end
+
+  def test_public_audience_insights_and_pdf_are_aggregated_scoped_and_allow_today
+    6.times do |i|
+      item = @site.analytics_events.create!(content_key: "audience-#{i}", content_author: "Ana", page_title: "Public example",
+        event_type: "page_view", occurred_at: Time.current, path: "/story", device_type: "mobile", value: 0,
+        visitor_hash: "secret-person-#{i}", session_hash: "secret-session-#{i}", country_code: "BR",
+        client_occurred_at: Time.current, page_view_uuid: SecureRandom.uuid,
+        metadata: { tracking_version: 2, city: "Rio", region: "RJ", geo_source: "dbip_city_lite", browser: "Chrome", operating_system: "Android" })
+    end
+    today = Time.now.utc.to_date.iso8601
+    request(:get, path, view: "audience", site_id: @other.id, from: today, to: today)
+    assert_equal 200, @session.response.status
+    body = @session.response.body
+    assert_includes body, "Rio · RJ · BR"
+    assert_includes body, "dia atual parcial"
+    assert_includes body, "6 de 6 visualizações com metadados"
+    assert_includes body, "Horários de acesso e clique"
+    refute_includes body, "secret-person"
+    refute_includes body, "secret-session"
+    refute_includes body, "Matéria confidencial"
+    document = Nokogiri::HTML(body)
+    assert_equal "audience", document.at_css("input[name=view]")["value"]
+    assert_equal today, document.at_css("input[name=to]")["max"]
+    pdf_path = document.at_css(".insights-pdf-button")["href"]
+    assert_equal "audience", Rack::Utils.parse_nested_query(URI.parse(pdf_path).query)["view"]
+    request(:get, pdf_path)
+    assert_equal 200, @session.response.status
+    text = IO.popen(["pdftotext", "-layout", "-", "-"], "r+") { |io| io.write(@session.response.body); io.close_write; io.read }
+    normalized = text.gsub(/\s+/, " ")
+    assert_includes normalized, "Público · alcance e horários"
+    assert_includes normalized, "Público · origens e comportamento"
+    assert_includes normalized, "Rio · RJ · BR"
+    assert_includes normalized, "dia atual parcial"
+    refute_includes normalized, "Anterior:"
+    refute_includes normalized, "secret-person"
+    refute_includes normalized, "secret-session"
+    refute_includes normalized, @share.token
+  end
+
+  def test_small_audience_groups_and_retired_links_are_not_disclosed
+    10.times do
+      @site.analytics_events.create!(content_key: "small", event_type: "page_view", occurred_at: Time.current,
+        path: "/story", device_type: "mobile", visitor_hash: "one-person", session_hash: "one-session", value: 0,
+        country_code: "BR", metadata: { city: "SecretTown", region: "SecretRegion", browser: "SecretBrowser" })
+    end
+    request(:get, path, view: "audience")
+    assert_equal 200, @session.response.status
+    %w[SecretTown SecretRegion SecretBrowser one-person one-session].each { |secret| refute_includes @session.response.body, secret }
+    @site.update!(active: false)
+    request(:get, path, view: "audience")
+    assert_equal 404, @session.response.status
+  end
 end

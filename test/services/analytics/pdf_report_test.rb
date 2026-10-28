@@ -43,7 +43,7 @@ class AnalyticsPdfReportTest < Minitest::Test
   def test_only_top_ten_are_exported_with_complete_summary_and_repeated_branding
     30.times { |i| (i + 1).times { event(i) } }
     generator, text = generate
-    assert_operator generator.instance_variable_get(:@pdf).page_count, :<=, 4
+    assert_operator generator.instance_variable_get(:@pdf).page_count, :<=, 6
     assert_equal (20...30).to_a.reverse.map(&:to_s), generator.instance_variable_get(:@rows).map { |row| row[:key] }
     (20...30).each { |i| assert_includes text, "Matéria #{i}:" }
     refute_includes text, "Matéria 19:"
@@ -124,7 +124,7 @@ class AnalyticsPdfReportTest < Minitest::Test
     assert $?.success?, "Invalid PDF link annotations"
     assert_includes links, "https://www.correiodamanha.com.br/noticia.html"
     refute_includes links, "private=secret"
-    assert_equal 3, generator.instance_variable_get(:@pdf).page_count
+    assert_equal 5, generator.instance_variable_get(:@pdf).page_count
     row = generator.instance_variable_get(:@rows).last
     generator.instance_variable_get(:@article_paths)[row[:key]] = "//evil.example/secret"
     assert_nil generator.send(:article_url, row)

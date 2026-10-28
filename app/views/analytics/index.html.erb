@@ -1,3 +1,4 @@
+<% unless @audience_view %>
 <% summary = @report.summary %>
 <% previous = @report.summary(previous: true) %>
 <% comparison = @report.comparison %>
@@ -9,8 +10,9 @@
 <% engagement_per_view = views.positive? ? (summary[:engagement_seconds].to_f / views).round : 0 %>
 <% duration_label = ->(seconds) { seconds.to_i >= 3600 ? "#{seconds.to_i / 3600}h #{seconds.to_i % 3600 / 60}min" : (seconds.to_i >= 60 ? "#{seconds.to_i / 60}min #{seconds.to_i % 60}s" : "#{seconds.to_i}s") } %>
 <% pages = [(@total / @per_page.to_f).ceil, 1].max %>
+<% end %>
 
-<div class="insights-page" data-dimension="<%= @report.dimension %>">
+<div class="insights-page" data-dimension="<%= @report.dimension %>" data-view="<%= @audience_view ? 'audience' : 'performance' %>">
   <header class="insights-heading">
     <div><p class="eyebrow"><%= @public_dashboard ? @site.name : "Inteligência editorial" %></p><h1><%= @public_dashboard ? "Audiência da redação" : "Audiência do conteúdo" %></h1><p>Alcance e desempenho das matérias da redação.</p></div>
     <% if @public_dashboard %>
@@ -27,14 +29,23 @@
     <%= render "analytics/sharing" %>
   <% end %>
 
-  <nav class="insights-tabs <%= 'with-columnists' if @site.correio_source? %>" aria-label="Dimensão da análise">
+  <nav class="insights-views" aria-label="Visão da audiência">
+    <% performance_params = @filter_params.except(:view, :page) %>
+    <% if @report.partial? %><% performance_params[:to] = (Time.now.utc.to_date - 1).iso8601 %><% performance_params[:from] = performance_params[:to] if @from.to_date >= Time.now.utc.to_date %><% end %>
+    <%= link_to analytics_dashboard_path(performance_params), class: ("active" unless @audience_view), aria: { current: ("page" unless @audience_view) } do %><%= ui_icon("chart-no-axes-column-increasing") %><span>Desempenho</span><% end %>
+    <% audience_params = @filter_params.merge(view: "audience", dimension: "articles", page: nil) %>
+    <% audience_params = audience_params.except(:from, :to) if params[:from].blank? && params[:to].blank? %>
+    <%= link_to analytics_dashboard_path(audience_params), class: ("active" if @audience_view), aria: { current: ("page" if @audience_view) } do %><%= ui_icon("users") %><span>Público</span><% end %>
+  </nav>
+
+  <% unless @audience_view %><nav class="insights-tabs <%= 'with-columnists' if @site.correio_source? %>" aria-label="Dimensão da análise">
     <% Analytics::EditorialReport::LABELS.each do |key, label| %>
       <% next if key == "columnists" && !@site.correio_source? %>
       <%= link_to analytics_dashboard_path(@filter_params.merge(dimension: key, article: nil, page: nil)), class: ("active" if @report.dimension == key), aria: { current: (@report.dimension == key ? "page" : nil) } do %>
         <%= ui_icon({ "articles" => "newspaper", "columnists" => "users", "authors" => "pencil", "categories" => "tags" }.fetch(key)) %><span><%= label %></span>
       <% end %>
     <% end %>
-  </nav>
+  </nav><% end %>
 
   <% if @public_dashboard %>
     <%= render "public_analytics/filters" %>
@@ -46,11 +57,12 @@
     </div>
     <%= form_with url: analytics_dashboard_path, method: :get, class: "insights-filters", data: { turbo: false } do |form| %>
       <%= form.hidden_field :dimension, value: @report.dimension %>
+      <% if @audience_view %><%= form.hidden_field :view, value: "audience" %><% end %>
       <% if @report.filters[:article] %><%= form.hidden_field :article, value: @report.filters[:article] %><% end %>
       <% if @report.filters[:columnist] %><%= form.hidden_field :columnist, value: @report.filters[:columnist] %><% end %>
       <% unless @public_dashboard %><div><%= form.label :site_id, "Publicação" %><%= form.select :site_id, @sites.map { |site| [site.name, site.id] }, selected: @site.id %></div><% end %>
-      <div class="insights-date"><%= form.label :from, "De" %><%= form.date_field :from, value: @filter_params[:from], required: true, max: (Time.now.utc.to_date - 1).iso8601 %></div>
-      <div class="insights-date"><%= form.label :to, "Até" %><%= form.date_field :to, value: @filter_params[:to], required: true, max: (Time.now.utc.to_date - 1).iso8601 %></div>
+      <div class="insights-date"><%= form.label :from, "De" %><%= form.date_field :from, value: @filter_params[:from], required: true, max: @latest_date.iso8601 %></div>
+      <div class="insights-date"><%= form.label :to, "Até" %><%= form.date_field :to, value: @filter_params[:to], required: true, max: @latest_date.iso8601 %></div>
       <div><%= form.label :sort, "Priorizar" %><%= form.select :sort, [["Visualizações", "views"], ["Conteúdos acessados", "articles"], ["Cliques", "clicks"], ["Tempo registrado", "engagement_seconds"]], selected: @report.sort %></div>
       <%= form.submit "Atualizar análise", class: "accent" %>
       <details class="insights-advanced" <%= "open" if @report.filters.slice(:q, :author, :category).any? || @per_page != 25 %>>
@@ -67,8 +79,11 @@
   </section>
   <% end %>
 
-  <div class="insights-context"><span><%= @site.name %></span><strong><%= @from.strftime("%d/%m/%Y") %> a <%= (@to - 1.second).strftime("%d/%m/%Y") %></strong><small>UTC · comparação com período anterior equivalente</small><% if @report.filters[:article] %><%= link_to "Remover detalhe da matéria", analytics_dashboard_path(@filter_params.except(:article)) %><% end %></div>
+  <div class="insights-context"><span><%= @site.name %></span><strong><%= @from.strftime("%d/%m/%Y") %> a <%= (@to - 1.second).strftime("%d/%m/%Y") %></strong><small><%= @report.partial? ? "UTC · dia atual parcial · sem comparação" : "UTC · dias completos" %></small><% if @report.filters[:article] %><%= link_to "Remover detalhe da matéria", analytics_dashboard_path(@filter_params.except(:article)) %><% end %></div>
 
+  <% if @audience_view %>
+    <%= render "analytics/reader_insights" %>
+  <% else %>
   <section id="analytics-summary" class="insights-kpis" aria-label="Resumo do período">
     <% [[:views, "Visualizações", number_with_delimiter(views), "Volume total identificado"], [:visitors, "Visitantes por dia", number_with_delimiter(summary[:visitors]), "Identificadores diários"], [:articles, "Conteúdos acessados", number_with_delimiter(summary[:articles]), "Cobertura do acervo"], [:clicks, "Interações", "#{click_rate}%", "Cliques por 100 visualizações"]].each do |key, label, value, hint| %>
       <% delta = comparison[key] %>
@@ -123,7 +138,8 @@
     <nav class="insights-pager" aria-label="Paginação"><span>Página <strong><%= @page %></strong> de <%= pages %></span><div><% if @page > 1 %><%= link_to "Anterior", analytics_dashboard_path(@filter_params.merge(page: @page - 1)), class: "button secondary" %><% end %><% if @page < pages %><%= link_to "Próxima", analytics_dashboard_path(@filter_params.merge(page: @page + 1)), class: "button secondary" %><% end %></div></nav>
   </section>
 
-  <% unless @public_dashboard %><section class="insights-activity-stream">
+  <% end %>
+  <% unless @public_dashboard || @audience_view %><section class="insights-activity-stream">
     <header><div><p class="eyebrow">Operação editorial</p><h2>Atividades recentes</h2><p>Acompanhe as últimas mudanças realizadas pela equipe no Hub.</p></div><%= link_to "Ver histórico", activity_logs_path if current_user.admin? %></header>
     <div>
       <% @recent_activities.each do |activity| %>
@@ -141,7 +157,7 @@
 <% if @public_dashboard %>
   <nav class="audience-mobile-tools" aria-label="Acesso rápido à audiência">
     <%= link_to "#analytics-summary" do %><%= ui_icon("chart-no-axes-column-increasing") %><span>Resumo</span><% end %>
-    <%= link_to "#analytics-ranking" do %><%= ui_icon("list-filter") %><span>Ranking</span><% end %>
+    <%= link_to(@audience_view ? "#analytics-audience" : "#analytics-ranking") do %><%= ui_icon("list-filter") %><span><%= @audience_view ? "Detalhes" : "Ranking" %></span><% end %>
     <%= link_to public_analytics_pdf_path, class: "audience-mobile-pdf", data: { turbo: false }, aria: { label: "Exportar PDF das métricas selecionadas" } do %><%= ui_icon("file-text") %><span>Exportar PDF</span><% end %>
   </nav>
 <% end %>

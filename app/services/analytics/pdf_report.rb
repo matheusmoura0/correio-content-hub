@@ -3,6 +3,7 @@ require "stringio"
 
 module Analytics
   class PdfReport
+    include ReaderInsightsPdf
     RED = "AD1119".freeze
     INK = "20242A".freeze
     MUTED = "68707C".freeze
@@ -45,6 +46,7 @@ module Analytics
       else
         ranking
       end
+      reader_insight_pages
       chrome
       @pdf.render
     end
@@ -55,9 +57,9 @@ module Analytics
       @pdf.fill_color INK
       @pdf.font("EditorialSerif") { @pdf.text "Destaques de audiência", size: 24, style: :bold }
       @pdf.move_down 8
-      @pdf.text "#{period} · dias completos em UTC", color: MUTED, size: 9
+      @pdf.text "#{period} · #{@report.partial? ? 'dia atual parcial (UTC)' : 'dias completos em UTC'}", color: MUTED, size: 9
       @pdf.move_down 6
-      @pdf.text "Comparação: #{date(@report.previous_from)} a #{date(@report.from - 1.second)}", color: MUTED, size: 8
+      @pdf.text @report.partial? ? "Dia em andamento: sem comparação com períodos completos." : "Comparação: #{date(@report.previous_from)} a #{date(@report.from - 1.second)}", color: MUTED, size: 8
       @pdf.move_down 14
       @pdf.text "#{report_label} · ordenação por #{SORT_LABELS.fetch(@report.sort)}", size: 10, style: :bold
       @pdf.move_down 4
@@ -81,7 +83,7 @@ module Analytics
           @pdf.text_box label, at: [12, 63], width: cell_width - 24, size: 8
           @pdf.text_box number(summary[key]), at: [12, 46], width: cell_width - 24, size: 22, style: :bold
           @pdf.fill_color MUTED
-          @pdf.text_box "Anterior: #{number(previous[key])} · #{change(@report.comparison[key])}",
+          @pdf.text_box @report.partial? ? "Dia em andamento" : "Anterior: #{number(previous[key])} · #{change(@report.comparison[key])}",
             at: [12, 16], width: cell_width - 24, size: 7
         end
       end
@@ -94,10 +96,10 @@ module Analytics
     def daily_chart
       @pdf.text "Evolução diária de visualizações", size: 11, style: :bold
       @pdf.move_down 5
-      @pdf.text "Vermelho: período atual · Cinza: período anterior equivalente", size: 7, color: MUTED
+      @pdf.text @report.partial? ? "Vermelho: período atual, incluindo o dia em andamento" : "Vermelho: período atual · Cinza: período anterior equivalente", size: 7, color: MUTED
       @pdf.move_down 10
       daily = @report.daily_views
-      prior = @report.daily_views(previous: true)
+      prior = @report.partial? ? [] : @report.daily_views(previous: true)
       peak = [daily.map { |day| day[:views] }.max.to_i, prior.map { |day| day[:views] }.max.to_i, 1].max
       @pdf.text "Escala: 0 a #{number(peak)} visualizações/dia", size: 7, color: MUTED
       width = @pdf.bounds.width
@@ -139,8 +141,8 @@ module Analytics
         metric = @report.sort.to_sym
         previous = row["previous_#{metric}".to_sym].to_i
         cells = [number(index + 1), "#{name}\n#{detail}", metric_value(row, metric),
-          metric == :engagement_seconds ? duration(previous) : number(previous),
-          change(@report.change(row[metric], previous)), metric_value(row, supporting_metric)]
+          @report.partial? ? "—" : (metric == :engagement_seconds ? duration(previous) : number(previous)),
+          @report.partial? ? "Parcial" : change(@report.change(row[metric], previous)), metric_value(row, supporting_metric)]
         height = [cells.each_with_index.map { |text, i| @pdf.height_of(text, width: widths[i] - 12, size: 8, leading: 2) }.max + 20, 44].max
         if @pdf.cursor < height + 8
           @pdf.start_new_page
@@ -189,13 +191,13 @@ module Analytics
             @pdf.text_box number(row[:views]), at: [@pdf.bounds.width - 110, top - 10], width: 100,
               height: 20, size: 16, style: :bold, align: :right
             @pdf.fill_color MUTED
-            @pdf.text_box "visualizações\nAnterior: #{number(row[:previous_views])} · #{change(row[:views_change])}",
+            @pdf.text_box "visualizações\n#{previous_views_label(row)}",
               at: [@pdf.bounds.width - 120, top - 31], width: 110, height: 24, size: 7, align: :right
           else
             @pdf.text_box "#{safe(row[:author], 75)} · #{safe(row[:category], 55)}", at: [x, top - 64],
               width: name_width, height: 23, size: 8
             @pdf.fill_color INK
-            @pdf.text_box "#{number(row[:views])} visualizações · Anterior: #{number(row[:previous_views])} · #{change(row[:views_change])}",
+            @pdf.text_box "#{number(row[:views])} visualizações · #{previous_views_label(row)}",
               at: [x, top - 91], width: name_width, height: 14, size: 8, style: :bold
             if (url = article_url(row))
               @pdf.fill_color RED
@@ -251,6 +253,10 @@ module Analytics
 
     def report_label
       @combined ? "Colunistas e notícias mais vistas" : @report.label
+    end
+
+    def previous_views_label(row)
+      @report.partial? ? "Dia em andamento" : "Anterior: #{number(row[:previous_views])} · #{change(row[:views_change])}"
     end
 
     def ranking_heading

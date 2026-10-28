@@ -32,7 +32,15 @@ module Analytics
     end
 
     def comparison
-      summary.to_h { |key, value| [key, change(value, summary(previous: true)[key])] }
+      summary.to_h { |key, value| [key, partial? ? nil : change(value, summary(previous: true)[key])] }
+    end
+
+    def partial?
+      to > Time.now.utc
+    end
+
+    def reader_insights
+      @reader_insights ||= ReaderInsights.new(scope)
     end
 
     def change(current, previous)
@@ -63,7 +71,7 @@ module Analytics
         %i[views articles clicks engagement_seconds].each do |metric|
           row["previous_#{metric}".to_sym] = prior.dig(row[:key], metric).to_i
         end
-        row[:views_change] = change(row[:views], row[:previous_views])
+        row[:views_change] = partial? ? nil : change(row[:views], row[:previous_views])
         row[:median_views] = medians[row[:key]] || 0
         profile = dimension == "columnists" ? profiles_by_slug[row[:key]] : profiles_by_alias[AuthorIdentity.normalize(row[:author])]
         if profile
@@ -103,7 +111,7 @@ module Analytics
        "Identificadores de visitantes mudam diariamente; a contagem não representa pessoas únicas no período.",
        "Tempo registrado combina a tag legada com tempo ativo estimado na tag v2. Não representa leitura concluída.",
        "Autoria usa o texto recebido pela tag; assinaturas coletivas e coautorias ainda não são separadas.",
-       "Comparação com período anterior de mesma duração. Sem base anterior, a variação é indefinida."]
+       partial? ? "Dia atual em andamento: comparações não são exibidas para o período parcial." : "Comparação com período anterior de mesma duração. Sem base anterior, a variação é indefinida."]
       if dimension == "columnists" || filters[:columnist]
         result << "Colunistas: somente assinaturas individuais reconhecidas nos perfis oficiais. Prefixo 'Por', caixa e acentos são normalizados; coautorias e assinaturas coletivas ficam em Jornalistas, sem atribuição automática a uma pessoa."
       end

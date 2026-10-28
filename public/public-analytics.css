@@ -37,6 +37,7 @@ body.public-audience { margin: 0; background: var(--hub-surface); color: var(--h
 .audience-visually-hidden { position: absolute; width: 1px; height: 1px; padding: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 .audience-controls { margin-bottom: 18px; padding-block: 12px; border-block: 1px solid var(--hub-line); }
 .audience-controls .insights-periods { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); max-width: 380px; gap: 6px; margin: 0 0 12px; }
+.public-audience [data-view="audience"] .audience-controls .insights-periods { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 .audience-controls .insights-periods a { display: flex; align-items: center; justify-content: center; min-height: 44px; font-size: 13px; }
 .public-audience .audience-filter-form { display: block; }
 .audience-search { display: grid; grid-template-columns: minmax(0, 1fr) 48px; gap: 8px; }

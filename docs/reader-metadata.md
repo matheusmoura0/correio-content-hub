@@ -75,8 +75,23 @@ The worker removes NEW enrichment and its client timestamps/UUIDs after 90 days,
 preserving historical event counts, existing hashes and legacy rows. This is not
 a new retention policy for the legacy analytics or operational logs; those still
 need a publisher decision. Public dashboards/PDFs do not expose raw events or
-this reader-level metadata. Future geographic reports must aggregate and
-suppress small groups, and include DB-IP attribution.
+this reader-level metadata. The shared `?view=audience` view and PDF audience
+appendix show only aggregates. Named groups and hourly buckets require at least
+five distinct daily visitor identifiers, not five events. Reading uses per-page
+maxima, never a sum of cumulative checkpoints; its median requires five active
+daily identifiers. These identifiers do not prove five different people, and
+aggregation does not guarantee anonymity against all auxiliary information.
+Only the site's existing revocable shared link opens the public data. No new
+raw-event API or session drill-down is exposed. DB-IP attribution is included.
+
+Audience defaults to a seven-day window including today and offers a Today
+shortcut. Its UTC day in progress is labelled partial; exported performance
+comparisons are withheld for partial windows. Performance defaults to complete
+days, as before. Date, site and explicit content filters are shared by the
+dashboard and exported PDF. Sparse/legacy periods show coverage and missing-data
+states rather than fabricated historical demographics. The dashboard shows up
+to six eligible groups per breakdown; the PDF shows up to five, plus all 24 hourly
+buckets. Suppressed buckets are not rendered as exact counts.
 
 ## Geo database and deployment
 

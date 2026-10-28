@@ -7,8 +7,8 @@
     <meta name="robots" content="noindex,nofollow,noarchive">
     <meta name="referrer" content="no-referrer">
     <%= csp_meta_tag %>
-    <link rel="stylesheet" href="/content-hub.css?v=20261028-5">
-    <link rel="stylesheet" href="/public-analytics.css?v=20261028-5">
+    <link rel="stylesheet" href="/content-hub.css?v=20261028-6">
+    <link rel="stylesheet" href="/public-analytics.css?v=20261028-6">
   </head>
   <body class="public-audience">
     <a class="audience-skip" href="#audience-content">Ir para os dados</a>
@@ -20,6 +20,6 @@
       <% if alert.present? %><div class="alert" role="alert"><%= alert %></div><% end %>
       <%= yield %>
     </main>
-    <footer class="audience-footer">Correio da Manhã · Dados de audiência · Dias completos em UTC</footer>
+    <footer class="audience-footer">Correio da Manhã · Dados de audiência · Períodos em UTC</footer>
   </body>
 </html>
