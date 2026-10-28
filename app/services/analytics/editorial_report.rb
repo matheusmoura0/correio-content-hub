@@ -101,7 +101,7 @@ module Analytics
     def notes
       result = ["Somente matérias com ID e acessos registrados; não é a quantidade total publicada no CMS.",
        "Identificadores de visitantes mudam diariamente; a contagem não representa pessoas únicas no período.",
-       "Tempo registrado pela tag legada, sem garantia de atividade contínua. Não representa leitura concluída.",
+       "Tempo registrado combina a tag legada com tempo ativo estimado na tag v2. Não representa leitura concluída.",
        "Autoria usa o texto recebido pela tag; assinaturas coletivas e coautorias ainda não são separadas.",
        "Comparação com período anterior de mesma duração. Sem base anterior, a variação é indefinida."]
       if dimension == "columnists" || filters[:columnist]

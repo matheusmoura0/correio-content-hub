@@ -17,6 +17,8 @@ gem "rails-i18n"
 gem "feedjira"
 gem "prawn", "~> 2.5"
 gem "ruby-vips", "~> 2.3"
+gem "browser", "~> 6.0"
+gem "maxmind-db", "~> 1.3", require: "maxmind/db"
 
 group :development, :test do
   gem "debug", platforms: %i[mri windows], require: "debug/prelude"

@@ -9,3 +9,4 @@ storage/*
 vendor/bundle
 backups/
 db:migrate
+geoip/

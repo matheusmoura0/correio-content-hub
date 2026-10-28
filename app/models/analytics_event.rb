@@ -1,5 +1,5 @@
 class AnalyticsEvent < ApplicationRecord
-  EVENT_TYPES = %w[page_view click engagement].freeze
+  EVENT_TYPES = %w[page_view click engagement scroll].freeze
 
   belongs_to :site
 
