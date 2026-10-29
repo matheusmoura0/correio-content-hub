@@ -642,7 +642,7 @@
         document.addEventListener("submit", (event) => {
           const form = event.target;
           // Keep the clicked decision's name/value until Turbo serializes the form.
-          if (form.classList.contains("product-edition-review")) return;
+          if (form.classList.contains("product-edition-review") || form.classList.contains("report-send-form")) return;
           if (form.dataset.loadingStarted === "true") return;
           form.dataset.loadingStarted = "true";
           const button = form.querySelector("button[type='submit'], input[type='submit']");
