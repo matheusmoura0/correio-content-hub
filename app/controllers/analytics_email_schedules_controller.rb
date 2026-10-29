@@ -39,7 +39,7 @@ class AnalyticsEmailSchedulesController < ApplicationController
   def load_schedule
     @site = Site.find(params[:site_id])
     raise ActiveRecord::RecordNotFound unless @site.active? && @site.correio_source? && !@site.retired_from_hub?
-    @schedule = AnalyticsEmailSchedule.create_or_find_by!(site: @site)
+    @site.with_lock { @schedule = AnalyticsEmailSchedule.find_or_create_by!(site: @site) }
   end
 
   def private_response

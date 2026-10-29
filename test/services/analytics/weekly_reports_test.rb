@@ -99,11 +99,24 @@ class WeeklyReportsTest < Minitest::Test
     @schedule.deliveries.delete_all
     def failing.deliver_now = raise(IOError, "network details must not be stored")
     AnalyticsReportMailer.stub(:weekly, failing) { run_cycle }
-    item = @schedule.deliveries.sole
+    item = @schedule.deliveries.reload.sole
     assert_equal "uncertain", item.status
     assert_equal "IOError", item.error_code
     run_cycle(@now + 2.hours)
     assert_equal 1, item.reload.attempts
+  end
+
+  def test_temporary_rejections_stop_after_three_attempts
+    @schedule.update!(recipients: ["one@example.com"])
+    failing = Object.new
+    def failing.deliver_now = raise(Net::SMTPServerBusy, "temporary")
+    AnalyticsReportMailer.stub(:weekly, failing) do
+      4.times { |i| run_cycle(@now + i.hours) }
+    end
+    item = @schedule.deliveries.sole
+    assert_equal "failed", item.status
+    assert_equal 3, item.attempts
+    assert_equal "Net::SMTPServerBusy", item.error_code
   end
 
   def test_preview_can_send_while_paused_but_claimed_records_never_resend
