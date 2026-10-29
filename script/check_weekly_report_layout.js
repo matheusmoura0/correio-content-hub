@@ -11,7 +11,7 @@ const assert = require("node:assert/strict");
       const page = await context.newPage();
       const html = fs.readFileSync("/review/settings.html", "utf8");
       // A synthetic same-origin document allows the actual icon masks to load without a login.
-      await page.route("https://hub.cm.com.br/__codex-email-layout", (route) => route.fulfill({ status: 200, contentType: "text/html", body: html }));
+      await page.route("https://hub.cm.com.br/__codex-email-layout", (route) => route.fulfill({ status: 200, contentType: "text/html; charset=utf-8", body: html }));
       await page.goto("https://hub.cm.com.br/__codex-email-layout", { waitUntil: "networkidle" });
       const size = await page.evaluate(() => ({ viewport: innerWidth, content: document.documentElement.scrollWidth }));
       assert(size.content <= size.viewport + 1, JSON.stringify(size));
