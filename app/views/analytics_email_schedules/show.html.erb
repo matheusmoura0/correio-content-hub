@@ -36,8 +36,8 @@
         </div>
         <p class="report-email-muted">Colunistas, notícias mais vistas e público agregado. O dia atual é parcial.</p>
         <div class="report-email-actions">
-          <%= form.button type: "submit", class: "button", disabled: !ready || @schedule.recipients.empty?, data: { turbo_confirm: "Enviar o PDF do período selecionado para todos os #{@schedule.recipients.size} destinatários salvos?" } do %><%= ui_icon("send") %> Enviar agora<% end %>
-          <%= form.button type: "submit", formaction: preview_analytics_email_schedule_path(site_id: @site.id), class: "button secondary", disabled: !ready do %><%= ui_icon("file-text") %> Prévia para mim<% end %>
+          <%= form.button type: "submit", name: "delivery_mode", value: "manual", class: "button", disabled: !ready || @schedule.recipients.empty?, data: { turbo_confirm: "Enviar o PDF do período selecionado para todos os #{@schedule.recipients.size} destinatários salvos?" } do %><%= ui_icon("send") %> Enviar agora<% end %>
+          <%= form.button type: "submit", name: "delivery_mode", value: "preview", class: "button secondary", disabled: !ready do %><%= ui_icon("file-text") %> Prévia para mim<% end %>
         </div>
         <p class="report-email-muted">Envio para <%= @schedule.recipients.size %> destinatário(s). Prévia somente para <%= current_user.email %>.</p>
       <% end %>

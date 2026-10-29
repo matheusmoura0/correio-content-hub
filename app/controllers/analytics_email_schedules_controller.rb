@@ -45,7 +45,7 @@ class AnalyticsEmailSchedulesController < ApplicationController
   end
 
   def send_now
-    queue_report("manual")
+    queue_report(params[:delivery_mode] == "preview" ? "preview" : "manual")
   end
 
   private
@@ -120,6 +120,6 @@ class AnalyticsEmailSchedulesController < ApplicationController
 
   def private_response
     response.headers["Cache-Control"] = "no-store"
-    response.headers["Referrer-Policy"] = "no-referrer"
+    response.headers["Referrer-Policy"] = "same-origin"
   end
 end

@@ -154,4 +154,40 @@ class AnalyticsEmailSchedulesTest < Minitest::Test
     assert_equal 0, AnalyticsEmailSchedule.count
     assert_equal 0, AnalyticsEmailDelivery.count
   end
+
+  def test_rendered_forms_work_with_csrf_and_same_origin_checks_enabled
+    login_as @user, scope: :user
+    ActionController::Base.allow_forgery_protection = true
+    request(:get)
+    assert_equal 200, @session.response.status
+    assert_equal "same-origin", @session.response.headers["Referrer-Policy"]
+    document = Nokogiri::HTML(@session.response.body)
+    schedule_form = document.at_css(".report-email-form")
+    csrf = schedule_form.at_css("input[name=authenticity_token]")["value"]
+    @session.patch(schedule_form["action"], params: { authenticity_token: csrf,
+      analytics_email_schedule: { hour: "9", enabled: "0" } }, headers: { "Origin" => "http://www.example.com" })
+    assert_equal 302, @session.response.status
+    assert_equal 9, AnalyticsEmailSchedule.sole.hour
+
+    request(:get)
+    form = Nokogiri::HTML(@session.response.body).at_css(".report-send-form")
+    assert_nil form.at_css('button[value="preview"]')["formaction"], "Preview must use the action its CSRF token covers"
+    params = form.css("input[name]").to_h { |input| [input["name"], input["value"]] }.merge("delivery_mode" => "preview")
+    Analytics::ReportEmailConfiguration.stub(:ready?, true) do
+      @session.post(form["action"], params: params, headers: { "Origin" => "http://www.example.com" })
+    end
+    assert_equal 302, @session.response.status
+    assert_equal 1, AnalyticsEmailDelivery.count
+    assert_equal "preview", AnalyticsEmailDelivery.sole.kind
+    assert_equal @user.email, AnalyticsEmailDelivery.sole.recipient
+
+    @session.patch(schedule_form["action"], params: { authenticity_token: csrf,
+      analytics_email_schedule: { hour: "10", enabled: "0" } }, headers: { "Origin" => "https://attacker.example" })
+    assert_equal 422, @session.response.status
+    assert_equal 9, AnalyticsEmailSchedule.sole.hour
+    @session.patch(schedule_form["action"], params: { analytics_email_schedule: { hour: "11" } },
+      headers: { "Origin" => "http://www.example.com" })
+    assert_equal 422, @session.response.status
+    assert_equal 9, AnalyticsEmailSchedule.sole.hour
+  end
 end
