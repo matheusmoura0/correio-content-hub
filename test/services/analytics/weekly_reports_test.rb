@@ -22,7 +22,7 @@ class WeeklyReportsTest < Minitest::Test
 
   def run_cycle(now = @now)
     pdf = Struct.new(:data) { def call = data }.new("%PDF-fake-unit-test")
-    Analytics::PdfReport.stub(:new, pdf) { Analytics::SendWeeklyReports.call(now: now) }
+    Analytics::PdfReport.stub(:new, ->(*) { pdf }) { Analytics::SendWeeklyReports.call(now: now) }
   end
 
   def test_schedule_boundaries_and_previous_full_utc_week

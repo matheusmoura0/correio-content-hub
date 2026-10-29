@@ -27,7 +27,8 @@ class AnalyticsEmailSchedulesTest < Minitest::Test
   end
 
   def request(method, suffix = "", params = {})
-    @session.public_send(method, @path + suffix, params: { site_id: @site.id }.merge(params))
+    @session.public_send(method, @path + suffix, params: { site_id: @site.id }.merge(params),
+      env: { "action_dispatch.show_exceptions" => ActionController::Base.allow_forgery_protection ? :all : :none })
   end
 
   def test_only_admin_can_view_or_change_settings
