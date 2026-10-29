@@ -54,6 +54,20 @@ services:
       web:
         condition: service_healthy
 
+  report_worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    command: ["bundle", "exec", "rails", "runner", "script/report_worker.rb"]
+    env_file:
+      - .env.production
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
+    depends_on:
+      web:
+        condition: service_healthy
+
 volumes:
   hub_postgres_data:
   hub_geoip_data:

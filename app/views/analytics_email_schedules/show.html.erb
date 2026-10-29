@@ -1,29 +1,71 @@
+<% ready = Analytics::ReportEmailConfiguration.ready? %>
 <div class="insights-page report-email-page">
   <header class="insights-heading">
-    <div><p class="eyebrow"><%= @site.name %></p><h1>Relatório semanal</h1><p>Remetente: relatorios@cm.com.br</p></div>
+    <div><p class="eyebrow"><%= @site.name %></p><h1>Relatórios por e-mail</h1></div>
     <%= link_to "Voltar às métricas", analytics_path(site_id: @site.id) %>
   </header>
-  <p role="status"><strong><%= Analytics::ReportEmailConfiguration.ready? ? "Serviço de e-mail configurado" : "Aguardando configuração do serviço de e-mail" %></strong> · <%= @schedule.enabled? ? "Envio automático ativo" : "Envio automático pausado" %></p>
-  <% if @schedule.errors.any? %><div role="alert"><% @schedule.errors.full_messages.each do |message| %><p><%= message %></p><% end %></div><% end %>
-  <%= form_with model: @schedule, url: analytics_email_schedule_path(site_id: @site.id), method: :patch, class: "report-email-form" do |form| %>
-    <div><%= form.label :recipients_text, "Destinatários" %><%= form.text_area :recipients_text, rows: 6, placeholder: "nome@jornal.com.br", autocomplete: "off", spellcheck: false %></div>
-    <div><%= form.label :hour, "Segunda-feira · horário de Brasília" %><%= form.select :hour, (0..23).map { |hour| [format("%02d:00", hour), hour] } %></div>
-    <label class="report-email-toggle"><%= form.check_box :enabled %> Ativar envio automático</label>
-    <div><%= form.button type: "submit", class: "button" do %><%= ui_icon("settings") %> Salvar<% end %></div>
-  <% end %>
-  <p>Período: segunda a domingo da semana anterior, em dias completos UTC. Inclui colunistas, notícias mais vistas e público agregado.</p>
-  <%= button_to preview_analytics_email_schedule_path(site_id: @site.id), method: :post, class: "button secondary", disabled: !Analytics::ReportEmailConfiguration.ready? do %><%= ui_icon("send") %> Enviar prévia para mim<% end %>
-  <section class="report-email-history" aria-labelledby="delivery-title">
-    <h2 id="delivery-title">Histórico de envios</h2>
-    <p>“Aceito pelo provedor” não confirma chegada à caixa de entrada. Envios de resultado incerto exigem conferência no provedor antes de qualquer reenvio.</p>
+  <div class="report-email-status" role="status">
+    <strong><%= ready ? "Remetente configurado" : "Aguardando serviço de e-mail" %></strong>
+    <span>relatorios@cm.com.br</span>
+    <span class="report-email-state <%= 'is-active' if @schedule.enabled? %>"><%= @schedule.enabled? ? "Envio semanal ativo" : "Envio semanal pausado" %></span>
+  </div>
+  <% if @schedule.errors.any? %><div class="report-email-errors" role="alert"><% @schedule.errors.full_messages.each do |message| %><p><%= message %></p><% end %></div><% end %>
+
+  <section class="report-email-section" aria-labelledby="recipients-title">
+    <header><h2 id="recipients-title">Destinatários</h2><span><%= @schedule.recipients.size %> / 30</span></header>
+    <%= form_with url: add_recipient_analytics_email_schedule_path(site_id: @site.id), method: :post, class: "report-recipient-form" do |form| %>
+      <div><%= form.label :email, "Adicionar e-mail" %><%= form.email_field :email, required: true, placeholder: "nome@jornal.com.br", autocomplete: "email", maxlength: 254 %></div>
+      <%= form.button type: "submit", class: "button", disabled: @schedule.recipients.size >= 30 do %><%= ui_icon("plus") %> Adicionar<% end %>
+    <% end %>
+    <% if @schedule.recipients.empty? %><p class="report-email-muted">Nenhum destinatário cadastrado.</p><% else %>
+      <ul class="report-recipient-list"><% @schedule.recipients.each do |email| %><li>
+        <span><%= email %></span>
+        <%= button_to remove_recipient_analytics_email_schedule_path(site_id: @site.id), method: :delete, params: { email: email }, class: "report-recipient-remove", title: "Remover #{email}", aria: { label: "Remover #{email}" }, form: { data: { turbo_confirm: "Remover #{email} dos próximos envios?" } } do %><%= ui_icon("trash-2") %><% end %>
+      </li><% end %></ul>
+    <% end %>
+  </section>
+
+  <div class="report-email-grid">
+    <section class="report-email-section" aria-labelledby="send-title">
+      <header><h2 id="send-title">Enviar agora</h2><span>PDF personalizado</span></header>
+      <%= form_with url: send_now_analytics_email_schedule_path(site_id: @site.id), method: :post, class: "report-send-form" do |form| %>
+        <%= form.hidden_field :request_token, value: @request_token %>
+        <div class="report-date-fields">
+          <div><%= form.label :from, "De (UTC)" %><%= form.date_field :from, value: @from, required: true, max: Time.now.utc.to_date %></div>
+          <div><%= form.label :to, "Até (UTC)" %><%= form.date_field :to, value: @to, required: true, max: Time.now.utc.to_date %></div>
+        </div>
+        <p class="report-email-muted">Colunistas, notícias mais vistas e público agregado. O dia atual é parcial.</p>
+        <div class="report-email-actions">
+          <%= form.button type: "submit", class: "button", disabled: !ready || @schedule.recipients.empty?, data: { turbo_confirm: "Enviar o PDF do período selecionado para todos os #{@schedule.recipients.size} destinatários salvos?" } do %><%= ui_icon("send") %> Enviar agora<% end %>
+          <%= form.button type: "submit", formaction: preview_analytics_email_schedule_path(site_id: @site.id), class: "button secondary", disabled: !ready do %><%= ui_icon("file-text") %> Prévia para mim<% end %>
+        </div>
+        <p class="report-email-muted">Envio para <%= @schedule.recipients.size %> destinatário(s). Prévia somente para <%= current_user.email %>.</p>
+      <% end %>
+    </section>
+
+    <section class="report-email-section" aria-labelledby="schedule-title">
+      <header><h2 id="schedule-title">Envio semanal</h2><span>Brasília</span></header>
+      <%= form_with model: @schedule, url: analytics_email_schedule_path(site_id: @site.id), method: :patch, class: "report-email-form" do |form| %>
+        <div><%= form.label :hour, "Toda segunda-feira às" %><%= form.select :hour, (0..23).map { |hour| [format("%02d:00", hour), hour] } %></div>
+        <label class="report-email-toggle"><%= form.check_box :enabled %> Ativar envio semanal</label>
+        <p class="report-email-muted">Semana anterior: segunda a domingo, em dias completos UTC. Ao ativar, a última semana vencida pode ser enviada em seguida.</p>
+        <div><%= form.button type: "submit", class: "button secondary" do %><%= ui_icon("settings") %> Salvar agendamento<% end %></div>
+      <% end %>
+    </section>
+  </div>
+
+  <section class="report-email-history report-email-section" aria-labelledby="delivery-title">
+    <header><h2 id="delivery-title">Histórico de envios</h2><%= link_to analytics_email_schedule_path(site_id: @site.id), class: "button secondary", title: "Atualizar histórico", aria: { label: "Atualizar histórico" } do %><%= ui_icon("activity") %><% end %></header>
+    <p class="report-email-muted">Últimos 60 envios. “Aceito pelo provedor” não confirma chegada à caixa de entrada. Resultados incertos exigem conferência no Resend antes de reenviar.</p>
     <% if @deliveries.empty? %><p>Nenhum envio registrado.</p><% else %>
       <div class="report-email-table"><table>
-        <thead><tr><th>Semana</th><th>Destinatário</th><th>Tipo</th><th>Status</th><th>Última tentativa</th></tr></thead>
+        <thead><tr><th>Período UTC</th><th>Destinatário</th><th>Tipo</th><th>Status</th><th>Última tentativa · Brasília</th></tr></thead>
         <tbody><% @deliveries.each do |delivery| %><tr>
-          <td><%= delivery.period_start.strftime("%d/%m/%Y") %></td><td><%= delivery.recipient %></td>
-          <td><%= delivery.run_key == "weekly" ? "Semanal" : "Prévia" %></td>
-          <td><%= AnalyticsEmailDelivery::STATUSES.fetch(delivery.status) %><% if delivery.error_code.present? %><small><%= delivery.error_code %></small><% end %></td>
-          <td><%= delivery.attempted_at&.in_time_zone("America/Sao_Paulo")&.strftime("%d/%m %H:%M") || "—" %></td>
+          <td data-label="Período"><span><%= delivery.period_start.strftime("%d/%m/%Y") %> a <%= delivery.report_end.strftime("%d/%m/%Y") %></span></td>
+          <td data-label="Destinatário"><%= delivery.recipient %></td>
+          <td data-label="Tipo"><%= delivery.kind_label %></td>
+          <td data-label="Status"><strong><%= AnalyticsEmailDelivery::STATUSES.fetch(delivery.status) %></strong><% if delivery.error_code.present? %><small><%= delivery.error_code %></small><% end %></td>
+          <td data-label="Última tentativa"><%= delivery.attempted_at&.in_time_zone("America/Sao_Paulo")&.strftime("%d/%m %H:%M") || "Aguardando" %></td>
         </tr><% end %></tbody>
       </table></div>
     <% end %>

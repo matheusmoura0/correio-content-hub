@@ -499,7 +499,7 @@
       }
       @media (max-width:420px) { .grid { grid-template-columns:1fr; } .brand-name { font-size:15px; } .brand-product { letter-spacing:.08em; } .session .logout { padding:6px 9px !important; } .nav-link,.nav-menu > summary { padding-inline:8px; } }
     </style>
-    <link rel="stylesheet" href="/content-hub.css?v=20261028-8">
+    <link rel="stylesheet" href="/content-hub.css?v=20261028-9">
   </head>
   <body class="<%= user_signed_in? ? 'hub-authenticated' : 'hub-guest' %>">
     <% if user_signed_in? %>
@@ -544,6 +544,7 @@
           <% if current_user.admin? %>
             <div class="hub-sidebar-section">
               <span>Administração</span>
+              <%= link_to analytics_email_schedule_path, class: "hub-nav-link #{'active' if controller_name == 'analytics_email_schedules'}" do %><%= ui_icon("send") %><span>Relatórios por e-mail</span><% end %>
               <%= link_to feeds_path, class: "hub-nav-link #{'active' if controller_name == 'feeds'}" do %><%= ui_icon("rss") %><span>Fontes de notícias</span><% end %>
               <%= link_to sites_path, class: "hub-nav-link #{'active' if controller_name == 'sites'}" do %><%= ui_icon("globe") %><span>Produtos e assuntos</span><% end %>
               <%= link_to topics_path, class: "hub-nav-link #{'active' if controller_name == 'topics'}" do %><%= ui_icon("search") %><span>Pesquisas</span><% end %>
@@ -576,6 +577,7 @@
                 <div class="hub-user-dropdown">
                   <% if current_user.admin? %>
                     <%= link_to "Configurações", sites_path %>
+                    <%= link_to "Relatórios por e-mail", analytics_email_schedule_path %>
                     <%= link_to "Categorias", categories_path %>
                   <% end %>
                   <%= button_to destroy_user_session_path, method: :delete, class: "hub-sign-out" do %><%= ui_icon("log-out") %><span>Sair</span><% end %>

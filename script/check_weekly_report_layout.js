@@ -15,10 +15,12 @@ const assert = require("node:assert/strict");
       await page.goto("https://hub.cm.com.br/__codex-email-layout", { waitUntil: "networkidle" });
       const size = await page.evaluate(() => ({ viewport: innerWidth, content: document.documentElement.scrollWidth }));
       assert(size.content <= size.viewport + 1, JSON.stringify(size));
-      for (const selector of [".report-email-form textarea", ".report-email-form select", ".report-email-form button"]) {
-        const box = await page.locator(selector).boundingBox();
+      for (const selector of [".report-recipient-form input[type=email]", ".report-recipient-form button", ".report-send-form input[type=date]", ".report-email-form select", ".report-email-form button"]) {
+        const box = await page.locator(selector).first().boundingBox();
         assert(box.height >= 44 && box.x >= 0 && box.x + box.width <= width, `${selector}: ${JSON.stringify(box)}`);
       }
+      assert.equal(await page.locator(".report-send-form button").count(), 2);
+      assert(await page.getByRole("button", { name: "Enviar agora", exact: true }).isVisible());
       await page.screenshot({ path: `/review/settings-${width}.png`, fullPage: true });
       console.log(JSON.stringify({ width, passed: true }));
       await context.close();

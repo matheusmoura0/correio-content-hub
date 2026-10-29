@@ -2810,16 +2810,51 @@ body.hub-guest {
   .reader-breakdowns h3 { font-size: 16px; }
   #analytics-audience { scroll-margin-top: 64px; }
 }
-.report-email-form { display: grid; gap: 18px; max-width: 620px; margin: 24px 0; }
+.report-email-page { max-width: 1220px; }
+.report-email-status { display: flex; flex-wrap: wrap; gap: 8px 18px; align-items: center; padding: 16px 0; border-bottom: 1px solid var(--hub-line); font-size: 14px; }
+.report-email-state { color: #68707c; margin-left: auto; }
+.report-email-state.is-active { color: #15803d; }
+.report-email-section { min-width: 0; padding: 24px 0; }
+.report-email-section > header { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 18px; }
+.report-email-section h2 { font: 700 20px Arial, sans-serif; margin: 0; }
+.report-email-section > header > span { color: #68707c; font-size: 13px; }
+.report-email-muted { color: #68707c; font-size: 13px; line-height: 1.6; overflow-wrap: anywhere; }
+.report-email-grid { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: 36px; border-top: 1px solid var(--hub-line); }
+.report-email-form, .report-send-form { display: grid; gap: 16px; margin: 0; }
 .report-email-page .button { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; }
-.report-email-form label { display: block; margin-bottom: 6px; font-weight: 600; }
-.report-email-form textarea, .report-email-form select { width: 100%; min-height: 44px; padding: 10px; border: 1px solid #cbd0d6; border-radius: 4px; background: #fff; color: #1e2329; font: inherit; }
-.report-email-form textarea { resize: vertical; }
+.report-email-page label { display: block; margin-bottom: 6px; font-size: 13px; font-weight: 600; }
+.report-email-page input[type=email], .report-email-page input[type=date], .report-email-form select { width: 100%; min-width: 0; min-height: 44px; padding: 10px; border: 1px solid #cbd0d6; border-radius: 4px; background: #fff; color: #1e2329; font: inherit; }
 .report-email-form .report-email-toggle { display: flex; gap: 10px; align-items: center; }
 .report-email-toggle input { width: 20px; height: 20px; }
-.report-email-history { margin-top: 32px; border-top: 1px solid #dce0e5; padding-top: 20px; }
-.report-email-history h2 { font-size: 22px; }
+.report-recipient-form { display: flex; align-items: end; gap: 12px; max-width: 700px; }
+.report-recipient-form > div { flex: 1; min-width: 0; }
+.report-recipient-list { padding: 0; margin: 18px 0 0; list-style: none; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 24px; }
+.report-recipient-list li { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-width: 0; border-bottom: 1px solid #e2e5e9; padding: 8px 0; }
+.report-recipient-list li > span { overflow-wrap: anywhere; font-size: 14px; }
+.hub-main .report-recipient-remove { display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; padding: 0; background: transparent; color: #a51220; }
+.hub-main .report-recipient-remove:hover { background: #fff2f3; }
+.report-date-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.report-email-actions { display: flex; flex-wrap: wrap; gap: 10px; }
+.report-email-history { border-top: 1px solid var(--hub-line); }
 .report-email-table { overflow-x: auto; }
 .report-email-table table { width: 100%; border-collapse: collapse; font-size: 14px; }
 .report-email-table th, .report-email-table td { text-align: left; padding: 12px 8px; border-bottom: 1px solid #dce0e5; overflow-wrap: anywhere; min-width: 100px; }
 .report-email-table small { display: block; color: #68717d; }
+.report-email-errors { color: #a51220; border-left: 3px solid #ad1119; padding: 4px 14px; margin: 16px 0; }
+@media (max-width: 800px) {
+  .report-email-grid, .report-recipient-list { grid-template-columns: minmax(0, 1fr); gap: 0; }
+  .report-email-grid > section + section { border-top: 1px solid var(--hub-line); }
+  .report-email-state { margin-left: 0; }
+  .report-email-table thead { display: none; }
+  .report-email-table table, .report-email-table tbody, .report-email-table tr { display: block; }
+  .report-email-table tr { border-bottom: 1px solid var(--hub-line); padding: 12px 0; }
+  .report-email-table td { display: grid; grid-template-columns: 100px minmax(0, 1fr); gap: 4px 12px; border: 0; min-width: 0; padding: 6px 0; }
+  .report-email-table td::before { content: attr(data-label); color: #68707c; font-size: 12px; }
+  .report-email-table td small { grid-column: 2; }
+  .report-email-table td br { display: none; }
+}
+@media (max-width: 440px) {
+  .report-recipient-form { flex-direction: column; align-items: stretch; }
+  .report-date-fields { grid-template-columns: minmax(0, 1fr); }
+  .report-email-actions > .button { width: 100%; }
+}

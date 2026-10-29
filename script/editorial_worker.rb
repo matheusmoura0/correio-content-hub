@@ -1,11 +1,6 @@
 interval = [ENV.fetch("EDITORIAL_INTERVAL_SECONDS", "1800").to_i, 60].max
 loop do
   begin
-    Analytics::SendWeeklyReports.call
-  rescue StandardError => error
-    Rails.logger.error("Weekly report cycle: #{error.class}")
-  end
-  begin
     Analytics::UpdateGeoDatabase.call
     Analytics::PruneReaderMetadata.call
   rescue StandardError => error

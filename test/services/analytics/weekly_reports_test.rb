@@ -129,4 +129,50 @@ class WeeklyReportsTest < Minitest::Test
     assert_equal 1, ActionMailer::Base.deliveries.size
     assert_includes ActionMailer::Base.deliveries.first.subject, "Prévia"
   end
+
+  def test_manual_send_works_while_paused_but_skips_removed_recipients
+    @schedule.update!(enabled: false)
+    start = Date.new(2026, 10, 22)
+    item = @schedule.deliveries.create!(period_start: start, period_end: start + 2,
+      recipient: "one@example.com", run_key: "manual-one")
+    removed = @schedule.deliveries.create!(period_start: start, period_end: start + 2,
+      recipient: "removed@example.com", run_key: "manual-one")
+    run_cycle
+    assert_equal "accepted", item.reload.status
+    assert_equal "cancelled", removed.reload.status
+    assert_equal 1, ActionMailer::Base.deliveries.size
+    mail = ActionMailer::Base.deliveries.first
+    assert_includes mail.subject, "Relatório de audiência | 22/10/2026 a 24/10/2026"
+    refute_includes mail.subject, "Prévia"
+    assert_includes mail.attachments.first.filename, "2026-10-22-2026-10-24"
+    assert_equal "Manual", item.kind_label
+    refute @schedule.reload.enabled?
+  end
+
+  def test_delivery_period_validation_and_legacy_weekly_fallback
+    item = @schedule.deliveries.new(period_start: Date.new(2026, 10, 19), recipient: "one@example.com", run_key: "weekly")
+    assert_equal Date.new(2026, 10, 25), item.report_end
+    item.period_end = item.period_start - 1
+    refute item.valid?
+    item.period_end = item.period_start + 90
+    refute item.valid?
+    item.period_end = item.period_start + 89
+    assert item.valid?
+  end
+
+  def test_pdf_generation_keeps_different_end_dates_separate
+    @schedule.update!(enabled: false)
+    start = Date.new(2026, 10, 19)
+    %w[one@example.com two@example.com].each_with_index do |recipient, index|
+      @schedule.deliveries.create!(period_start: start, period_end: start + index + 1,
+        recipient: recipient, run_key: "manual-period-test")
+    end
+    periods = []
+    pdf = Struct.new(:data) { def call = data }.new("%PDF-unit-test")
+    Analytics::PdfReport.stub(:new, ->(report) { periods << [report.from.to_date, report.to.to_date]; pdf }) do
+      Analytics::SendWeeklyReports.call(now: @now)
+    end
+    assert_equal [[start, start + 2], [start, start + 3]], periods
+    assert_equal 2, ActionMailer::Base.deliveries.size
+  end
 end

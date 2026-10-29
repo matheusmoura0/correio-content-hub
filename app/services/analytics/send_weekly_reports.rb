@@ -18,13 +18,14 @@ module Analytics
           next unless schedule.available?
           period = schedule.due_period(@now)
           if schedule.enabled? && period
-            schedule.recipients.each do |recipient|
-              schedule.deliveries.create_or_find_by!(period_start: period, recipient: recipient, run_key: "weekly")
+            existing = schedule.deliveries.where(period_start: period, run_key: "weekly").pluck(:recipient)
+            (schedule.recipients - existing).each do |recipient|
+              schedule.deliveries.create!(period_start: period, recipient: recipient, run_key: "weekly")
             end
           end
         end
         pdfs = {}
-        schedule.deliveries.where(status: %w[pending retry]).order(:id).find_each do |delivery|
+        schedule.deliveries.where(status: %w[pending retry]).find_each do |delivery|
           process(schedule, delivery, pdfs)
         end
       rescue StandardError => error
@@ -39,8 +40,11 @@ module Analytics
       claimed = delivery.with_lock do
         next false unless delivery.eligible?(@now)
         schedule.reload
-        allowed = schedule.available? && (delivery.run_key != "weekly" ||
-          (schedule.enabled? && schedule.recipients.include?(delivery.recipient) && delivery.period_start == schedule.due_period(@now)))
+        allowed = schedule.available? && case delivery.kind
+        when "preview" then true
+        when "manual" then schedule.recipients.include?(delivery.recipient)
+        else schedule.enabled? && schedule.recipients.include?(delivery.recipient) && delivery.period_start == schedule.due_period(@now)
+        end
         unless allowed
           delivery.update!(status: "cancelled")
           next false
@@ -51,9 +55,9 @@ module Analytics
       return unless claimed
 
       transport_started = false
-      pdf = pdfs[delivery.period_start] ||= begin
+      pdf = pdfs[[delivery.period_start, delivery.report_end]] ||= begin
         from = delivery.period_start.to_time(:utc)
-        report = EditorialReport.new(site: schedule.site, from: from, to: from + 7.days)
+        report = EditorialReport.new(site: schedule.site, from: from, to: (delivery.report_end + 1).to_time(:utc))
         PdfReport.new(report).call
       end
       transport_started = true

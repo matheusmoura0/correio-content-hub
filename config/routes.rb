@@ -39,6 +39,9 @@ Rails.application.routes.draw do
   get "metricas", to: "analytics#index", as: :analytics
   resource :analytics_email_schedule, only: %i[show update], path: "metricas/envio-semanal" do
     post :preview
+    post :send_now
+    post :add_recipient
+    delete :remove_recipient
   end
   resource :analytics_share, only: %i[create update destroy], path: "metricas/compartilhamento"
   get "audiencia/:token", to: "public_analytics#show", as: :public_analytics,

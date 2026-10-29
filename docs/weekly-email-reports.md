@@ -1,6 +1,7 @@
 # Weekly email reports
 
-Admin entry: Metrics > Relatório semanal por e-mail. Only the active Correio
+Admin entry: Relatórios por e-mail in the administration sidebar, admin account
+menu, or Metrics. Direct URL: `/metricas/envio-semanal`. Only the active Correio
 da Manhã is supported. Settings and recipient history require an admin login;
 they are never exposed on public dashboards. New schedules default to paused.
 
@@ -24,7 +25,7 @@ For Resend:
    SMTP_PASSWORD=<sending-only-api-key>
    ```
 
-5. Recreate `web` and `editorial_worker` to load the environment.
+5. Recreate `web` and `report_worker` to load the environment.
 6. Save recipients in the admin screen, send a preview to your own admin email,
    check the PDF and provider status, then enable the schedule.
 
@@ -38,8 +39,8 @@ https://resend.com/docs/dashboard/domains/introduction
 
 ## Timing and delivery
 
-The existing editorial worker checks every 30 minutes (configurable using
-`EDITORIAL_INTERVAL_SECONDS`). Monday 08:00 America/Sao_Paulo is the default;
+The dedicated `report_worker` checks every five seconds, separately from the
+editorial automation. Monday 08:00 America/Sao_Paulo is the default;
 the admin can change the hour. Delivery is due at or after that hour, on the
 next worker cycle, not guaranteed at exactly 08:00. A restart later that week
 will catch up only the latest due week; there is no historical mass backfill.
@@ -56,12 +57,22 @@ retry. Permanent rejections stop. Network failures after transport starts and
 crashed `sending` records require checking the provider; they are not blindly
 resent. Resend additionally receives a stable `Resend-Idempotency-Key` header.
 
-Paused schedules, removed recipients and stale queued weeks are not sent.
-An explicitly requested preview can run while paused, only to the requesting
-admin's address, with a 30-minute cooldown per publication. Preview generation
-and delivery run on the worker, not in the HTTP request.
+Paused weekly schedules, removed recipients and stale queued weeks are not sent.
+Admins can add/remove individual emails; removing the last recipient pauses the
+weekly schedule. An explicitly requested manual report can run while weekly
+sending is paused, to the saved recipient list only. A preview goes only to the
+requesting admin's address. Both accept an inclusive UTC date range of up to 90
+days, including today (marked partial). Old deliveries retain their seven-day
+fallback period. A one-use session form token, database uniqueness and one-minute
+per-type cooldown guard repeated clicks. Different recipients never share a To
+or CC list. PDF generation and delivery run on the worker, not in the HTTP request.
 
 Migration: `20261028180000_create_analytics_email_reports.rb` adds only the two
 email scheduling tables. Deploy with a database backup and normal Docker image
 rebuild. Test only on an isolated VPS database with ActionMailer test delivery;
 never use live recipients for automated verification.
+
+Migration `20261028190000_add_period_end_to_analytics_email_deliveries.rb` adds
+an optional inclusive end date for manual/preview ranges. It does not modify
+old delivery history or activate an existing schedule. Deploy and start
+`report_worker` in addition to `web` and `editorial_worker`.
