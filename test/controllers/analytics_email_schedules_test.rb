@@ -48,7 +48,7 @@ class AnalyticsEmailSchedulesTest < Minitest::Test
     assert_includes @session.response.headers["Cache-Control"], "no-store"
     assert_includes @session.response.body, "relatorios@cm.com.br"
     request(:patch, "", analytics_email_schedule: { recipients_text: "one@example.com\ntwo@example.com", hour: 8, enabled: "0" })
-    assert_equal 302, @session.response.status
+    assert_equal 302, @session.response.status, Nokogiri::HTML(@session.response.body).at_css('[role="alert"]')&.text
     assert_equal %w[one@example.com two@example.com], AnalyticsEmailSchedule.sole.recipients
     refute AnalyticsEmailSchedule.sole.enabled?
     ActionController::Base.allow_forgery_protection = true
@@ -64,7 +64,7 @@ class AnalyticsEmailSchedulesTest < Minitest::Test
     Analytics::ReportEmailConfiguration.stub(:ready?, true) do
       2.times { request(:post, "/preview", recipient: "evil@example.com") }
     end
-    assert_equal 1, AnalyticsEmailDelivery.count
+    assert_equal 1, AnalyticsEmailDelivery.count, "Response: #{@session.response.status}, #{@session.response.body.first(1000)}"
     assert_equal @user.email, AnalyticsEmailDelivery.sole.recipient
     assert_equal "pending", AnalyticsEmailDelivery.sole.status
     assert_empty ActionMailer::Base.deliveries

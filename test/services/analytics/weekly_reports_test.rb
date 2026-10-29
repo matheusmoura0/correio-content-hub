@@ -35,7 +35,7 @@ class WeeklyReportsTest < Minitest::Test
     run_cycle
     run_cycle(@now + 1.hour)
     assert_equal 2, @schedule.deliveries.count
-    assert_equal 2, ActionMailer::Base.deliveries.size
+    assert_equal 2, ActionMailer::Base.deliveries.size, @schedule.deliveries.pluck(:status, :error_code).inspect
     assert_equal ["accepted"], @schedule.deliveries.distinct.pluck(:status)
     mail = ActionMailer::Base.deliveries.first
     assert_equal ["relatorios@cm.com.br"], mail.from
@@ -94,7 +94,7 @@ class WeeklyReportsTest < Minitest::Test
     run_cycle(@now + 5.minutes)
     assert_empty ActionMailer::Base.deliveries
     run_cycle(@now + 31.minutes)
-    assert_equal "accepted", item.reload.status
+    assert_equal "accepted", item.reload.status, item.error_code
     assert_equal 2, item.attempts
     @schedule.deliveries.delete_all
     def failing.deliver_now = raise(IOError, "network details must not be stored")
@@ -111,7 +111,7 @@ class WeeklyReportsTest < Minitest::Test
     preview = @schedule.deliveries.create!(period_start: Date.new(2026, 10, 26), recipient: "admin@example.com", run_key: "preview-123")
     claimed = @schedule.deliveries.create!(period_start: Date.new(2026, 10, 26), recipient: "claimed@example.com", run_key: "preview-456", status: "sending", attempts: 1)
     run_cycle
-    assert_equal "accepted", preview.reload.status
+    assert_equal "accepted", preview.reload.status, preview.error_code
     assert_equal "sending", claimed.reload.status
     assert_equal 1, ActionMailer::Base.deliveries.size
     assert_includes ActionMailer::Base.deliveries.first.subject, "Prévia"
