@@ -27,6 +27,7 @@
 
   <% if !@public_dashboard && current_user.admin? && @site.correio_source? %>
     <%= render "analytics/sharing" %>
+    <p><%= link_to analytics_email_schedule_path(site_id: @site.id) do %><%= ui_icon("send") %> Relatório semanal por e-mail<% end %></p>
   <% end %>
 
   <nav class="insights-views" aria-label="Visão da audiência">

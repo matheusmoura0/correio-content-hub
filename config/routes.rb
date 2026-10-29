@@ -37,6 +37,9 @@ Rails.application.routes.draw do
   resources :users, except: :show
   resources :activity_logs, only: :index, path: "atividades"
   get "metricas", to: "analytics#index", as: :analytics
+  resource :analytics_email_schedule, only: %i[show update], path: "metricas/envio-semanal" do
+    post :preview
+  end
   resource :analytics_share, only: %i[create update destroy], path: "metricas/compartilhamento"
   get "audiencia/:token", to: "public_analytics#show", as: :public_analytics,
     constraints: { token: /[A-Za-z0-9]{32}/ }, defaults: { format: :html }

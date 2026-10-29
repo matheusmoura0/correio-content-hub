@@ -2810,3 +2810,15 @@ body.hub-guest {
   .reader-breakdowns h3 { font-size: 16px; }
   #analytics-audience { scroll-margin-top: 64px; }
 }
+.report-email-form { display: grid; gap: 18px; max-width: 620px; margin: 24px 0; }
+.report-email-form label { display: block; margin-bottom: 6px; font-weight: 600; }
+.report-email-form textarea, .report-email-form select { width: 100%; min-height: 44px; padding: 10px; border: 1px solid #cbd0d6; border-radius: 4px; background: #fff; color: #1e2329; font: inherit; }
+.report-email-form textarea { resize: vertical; }
+.report-email-form .report-email-toggle { display: flex; gap: 10px; align-items: center; }
+.report-email-toggle input { width: 20px; height: 20px; }
+.report-email-history { margin-top: 32px; border-top: 1px solid #dce0e5; padding-top: 20px; }
+.report-email-history h2 { font-size: 22px; }
+.report-email-table { overflow-x: auto; }
+.report-email-table table { width: 100%; border-collapse: collapse; font-size: 14px; }
+.report-email-table th, .report-email-table td { text-align: left; padding: 12px 8px; border-bottom: 1px solid #dce0e5; overflow-wrap: anywhere; min-width: 100px; }
+.report-email-table small { display: block; color: #68717d; }

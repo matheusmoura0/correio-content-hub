@@ -1,0 +1,31 @@
+<div class="insights-page report-email-page">
+  <header class="insights-heading">
+    <div><p class="eyebrow"><%= @site.name %></p><h1>Relatório semanal</h1><p>Remetente: relatorios@cm.com.br</p></div>
+    <%= link_to "Voltar às métricas", analytics_path(site_id: @site.id) %>
+  </header>
+  <p role="status"><strong><%= Analytics::ReportEmailConfiguration.ready? ? "Serviço de e-mail configurado" : "Aguardando configuração do serviço de e-mail" %></strong> · <%= @schedule.enabled? ? "Envio automático ativo" : "Envio automático pausado" %></p>
+  <% if @schedule.errors.any? %><div role="alert"><% @schedule.errors.full_messages.each do |message| %><p><%= message %></p><% end %></div><% end %>
+  <%= form_with model: @schedule, url: analytics_email_schedule_path(site_id: @site.id), method: :patch, class: "report-email-form" do |form| %>
+    <div><%= form.label :recipients_text, "Destinatários" %><%= form.text_area :recipients_text, rows: 6, placeholder: "nome@jornal.com.br", autocomplete: "off", spellcheck: false %></div>
+    <div><%= form.label :hour, "Segunda-feira · horário de Brasília" %><%= form.select :hour, (0..23).map { |hour| [format("%02d:00", hour), hour] } %></div>
+    <label class="report-email-toggle"><%= form.check_box :enabled %> Ativar envio automático</label>
+    <div><%= form.button type: "submit", class: "btn btn-primary" do %><%= ui_icon("settings") %> Salvar<% end %></div>
+  <% end %>
+  <p>Período: segunda a domingo da semana anterior, em dias completos UTC. Inclui colunistas, notícias mais vistas e público agregado.</p>
+  <%= button_to preview_analytics_email_schedule_path(site_id: @site.id), method: :post, class: "btn", disabled: !Analytics::ReportEmailConfiguration.ready? do %><%= ui_icon("send") %> Enviar prévia para mim<% end %>
+  <section class="report-email-history" aria-labelledby="delivery-title">
+    <h2 id="delivery-title">Histórico de envios</h2>
+    <p>“Aceito pelo provedor” não confirma chegada à caixa de entrada. Envios de resultado incerto exigem conferência no provedor antes de qualquer reenvio.</p>
+    <% if @deliveries.empty? %><p>Nenhum envio registrado.</p><% else %>
+      <div class="report-email-table"><table>
+        <thead><tr><th>Semana</th><th>Destinatário</th><th>Tipo</th><th>Status</th><th>Última tentativa</th></tr></thead>
+        <tbody><% @deliveries.each do |delivery| %><tr>
+          <td><%= delivery.period_start.strftime("%d/%m/%Y") %></td><td><%= delivery.recipient %></td>
+          <td><%= delivery.run_key == "weekly" ? "Semanal" : "Prévia" %></td>
+          <td><%= AnalyticsEmailDelivery::STATUSES.fetch(delivery.status) %><% if delivery.error_code.present? %><small><%= delivery.error_code %></small><% end %></td>
+          <td><%= delivery.attempted_at&.in_time_zone("America/Sao_Paulo")&.strftime("%d/%m %H:%M") || "—" %></td>
+        </tr><% end %></tbody>
+      </table></div>
+    <% end %>
+  </section>
+</div>
