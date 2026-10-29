@@ -9,10 +9,10 @@
     <div><%= form.label :recipients_text, "Destinatários" %><%= form.text_area :recipients_text, rows: 6, placeholder: "nome@jornal.com.br", autocomplete: "off", spellcheck: false %></div>
     <div><%= form.label :hour, "Segunda-feira · horário de Brasília" %><%= form.select :hour, (0..23).map { |hour| [format("%02d:00", hour), hour] } %></div>
     <label class="report-email-toggle"><%= form.check_box :enabled %> Ativar envio automático</label>
-    <div><%= form.button type: "submit", class: "btn btn-primary" do %><%= ui_icon("settings") %> Salvar<% end %></div>
+    <div><%= form.button type: "submit", class: "button" do %><%= ui_icon("settings") %> Salvar<% end %></div>
   <% end %>
   <p>Período: segunda a domingo da semana anterior, em dias completos UTC. Inclui colunistas, notícias mais vistas e público agregado.</p>
-  <%= button_to preview_analytics_email_schedule_path(site_id: @site.id), method: :post, class: "btn", disabled: !Analytics::ReportEmailConfiguration.ready? do %><%= ui_icon("send") %> Enviar prévia para mim<% end %>
+  <%= button_to preview_analytics_email_schedule_path(site_id: @site.id), method: :post, class: "button secondary", disabled: !Analytics::ReportEmailConfiguration.ready? do %><%= ui_icon("send") %> Enviar prévia para mim<% end %>
   <section class="report-email-history" aria-labelledby="delivery-title">
     <h2 id="delivery-title">Histórico de envios</h2>
     <p>“Aceito pelo provedor” não confirma chegada à caixa de entrada. Envios de resultado incerto exigem conferência no provedor antes de qualquer reenvio.</p>

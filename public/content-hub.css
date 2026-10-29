@@ -2811,6 +2811,7 @@ body.hub-guest {
   #analytics-audience { scroll-margin-top: 64px; }
 }
 .report-email-form { display: grid; gap: 18px; max-width: 620px; margin: 24px 0; }
+.report-email-page button { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; }
 .report-email-form label { display: block; margin-bottom: 6px; font-weight: 600; }
 .report-email-form textarea, .report-email-form select { width: 100%; min-height: 44px; padding: 10px; border: 1px solid #cbd0d6; border-radius: 4px; background: #fff; color: #1e2329; font: inherit; }
 .report-email-form textarea { resize: vertical; }
