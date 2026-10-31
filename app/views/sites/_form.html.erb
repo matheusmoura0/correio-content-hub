@@ -1,0 +1,25 @@
+<%= form_with model: site do |form| %>
+  <% site.errors.full_messages.each do |message| %><p class="alert"><%= message %></p><% end %>
+  <div class="grid">
+    <div><%= form.label :name, "Nome" %><%= form.text_field :name, required: true %></div>
+    <div><%= form.label :publication_key, "Identificador da publicação" %><%= form.text_field :publication_key, required: true, placeholder: "cinemagazine" %></div>
+  </div>
+  <%= form.label :domain, "Domínio" %>
+  <%= form.text_field :domain, required: true, placeholder: "exemplo.com.br" %>
+  <div class="grid">
+    <div><%= form.label :site_type, "Tipo de produto" %><%= form.select :site_type, Site::SITE_TYPES.map { |value, label| [label, value] } %></div>
+    <div><%= form.label :content_mode, "Origem do conteúdo" %><%= form.select :content_mode, Site::CONTENT_MODES.map { |value, label| [label, value] } %></div>
+    <div><%= form.label :layout_profile, "Perfil visual" %><%= form.select :layout_profile, Site::LAYOUT_PROFILES.map { |value, label| [label, value] } %></div>
+    <div><%= form.label :external_provider, "Provedor externo" %><%= form.select :external_provider, [["Nenhum", ""]] + Site::EXTERNAL_PROVIDERS.map { |value, label| [label, value] } %></div>
+  </div>
+  <%= form.label :allowed_origins, "Origens autorizadas (uma por linha)" %>
+  <%= form.text_area :allowed_origins, rows: 4, placeholder: "https://cinemagazine.com.br\nhttps://preview.vercel.app" %>
+  <label><%= form.check_box :receives_hub_content, disabled: site.correio_source? || site.retired_from_hub? %> Recebe matérias e publicações do Hub</label>
+  <%= form.label :editorial_keywords, "Assuntos aceitos pela publicação" %>
+  <%= form.text_area :editorial_keywords, rows: 4, placeholder: "cinema, filmes, cineastas" %>
+  <p class="muted">Termos separados por vírgula ou linha. A publicação exige correspondência com esses assuntos, inclusive para reportagens próprias. Sem termos configurados, a publicação fica bloqueada.</p>
+  <% if site.correio_source? %><p class="muted">O Correio da Manhã é uma fonte editorial e não pode ser usado como destino.</p><% end %>
+  <% if site.retired_from_hub? %><p class="muted"><%= site.name %> não participa das publicações do Hub. O cadastro permanece apenas para preservar o histórico.</p><% end %>
+  <label><%= form.check_box :active, disabled: site.retired_from_hub? %> Ativo</label><br><br>
+  <%= form.submit %>
+<% end %>

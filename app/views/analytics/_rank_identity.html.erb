@@ -1,0 +1,21 @@
+<% person = %w[authors columnists].include?(@report.dimension) %>
+<div class="insights-story-cell <%= 'author-profile' if person %>">
+  <% if @report.dimension == "articles" %>
+    <span class="insights-story-image">
+      <% if row[:image_url].present? %><%= image_tag row[:image_url], alt: "", loading: "lazy", decoding: "async" %><% else %><%= ui_icon("newspaper") %><% end %>
+    </span>
+  <% elsif person %>
+    <span class="insights-author-image">
+      <span class="insights-author-initials" aria-hidden="true"><%= row[:name].split.filter_map { |part| part.first }.first(2).join.upcase.presence || "?" %></span>
+      <% if row[:author_image_url].present? %><%= image_tag row[:author_image_url], alt: "", loading: "lazy", decoding: "async", referrerpolicy: "no-referrer" %><% end %>
+    </span>
+  <% end %>
+  <div>
+    <%= link_to row[:name], analytics_dashboard_path(@filter_params.merge(dimension: "articles", drill => row[:key], page: nil)) %>
+    <% if @report.dimension == "articles" %>
+      <small><%= row[:author] %> · <%= row[:category] %> · ID <%= row[:key] %></small>
+    <% elsif person %>
+      <small><%= "Assinatura individual · " if @report.dimension == "columnists" %><%= pluralize(row[:articles], "matéria", "matérias") %> no período</small>
+    <% end %>
+  </div>
+</div>

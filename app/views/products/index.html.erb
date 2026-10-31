@@ -1,0 +1,31 @@
+<div class="products-page">
+  <header class="products-heading">
+    <div><p class="eyebrow">Redação</p><h1>Produtos</h1></div>
+    <%= link_to editorial_editions_path, class: "button secondary" do %><%= ui_icon("library") %><span>Pendências de aprovação</span><% end %>
+  </header>
+  <section class="products-summary" aria-label="Situação dos produtos">
+    <div><strong><%= @products.size %></strong><span>Produtos ativos</span></div>
+    <div><strong><%= @pending_editions.size %></strong><span>Edições para conferir</span></div>
+    <div><strong><%= @published_counts.values.sum %></strong><span>Matérias no ar</span></div>
+  </section>
+  <section class="products-grid" aria-label="Jornais e revistas">
+    <% @products.each do |product| %>
+      <% edition = @pending_editions[product.id] %>
+      <article class="product-card">
+        <div class="product-card-cover">
+          <% if @covers[product.id] %><%= image_tag @covers[product.id], alt: "", loading: "lazy" %><% else %><%= ui_icon("newspaper") %><% end %>
+          <span><%= product.site_type == "hybrid" ? "Editorial e catálogo" : "Publicação editorial" %></span>
+        </div>
+        <div class="product-card-body">
+          <h2><%= link_to product.name, product_path(product.publication_key) %></h2>
+          <small class="product-domain"><%= product.domain %></small>
+          <div class="product-card-state <%= 'pending' if edition %>"><span class="presence-dot <%= edition ? 'online' : 'offline' %>"></span><%= edition ? "#{edition.items.count { |item| item.decision == 'pending' }} matérias para conferir" : "Sem edição pendente" %></div>
+          <dl><div><dt>Rascunhos</dt><dd><%= @draft_counts.fetch(product.id, 0) %></dd></div><div><dt>No ar</dt><dd><%= @published_counts.fetch(product.id, 0) %></dd></div></dl>
+          <% if @latest_approvals[product.id] %><small class="product-last-edition">Última aprovação: <%= l(@latest_approvals[product.id], format: :short) %></small><% end %>
+        </div>
+        <footer><%= link_to product_path(product.publication_key), class: "button #{'secondary' unless edition}" do %><%= ui_icon(edition ? "library" : "newspaper") %><span><%= edition ? "Conferir edição" : "Abrir produto" %></span><% end %></footer>
+      </article>
+    <% end %>
+  </section>
+  <% if @products.empty? %><div class="empty-state"><h2>Nenhum produto ativo</h2><%= link_to "Configurar produtos", sites_path if current_user.admin? %></div><% end %>
+</div>

@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8">
+    <title>Audiência | Correio da Manhã</title>
+    <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+    <meta name="robots" content="noindex,nofollow,noarchive">
+    <meta name="referrer" content="no-referrer">
+    <%= csp_meta_tag %>
+    <link rel="stylesheet" href="/content-hub.css?v=20261028-6">
+    <link rel="stylesheet" href="/public-analytics.css?v=20261028-6">
+  </head>
+  <body class="public-audience">
+    <a class="audience-skip" href="#audience-content">Ir para os dados</a>
+    <header class="audience-masthead">
+      <div class="audience-brand"><span class="hub-brand-mark">CM</span><strong>Correio da Manhã</strong></div>
+      <span class="audience-label"><%= ui_icon("chart-no-axes-column-increasing") %>Audiência da redação</span>
+    </header>
+    <main id="audience-content" class="hub-main audience-main">
+      <% if alert.present? %><div class="alert" role="alert"><%= alert %></div><% end %>
+      <%= yield %>
+    </main>
+    <footer class="audience-footer">Correio da Manhã · Dados de audiência · Períodos em UTC</footer>
+  </body>
+</html>

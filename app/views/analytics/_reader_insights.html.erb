@@ -1,0 +1,37 @@
+<% coverage = @reader_insights.coverage %>
+<% reading = @reader_insights.reading %>
+<% breakdowns = @reader_insights.breakdowns %>
+<section id="analytics-summary" class="reader-summary">
+  <header><div><p class="eyebrow">Público</p><h2>Quem chega às matérias</h2></div><span><%= @report.partial? ? "Dia em andamento" : "Período fechado" %></span></header>
+  <div class="reader-coverage"><strong><%= number_with_delimiter(coverage[:known]) %> de <%= number_with_delimiter(coverage[:total]) %> visualizações com metadados</strong><span><%= coverage[:percent] %>% de cobertura · Cliques com metadados: <%= number_with_delimiter(coverage[:clicks]) %></span></div>
+  <% if coverage[:known].zero? %><p class="reader-notice">Ainda sem dados de público neste período. A coleta começou em 28/10/2026; os dados anteriores não são preenchidos retroativamente.</p><% end %>
+  <div class="reader-metrics">
+    <article><span>Leitura ativa mediana</span><strong><%= reading[:active_seconds].nil? ? "—" : "#{reading[:active_seconds]}s" %></strong><small>Visualizações com atividade registrada</small></article>
+    <article><span>Rolagem até 75%</span><strong><%= reading[:scroll_75_percent].nil? ? "—" : "#{reading[:scroll_75_percent]}%" %></strong><small><%= number_with_delimiter(reading[:pages]) %> visualizações rastreadas na base</small></article>
+    <article><span>Tempo até o clique</span><strong><%= reading[:click_delay_seconds].nil? ? "—" : "#{reading[:click_delay_seconds]}s" %></strong><small>Mediana desde a abertura da página</small></article>
+  </div>
+</section>
+
+<section id="analytics-audience" class="reader-audience">
+  <section class="reader-hours">
+    <header><h2>Horários de acesso e clique</h2><span>Amostra com metadados · Brasília</span></header>
+    <% peak = [@reader_insights.hourly.flat_map { |row| [row[:views].to_i, row[:clicks].to_i] }.max.to_i, 1].max %>
+    <div class="reader-hour-chart" role="img" aria-label="Visualizações em vermelho e cliques em verde por hora, no fuso de Brasília">
+      <% @reader_insights.hourly.each do |row| %>
+        <div title="<%= '%02d' % row[:hour] %>h · <%= row[:views].nil? ? 'visualizações restritas' : "#{row[:views]} visualizações" %> · <%= row[:clicks].nil? ? 'cliques restritos' : "#{row[:clicks]} cliques" %>"><i style="height:<%= row[:views].to_i * 100.0 / peak %>%"></i><i class="clicks" style="height:<%= row[:clicks].to_i * 100.0 / peak %>%"></i></div>
+      <% end %>
+    </div>
+    <div class="reader-hour-axis"><span>00h</span><span>06h</span><span>12h</span><span>18h</span><span>23h</span></div>
+    <details><summary>Dados por hora</summary><div class="reader-hour-data"><% @reader_insights.hourly.each do |row| %><div><strong><%= '%02d' % row[:hour] %>h</strong><span>Visualizações: <%= row[:views].nil? ? 'restrito' : number_with_delimiter(row[:views]) %></span><span>Cliques: <%= row[:clicks].nil? ? 'restrito' : number_with_delimiter(row[:clicks]) %></span></div><% end %></div></details>
+  </section>
+  <div class="reader-breakdowns">
+    <% { countries: ["Países", "Visualizações"], regions: ["Estados e regiões", "Visualizações"], cities: ["Cidades aproximadas", "Visualizações"], sources: ["Origens de tráfego", "Visualizações"], campaigns: ["Campanhas", "Visualizações"], devices: ["Dispositivos", "Visualizações"], browsers: ["Navegadores", "Visualizações"], systems: ["Sistemas operacionais", "Visualizações"], timezones: ["Fusos informados pelos leitores", "Visualizações"], placements: ["Onde acontecem os cliques", "Cliques"] }.each do |key, (title, unit)| %>
+      <section><header><h3><%= title %></h3><small><%= unit %></small></header>
+        <% rows = breakdowns.fetch(key) %>
+        <% rows.each do |row| %><div class="reader-breakdown-row"><span><%= row[:label] %></span><strong><%= number_with_delimiter(row[:count]) %></strong></div><% end %>
+        <% if rows.empty? %><p class="reader-empty">Sem amostra suficiente ou dado disponível.</p><% end %>
+      </section>
+    <% end %>
+  </div>
+  <footer class="reader-measurement"><h3>Sobre esta amostra</h3><ul><% @reader_insights.notes.first(4).each do |note| %><li><%= note %></li><% end %></ul><p>Localização aproximada: <a href="https://db-ip.com" rel="noopener noreferrer" target="_blank">IP Geolocation by DB-IP</a> · City Lite · CC BY 4.0.</p></footer>
+</section>
